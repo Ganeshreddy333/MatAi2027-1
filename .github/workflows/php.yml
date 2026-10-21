@@ -1,0 +1,96 @@
+name: PHP application checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.2', '8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: curl, fileinfo, mbstring, pdo_mysql
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate Composer manifest
+        run: composer validate --strict --no-check-publish
+      - name: Require reproducible dependency lock
+        run: test -f composer.lock
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist
+      - name: Audit PHP dependencies
+        run: composer audit --locked --no-interaction
+      - name: Check PHP syntax
+        run: find backend/src backend/php backend/bin frontend -name '*.php' -print0 | xargs -0 -n1 php -l
+      - name: Run PHPUnit
+        run: composer test
+      - name: Run PHPStan
+        run: composer analyse
+      - name: Check JavaScript syntax
+        run: for file in backend/*.js frontend/js/*.js; do node --check "$file"; done
+
+  secrets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan repository history for secrets
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  database-migrations:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test-root-password
+          MYSQL_DATABASE: matai_test
+          MYSQL_USER: matai_test
+          MYSQL_PASSWORD: test-application-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ptest-root-password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      APP_ENV: test
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: matai_test
+      MYSQL_USER: matai_test
+      MYSQL_PASSWORD: test-application-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: curl, fileinfo, mbstring, pdo_mysql
+          coverage: none
+      - name: Require reproducible dependency lock
+        run: test -f composer.lock
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist
+      - name: Apply migrations twice to isolated MySQL
+        run: |
+          php backend/bin/migrate.php
+          php backend/bin/migrate.php

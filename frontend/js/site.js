@@ -136,27 +136,32 @@
     },
     {
       href: "about.html",
-      label: "About the Conference",
+      label: "About",
       drop: [
-        { href: "about.html", label: "About the Conference", drop: pageDrop("about.html") }
+        { href: "about.html", label: "About the Conference", drop: pageDrop("about.html") },
+        { href: "committee.html", label: "Scientific Committee", drop: pageDrop("committee.html") }
       ]
     },
-    { href: "committee.html", label: "Scientific Committee", drop: pageDrop("committee.html") },
-    { href: "speakers.html", label: "Speakers", drop: pageDrop("speakers.html") },
-    { href: "abstract-submission.html", label: "Abstract Submission", drop: pageDrop("abstract-submission.html").concat([
-      { href: "sessions.html", label: "Scientific Sessions", drop: pageDrop("sessions.html") }
-    ]) },
+    {
+      href: "sessions.html",
+      label: "Program",
+      drop: [
+        { href: "sessions.html", label: "Scientific Sessions", drop: pageDrop("sessions.html") },
+        { href: "speakers.html", label: "Speakers", drop: pageDrop("speakers.html") },
+        { href: "abstract-submission.html", label: "Abstract Submission", drop: pageDrop("abstract-submission.html") }
+      ]
+    },
     { href: "venue.html", label: "Venue", drop: pageDrop("venue.html") },
     {
       href: "information.html",
-      label: "Information",
+      label: "Resources",
       drop: [
         { href: "information.html", label: "Conference Information", drop: pageDrop("information.html") },
-        { href: "brochure.html", label: "Conference Brochure", drop: pageDrop("brochure.html") }
+        { href: "brochure.html", label: "Conference Brochure", drop: pageDrop("brochure.html") },
+        { href: "sponsors.html", label: "Sponsors & Exhibition", drop: pageDrop("sponsors.html") }
       ]
     },
-    { href: "sponsors.html", label: "Sponsors & Exhibition", drop: pageDrop("sponsors.html") },
-    { href: "registration.html", label: "Registration", drop: pageDrop("registration.html") },
+    { href: "registration.html", label: "Registration" },
     { href: "contact.html", label: "Contact", drop: pageDrop("contact.html") }
   ];
 
@@ -195,7 +200,7 @@
           '<span class="logo">Ai</span>' +
           '<span class="brand-title"><span class="brand-mat">Mat</span><span class="brand-ai">Ai</span> <span class="brand-year">2027</span><small>Materials · Engineering · AI</small></span>' +
         '</a>' +
-        '<nav><ul class="nav-links" id="navLinks">' + links + '</ul></nav>' +
+        '<nav aria-label="Primary"><ul class="nav-links" id="navLinks">' + links + '</ul></nav>' +
         '<div class="nav-cta">' +
           '<a class="btn btn-primary btn-sm" href="registration.html">Register Now</a>' +
           '<button class="nav-toggle" id="navToggle" type="button" aria-label="Open navigation menu" aria-controls="navLinks" aria-expanded="false"><span></span><span></span><span></span></button>' +

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 640" fill="none">
+  <defs>
+    <pattern id="lattice" width="120" height="104" patternUnits="userSpaceOnUse">
+      <path d="M0 26 30 0h60l30 26v52l-30 26H30L0 78zM30 0l30 26v52l-30 26M90 0 60 26v52l30 26M0 26h30l30-26 30 26h30M0 78h30l30 26 30-26h30" stroke="#A9531D" stroke-opacity=".26" stroke-width="1.2"/>
+      <circle cx="30" cy="0" r="2.4" fill="#A9531D" fill-opacity=".45"/>
+      <circle cx="90" cy="0" r="2.4" fill="#C79455" fill-opacity=".55"/>
+      <circle cx="0" cy="26" r="2.4" fill="#C79455" fill-opacity=".5"/>
+      <circle cx="60" cy="26" r="2.4" fill="#A9531D" fill-opacity=".45"/>
+      <circle cx="120" cy="26" r="2.4" fill="#A9531D" fill-opacity=".45"/>
+      <circle cx="0" cy="78" r="2.4" fill="#A9531D" fill-opacity=".45"/>
+      <circle cx="60" cy="78" r="2.4" fill="#C79455" fill-opacity=".55"/>
+      <circle cx="120" cy="78" r="2.4" fill="#C79455" fill-opacity=".5"/>
+      <circle cx="30" cy="104" r="2.4" fill="#C79455" fill-opacity=".5"/>
+      <circle cx="90" cy="104" r="2.4" fill="#A9531D" fill-opacity=".45"/>
+    </pattern>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="matrix(0 360 -520 0 650 300)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#D7A96D" stop-opacity=".3"/>
+      <stop offset="1" stop-color="#D7A96D" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="900" height="640" fill="url(#glow)"/>
+  <rect width="900" height="640" fill="url(#lattice)"/>
+  <g stroke="#A9531D" stroke-opacity=".3">
+    <path d="m566 212 74-42 74 42v85l-74 42-74-42z"/>
+    <path d="m640 170 75-43 74 43v85l-75 42-74-42z"/>
+    <path d="m714 297 75-42 74 42v85l-74 42-75-42z"/>
+    <path d="m566 382 74-43 75 43v85l-75 42-74-42z"/>
+    <path d="m640 424 75-42 74 42v85l-74 43-74-43z"/>
+    <path d="m640 255 74 42m-74 85 75-42m0 84v-85"/>
+  </g>
+  <g fill="#A9531D">
+    <circle cx="566" cy="212" r="5"/>
+    <circle cx="640" cy="170" r="5"/>
+    <circle cx="714" cy="127" r="5"/>
+    <circle cx="788" cy="170" r="5"/>
+    <circle cx="862" cy="297" r="5"/>
+    <circle cx="789" cy="424" r="5"/>
+    <circle cx="715" cy="509" r="5"/>
+    <circle cx="640" cy="424" r="5"/>
+    <circle cx="566" cy="382" r="5"/>
+  </g>
+</svg>

@@ -496,10 +496,15 @@
       });
       var oldText = submitButton ? submitButton.textContent : "";
       if (submitButton) { submitButton.disabled = true; submitButton.textContent = "Starting secure checkout…"; }
-      fetch("/api/checkout/stripe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+      fetch("/api/csrf").then(function (csrfResponse) {
+        return csrfResponse.json().then(function (csrf) {
+          if (!csrfResponse.ok || !csrf.token) throw new Error("Could not initialize request security.");
+          return fetch("/api/checkout/stripe", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf.token },
+            body: JSON.stringify(payload)
+          });
+        });
       }).then(function (response) {
         return response.json().then(function (result) {
           if (!response.ok) throw new Error(result.error || "Could not start checkout.");

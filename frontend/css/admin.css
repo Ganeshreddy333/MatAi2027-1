@@ -199,7 +199,7 @@ h1,h2,h3,h4 { color:#10221b; }
   width:44px; height:44px; border-radius:50%; background:#ffca28; color:#07382b;
   font-family:var(--a-font); font-size:1rem; font-weight:800;
 }
-.a-admin-email { color:#8c9aab; margin-right:.3rem; }
+.a-admin-user { color:#8c9aab; margin-right:.3rem; }
 .a-btn {
   border-radius:8px; background:#ffca28; color:#12231c; font-family:var(--a-font);
   box-shadow:none; padding:.68rem 1.1rem;
@@ -293,7 +293,7 @@ table.a-table tr:hover td { background:#fbf7e9; }
   .a-stats { grid-template-columns:1fr 1fr; }
   .a-top-actions { width:100%; justify-content:flex-start; }
   #dates-list .a-row { flex-wrap:wrap; }
-  .a-admin-email { display:none; }
+  .a-admin-user { display:none; }
   .a-header-actions { align-items:flex-start; flex-direction:column; }
   .a-panelhead { align-items:flex-start; flex-direction:column; gap:.8rem; }
   .a-action-buttons { width:100%; }
@@ -457,6 +457,6 @@ table.a-table tbody tr:hover td { background:#f6f8f5; }
 @media(max-width:560px) {
   .a-topbar { gap:.6rem; padding:.65rem .75rem; }
   .a-brand { gap:.5rem; font-size:.98rem; }
-  .a-admin-email { max-width:42vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .a-admin-user { max-width:42vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .a-header-actions { gap:.75rem; }
 }

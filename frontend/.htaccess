@@ -1,0 +1,28 @@
+Options -Indexes
+RewriteEngine On
+ErrorDocument 403 /403.html
+ErrorDocument 404 /404.html
+ErrorDocument 429 /429.html
+ErrorDocument 500 /500.html
+
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    Header always set Strict-Transport-Security "max-age=31536000" env=HTTPS
+</IfModule>
+
+# Keep the existing static site as the public document root while routing API
+# requests into the PHP application outside the web root.
+RewriteRule ^(?:api|admin|uploads)(?:/.*)?$ api.php [QSA,L]
+
+# Uploaded abstract documents, application data, and source files are private.
+<FilesMatch "(^\.|\.env|\.json$|\.log$|^(?!api\.php$).*\.php$)">
+    Require all denied
+</FilesMatch>
+
+# The PHP API bridge is the sole PHP file intended to execute inside this root.
+<Files "api.php">
+    Require all granted
+</Files>

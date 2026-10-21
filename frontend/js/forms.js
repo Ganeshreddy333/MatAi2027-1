@@ -64,6 +64,15 @@
     } catch (e) { return false; }
   }
 
+  function csrfToken() {
+    return fetch("/api/csrf").then(function (response) {
+      return response.json().then(function (result) {
+        if (!response.ok || !result.token) throw new Error("Could not initialize request security.");
+        return result.token;
+      });
+    });
+  }
+
   function handle(form) {
     var kind = form.getAttribute("data-form");
     var endpoint = form.getAttribute("data-endpoint") || ("/api/" + kind);
@@ -100,12 +109,17 @@
           "✓ Thank you! Your " + kind + " submission has been received." +
           '<br><span style="font-weight:400;font-size:.88rem">Reference: <strong>' + ref + "</strong>" +
           (via === "local" ? " — saved locally on this device (start the server to store centrally)." : ".") +
-          " A confirmation will follow by email.</span>" + extra);
+          " Keep this reference for your records.</span>" + extra);
         if (btn) { btn.disabled = false; btn.textContent = origText; }
       };
 
-      // Keep file:// demos local, but do not claim a failed server request was submitted.
+      // Local storage cannot retain uploaded file data.
       if (location.protocol === "file:") {
+        if (hasFile) {
+          showStatus(form, "err", "⚠ File uploads aren't available in the offline preview. Start the local server to submit this form with its attachment.");
+          if (btn) { btn.disabled = false; btn.textContent = origText; }
+          return;
+        }
         if (saveLocal(kind, data)) done("local");
         else {
           showStatus(form, "err", "⚠ This submission could not be saved in this browser. Please try again.");
@@ -114,8 +128,11 @@
         return;
       }
       var request = { method: "POST", body: hasFile ? data : JSON.stringify(data) };
-      if (!hasFile) request.headers = { "Content-Type": "application/json" };
-      fetch(endpoint, request).then(function (r) {
+      request.headers = hasFile ? {} : { "Content-Type": "application/json" };
+      csrfToken().then(function (token) {
+        request.headers["X-CSRF-Token"] = token;
+        return fetch(endpoint, request);
+      }).then(function (r) {
         return r.json().then(function (j) {
           if (!r.ok) throw new Error(j.error || "Submission failed.");
           return j;

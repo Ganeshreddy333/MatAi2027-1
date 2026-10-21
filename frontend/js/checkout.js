@@ -12,9 +12,27 @@
   var razorpayScriptPromise;
 
   function option(value) {
-    return paymentSelect && Array.prototype.find.call(paymentSelect.options, function (item) {
+    var choices = form.querySelectorAll('input[name="paymentGatewayChoice"]');
+    var choice = Array.prototype.find.call(choices, function (item) {
       return item.value === value;
     });
+    if (choice) return choice;
+    if (!paymentSelect || !paymentSelect.options) return null;
+    return Array.prototype.find.call(paymentSelect.options, function (item) {
+      return item.value === value;
+    });
+  }
+
+  function selectAvailableGateway() {
+    var choices = form.querySelectorAll('input[name="paymentGatewayChoice"]');
+    var fallback = Array.prototype.find.call(choices, function (choice) {
+      var card = choice.closest(".payment-method-card");
+      return !choice.disabled && !(card && card.hidden);
+    });
+    if (fallback) {
+      fallback.checked = true;
+      fallback.dispatchEvent(new Event("change", { bubbles: true }));
+    }
   }
 
   function showStatus(kind, text) {
@@ -25,10 +43,15 @@
   }
 
   function request(url, body) {
-    return fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
+    return fetch("/api/csrf").then(function (response) {
+      return response.json().then(function (csrf) {
+        if (!response.ok || !csrf.token) throw new Error("Could not initialize request security.");
+        return fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf.token },
+          body: JSON.stringify(body)
+        });
+      });
     }).then(function (response) {
       return response.json().then(function (result) {
         if (!response.ok) throw new Error(result.error || "Payment request failed.");
@@ -54,11 +77,27 @@
     }[provider];
     var item = option(label);
     if (!item) return;
+    if (item.type === "radio") {
+      var card = item.closest(".payment-method-card");
+      item.disabled = !enabled;
+      if (card) {
+        card.classList.toggle("is-unavailable", !enabled);
+        if (provider === "stripe") card.hidden = !enabled;
+      }
+      if (!enabled && item.checked) selectAvailableGateway();
+      return;
+    }
     item.disabled = !enabled;
     item.textContent = enabled ? label : label + " (not configured)";
     if (!enabled && paymentSelect.value === label) {
-      paymentSelect.value = "Bank Transfer";
-      paymentSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      var fallback = option("Bank Transfer");
+      if (fallback && fallback.type === "radio") {
+        fallback.checked = true;
+        fallback.dispatchEvent(new Event("change", { bubbles: true }));
+      } else {
+        paymentSelect.value = "Bank Transfer";
+        paymentSelect.dispatchEvent(new Event("change", { bubbles: true }));
+      }
     }
   }
 
@@ -129,6 +168,10 @@
     if (gateway !== "PayPal" && gateway !== "Razorpay") return;
     event.preventDefault();
     event.stopImmediatePropagation();
+    if (!configs[gateway.toLowerCase()]) {
+      showStatus("err", gateway + " checkout is not configured. Choose another payment method.");
+      return;
+    }
     if (!form.checkValidity()) {
       form.reportValidity();
       return;

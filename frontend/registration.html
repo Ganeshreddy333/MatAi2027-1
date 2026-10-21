@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261016-color-audit">
+  <link rel="stylesheet" href="css/styles.css?v=20261020-public-refresh">
 </head>
 <body>
   <div id="site-header"></div>
@@ -36,7 +36,6 @@
   </section>
 
   <section class="section alt" id="register-form">
-    <span id="registration-details" aria-hidden="true"></span>
     <div class="container">
       <div class="center reveal"><span class="eyebrow">Register Now</span><h2>Registration Form</h2><p class="lead">Complete the participant details, select a registration period and any options, then review your summary. All fees are in EUR (€); a 5% tax is added to every order.</p></div>
 
@@ -46,29 +45,29 @@
         <!-- Participant details -->
         <h3 class="fm-head">Registration Form</h3>
         <div class="form-grid">
-          <div class="field"><label>Title <span class="req">*</span></label>
-            <select name="title" required><option value="">Select</option><option>Dr</option><option>Prof</option><option>Assoc Prof</option><option>Assist Prof</option><option>Mr</option><option>Ms</option><option>Mx</option><option>Prefer not to say</option></select><div class="error-msg">Required</div>
+          <div class="field"><label for="registration-title">Title <span class="req">*</span></label>
+            <select id="registration-title" name="title" required><option value="">Select</option><option>Dr</option><option>Prof</option><option>Assoc Prof</option><option>Assist Prof</option><option>Mr</option><option>Ms</option><option>Mx</option><option>Prefer not to say</option></select><div class="error-msg">Required</div>
           </div>
-          <div class="field"><label>Name <span class="req">*</span></label>
-            <input type="text" name="fullName" placeholder="Enter your full name" required><div class="error-msg">Required</div>
+          <div class="field"><label for="registration-name">Name <span class="req">*</span></label>
+            <input id="registration-name" type="text" name="fullName" placeholder="Enter your full name" required><div class="error-msg">Required</div>
           </div>
-          <div class="field"><label>Email <span class="req">*</span></label>
-            <input type="email" name="email" placeholder="Enter your email" required><div class="error-msg">Valid email required</div>
+          <div class="field"><label for="registration-email">Email <span class="req">*</span></label>
+            <input id="registration-email" type="email" name="email" placeholder="Enter your email" required><div class="error-msg">Valid email required</div>
           </div>
-          <div class="field"><label>Telephone</label>
-            <input type="tel" name="phone" placeholder="Enter your phone number">
+          <div class="field"><label for="registration-phone">Telephone</label>
+            <input id="registration-phone" type="tel" name="phone" placeholder="Enter your phone number">
           </div>
-          <div class="field"><label>City</label>
-            <input type="text" name="city" placeholder="Enter your city">
+          <div class="field"><label for="registration-city">City</label>
+            <input id="registration-city" type="text" name="city" placeholder="Enter your city">
           </div>
-          <div class="field"><label>Interested In</label>
-            <select name="interestedIn"><option value="">Select an area of interest</option><option>Conference Registration</option><option>Abstract Presentation</option><option>Accommodation</option><option>Exhibition</option><option>Sponsorship</option><option>Other</option></select>
+          <div class="field"><label for="registration-interest">Interested In</label>
+            <select id="registration-interest" name="interestedIn"><option value="">Select an area of interest</option><option>Conference Registration</option><option>Abstract Presentation</option><option>Accommodation</option><option>Exhibition</option><option>Sponsorship</option><option>Other</option></select>
           </div>
-          <div class="field"><label>Organization <span class="req">*</span></label>
-            <input type="text" name="institution" placeholder="Organization / institution" required><div class="error-msg">Required</div>
+          <div class="field"><label for="registration-organization">Organization <span class="req">*</span></label>
+            <input id="registration-organization" type="text" name="institution" placeholder="Organization / institution" required><div class="error-msg">Required</div>
           </div>
-          <div class="field"><label>Country <span class="req">*</span></label>
-            <select name="country" required>
+          <div class="field"><label for="registration-country">Country <span class="req">*</span></label>
+            <select id="registration-country" name="country" required>
               <option value="">Select country</option>
               <option>Germany</option><option>United Kingdom</option><option>France</option><option>Italy</option><option>Spain</option><option>Netherlands</option><option>Belgium</option><option>Switzerland</option><option>Austria</option><option>Sweden</option><option>Norway</option><option>Denmark</option><option>Finland</option><option>Poland</option><option>Portugal</option><option>Ireland</option><option>Greece</option><option>Czech Republic</option><option>United States</option><option>Canada</option><option>Brazil</option><option>Mexico</option><option>India</option><option>China</option><option>Japan</option><option>South Korea</option><option>Singapore</option><option>Australia</option><option>New Zealand</option><option>United Arab Emirates</option><option>Saudi Arabia</option><option>Qatar</option><option>South Africa</option><option>Egypt</option><option>Nigeria</option><option>Turkey</option><option>Other</option>
             </select><div class="error-msg">Required</div>
@@ -78,8 +77,8 @@
         <!-- Billing address -->
         <h3 class="fm-head">Billing Address</h3>
         <div class="form-grid">
-          <div class="field full"><label>Billing Address</label>
-            <textarea name="billingAddress" placeholder="Enter your billing address" style="min-height:80px"></textarea>
+          <div class="field full"><label for="registration-billing-address">Billing Address</label>
+            <textarea id="registration-billing-address" name="billingAddress" placeholder="Enter your billing address" style="min-height:80px"></textarea>
           </div>
         </div>
         <h3 class="fm-head">Participants</h3>
@@ -284,10 +283,10 @@
         <div class="registration-addon-card">
           <p class="text-muted">Optional accommodation is charged per night. Choose a room type and enter your stay dates.</p>
           <div class="form-grid">
-            <div class="field"><label>Room Type</label><select name="accommodationType" id="accommodation-type"><option value="">No accommodation</option><option value="single">Single Occupancy</option><option value="double">Double Occupancy</option></select></div>
-            <div class="field accommodation-stay-field" id="accommodation-nights-field" hidden><label>Number of Nights</label><select name="accommodationNights" id="accommodation-nights"><option value="1">1 night</option><option value="2">2 nights</option><option value="3">3 nights</option><option value="4">4 nights</option><option value="5">5 nights</option><option value="6">6 nights</option><option value="7">7 nights</option><option value="8">8 nights</option><option value="9">9 nights</option><option value="10">10 nights</option><option value="11">11 nights</option><option value="12">12 nights</option><option value="13">13 nights</option><option value="14">14 nights</option></select></div>
-            <div class="field accommodation-stay-field" id="accommodation-check-in-field" hidden><label>Check-in Date</label><input type="date" name="checkInDate" id="check-in-date"></div>
-            <div class="field accommodation-stay-field" id="accommodation-check-out-field" hidden><label>Check-out Date</label><input type="date" name="checkOutDate" id="check-out-date" readonly aria-describedby="accommodation-checkout-help"><span class="hint" id="accommodation-checkout-help">Calculated from your check-in date and number of nights.</span></div>
+            <div class="field"><label for="accommodation-type">Room Type</label><select name="accommodationType" id="accommodation-type"><option value="">No accommodation</option><option value="single">Single Occupancy</option><option value="double">Double Occupancy</option></select></div>
+            <div class="field accommodation-stay-field" id="accommodation-nights-field" hidden><label for="accommodation-nights">Number of Nights</label><select name="accommodationNights" id="accommodation-nights"><option value="1">1 night</option><option value="2">2 nights</option><option value="3">3 nights</option><option value="4">4 nights</option><option value="5">5 nights</option><option value="6">6 nights</option><option value="7">7 nights</option><option value="8">8 nights</option><option value="9">9 nights</option><option value="10">10 nights</option><option value="11">11 nights</option><option value="12">12 nights</option><option value="13">13 nights</option><option value="14">14 nights</option></select></div>
+            <div class="field accommodation-stay-field" id="accommodation-check-in-field" hidden><label for="check-in-date">Check-in Date</label><input type="date" name="checkInDate" id="check-in-date"></div>
+            <div class="field accommodation-stay-field" id="accommodation-check-out-field" hidden><label for="check-out-date">Check-out Date</label><input type="date" name="checkOutDate" id="check-out-date" readonly aria-describedby="accommodation-checkout-help"><span class="hint" id="accommodation-checkout-help">Calculated from your check-in date and number of nights.</span></div>
           </div>
           <div class="accommodation-rate-note" id="accommodation-rate-note"></div>
         </div>
@@ -305,7 +304,7 @@
 
         <div class="registration-tools mt-2">
           <div class="field coupon-field">
-            <label>Have a promo code?</label>
+            <label for="coupon-code">Have a promo code?</label>
             <div class="coupon-row">
               <input type="text" name="couponCode" id="coupon-code" placeholder="Apply Coupon">
               <button type="button" class="btn btn-dark btn-sm" id="coupon-apply">Apply Coupon</button>
@@ -350,7 +349,13 @@
             <h3 class="payment-method-heading">Choose your payment method</h3>
             <p class="payment-security-line"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3h2v12H5V10h2Zm2 0h6V7a3 3 0 0 0-6 0v3Zm3 4a2 2 0 0 0-1 3.732V20h2v-2.268A2 2 0 0 0 12 14Z"/></svg> Secure checkout <b>•</b> Encrypted payments <b>•</b> Trusted by millions</p>
             <input type="hidden" name="paymentGateway" id="payment-gateway" value="Razorpay">
+            <p class="pay-note" role="status" aria-live="polite">Loading available payment methods…</p>
             <div class="payment-method-grid" role="radiogroup" aria-label="Payment Gateway">
+              <label class="payment-method-card payment-method-compact" hidden>
+                <input type="radio" name="paymentGatewayChoice" value="Stripe / Card Payment">
+                <span class="payment-method-radio" aria-hidden="true"></span>
+                <span class="payment-method-content"><img class="payment-brand-logo" src="assets/payment-card-icon.svg" alt=""><span class="payment-region-pill">CARD PAYMENT</span><span class="payment-method-description">Pay securely by credit or debit card using Stripe checkout.</span><span class="payment-badges" aria-label="Accepted payment types"><span class="payment-badge"><img src="assets/visa-logo.svg" alt="Visa"></span><span class="payment-badge"><img src="assets/mastercard-logo.svg" alt="Mastercard"></span><span class="payment-badge"><img src="assets/amex-logo.svg" alt="American Express"></span></span></span>
+              </label>
               <label class="payment-method-card">
                 <input type="radio" name="paymentGatewayChoice" value="PayPal">
                 <span class="payment-method-radio" aria-hidden="true"></span>
@@ -360,6 +365,11 @@
                 <input type="radio" name="paymentGatewayChoice" value="Razorpay" checked>
                 <span class="payment-method-radio" aria-hidden="true"></span>
                 <span class="payment-method-content"><img class="payment-brand-logo" src="assets/razorpay-logo.svg" alt="Razorpay"><span class="payment-region-pill"><span aria-hidden="true">&#127760;</span> GLOBAL PAYMENTS</span><span class="payment-method-description">Pay securely with Razorpay (India &amp; International)</span><span class="payment-badges" aria-label="Accepted payment types"><span class="payment-badge"><img src="assets/visa-logo.svg" alt="Visa"></span><span class="payment-badge"><img src="assets/mastercard-logo.svg" alt="Mastercard"></span><span class="payment-badge"><img src="assets/amex-logo.svg" alt="American Express"></span><span class="payment-badge"><img src="assets/upi-logo.svg" alt="UPI"></span><span class="payment-badge"><img src="assets/rupay-logo.svg" alt="RuPay"></span><span class="payment-badge payment-badge-netbanking"><img src="assets/net-banking-icon.svg" alt=""><span>Net Banking</span></span><span class="payment-badge payment-badge-wallet"><span aria-hidden="true">&#128179;</span><span>Wallets</span></span></span><span class="payment-capabilities">Credit &amp; debit cards <b>|</b> UPI <b>|</b> Net banking <b>|</b> Wallets <b>|</b> International cards</span></span>
+              </label>
+              <label class="payment-method-card payment-method-compact">
+                <input type="radio" name="paymentGatewayChoice" value="Bank Transfer">
+                <span class="payment-method-radio" aria-hidden="true"></span>
+                <span class="payment-method-content"><img class="payment-brand-logo" src="assets/net-banking-icon.svg" alt=""><span class="payment-region-pill">MANUAL PAYMENT</span><span class="payment-method-description">Bank transfer with organizer follow-up.</span><span class="payment-capabilities">Your registration remains pending until payment is confirmed.</span></span>
               </label>
             </div>
 
@@ -492,11 +502,11 @@
   </div>
 
   <div id="site-footer"></div>
-  <script src="js/site.js?v=20261016-color-audit"></script>
-  <script src="js/forms.js"></script>
+  <script src="js/site.js?v=20261020-public-refresh"></script>
+  <script src="js/forms.js?v=20261020-public-refresh"></script>
   <script src="js/human-verification.js?v=20261016-color-audit"></script>
   <script src="js/register.js?v=20261016-color-audit"></script>
   <script src="js/terms-modal.js"></script>
-  <script src="js/checkout.js"></script>
+  <script src="js/checkout.js?v=20261020-public-refresh"></script>
 </body>
 </html>

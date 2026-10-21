@@ -8,7 +8,7 @@
    SECURITY: Submissions contain personal data (PII). There is NO
    public read endpoint. Private storage is outside the static frontend,
    and every /admin/api/** route requires an authenticated
-   session (login with ADMIN_USERNAME + ADMIN_PASSWORD). Do not weaken these controls.
+   session (login with ADMIN_USERNAME + NODE_ADMIN_PASSWORD_HASH). Do not weaken these controls.
    ================================================================ */
 "use strict";
 
@@ -20,16 +20,17 @@ const crypto = require("crypto");
 const multer = require("multer");
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 const storage = require("./storage");
+const { applyVerifiedPaymentStatus } = require("./payment-status");
 
 const app = express();
+app.disable("x-powered-by");
 const PORT = process.env.PORT || 3000;
 const ROOT = __dirname;
 const FRONTEND_DIR = path.join(ROOT, "..", "frontend");
 const DATA_DIR = path.join(ROOT, "data");
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 const IMAGE_UPLOAD_DIR = path.join(DATA_DIR, "images");
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "matai-admin-2027";
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "";
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || "";
@@ -40,6 +41,15 @@ const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "";
 const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || "";
 const RAZORPAY_CURRENCY = "EUR";
 const PUBLIC_BASE_URL = (process.env.PUBLIC_BASE_URL || "http://localhost:" + PORT).replace(/\/+$/, "");
+const APP_ENV = process.env.APP_ENV || process.env.NODE_ENV || "local";
+const SECURE_COOKIES = APP_ENV === "production" || PUBLIC_BASE_URL.startsWith("https://");
+const NODE_ADMIN_PASSWORD_HASH = process.env.NODE_ADMIN_PASSWORD_HASH || "";
+const { verifyAdminPassword, safeEqual, sessionCookie } = require("./admin-auth");
+const { createCsrfProtection } = require("./csrf-protection");
+
+if (APP_ENV === "production" && !PUBLIC_BASE_URL.startsWith("https://")) {
+  throw new Error("PUBLIC_BASE_URL must use HTTPS when the Node application is in production.");
+}
 
 // Allowed form kinds -> required fields (server-side validation)
 const FORMS = {
@@ -236,6 +246,7 @@ function mergeDefaults(defaults, saved) {
   return merged;
 }
 /* ---------- Middleware ---------- */
+// Provider webhooks above authenticate with provider signatures and intentionally bypass browser CSRF tokens.
 app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   try {
     await processStripeWebhook(req.body, req.get("stripe-signature"));
@@ -270,55 +281,99 @@ app.use((req, res, next) => {
 });
 
 /* ---------- Session auth (in-memory) ---------- */
-const sessions = new Map(); // token -> expiry (ms)
+const sessions = new Map(); // token -> session state
 const SESSION_TTL = 1000 * 60 * 60 * 8; // 8 hours
-function newSession() {
+function newSession(authenticated) {
+  const now = Date.now();
+  sessions.forEach((session, token) => {
+    if (session.expiresAt <= now) sessions.delete(token);
+  });
   const t = crypto.randomBytes(24).toString("hex");
-  sessions.set(t, Date.now() + SESSION_TTL);
+  sessions.set(t, {
+    expiresAt: now + SESSION_TTL,
+    csrf: crypto.randomBytes(32).toString("hex"),
+    authenticated: Boolean(authenticated)
+  });
   return t;
 }
-function validSession(t) {
-  if (!t) return false;
-  const e = sessions.get(t);
-  if (!e) return false;
-  if (e < Date.now()) { sessions.delete(t); return false; }
-  return true;
+function getSession(req) {
+  const token = parseCookies(req).matai_admin;
+  const session = token ? sessions.get(token) : null;
+  if (!session) return null;
+  if (session.expiresAt <= Date.now()) {
+    sessions.delete(token);
+    return null;
+  }
+  return { token, session };
 }
 function parseCookies(req) {
   const out = {}; const h = req.headers.cookie; if (!h) return out;
   h.split(";").forEach(function (c) {
     const i = c.indexOf("=");
-    if (i > -1) out[c.slice(0, i).trim()] = decodeURIComponent(c.slice(i + 1).trim());
+    if (i > -1) {
+      const name = c.slice(0, i).trim();
+      try { out[name] = decodeURIComponent(c.slice(i + 1).trim()); }
+      catch (_) { out[name] = ""; }
+    }
   });
   return out;
 }
-function isAuthed(req) { return validSession(parseCookies(req).matai_admin); }
+function setSessionCookie(res, token) {
+  res.setHeader("Set-Cookie", sessionCookie(token, SECURE_COOKIES, SESSION_TTL / 1000));
+}
+function isAuthed(req) {
+  const current = getSession(req);
+  return Boolean(current && current.session.authenticated);
+}
 function requireAuth(req, res, next) {
   if (isAuthed(req)) return next();
   return res.status(401).json({ ok: false, error: "Unauthorized" });
 }
 
+app.get("/api/csrf", (req, res) => {
+  let current = getSession(req);
+  if (!current) {
+    const token = newSession(false);
+    current = { token, session: sessions.get(token) };
+    setSessionCookie(res, token);
+  }
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ ok: true, token: current.session.csrf });
+});
+
+app.use(createCsrfProtection(getSession));
+
 /* ---------- Auth endpoints ---------- */
 app.post("/admin/login", (req, res) => {
+  if (!ADMIN_USERNAME || !NODE_ADMIN_PASSWORD_HASH) {
+    return res.status(503).json({ ok: false, error: "Administrator credentials are not configured." });
+  }
   const user = String((req.body && req.body.username) || "");
   const pw = String((req.body && req.body.password) || "");
-  const ua = Buffer.from(user), ub = Buffer.from(ADMIN_USERNAME);
-  const pa = Buffer.from(pw), pb = Buffer.from(ADMIN_PASSWORD);
-  const userOk = ua.length === ub.length && crypto.timingSafeEqual(ua, ub);
-  const passOk = pa.length === pb.length && crypto.timingSafeEqual(pa, pb);
+  const current = getSession(req);
+  const userOk = safeEqual(user, ADMIN_USERNAME);
+  const passOk = verifyAdminPassword(pw, NODE_ADMIN_PASSWORD_HASH);
   if (!userOk || !passOk) return res.status(401).json({ ok: false, error: "Incorrect username or password." });
-  const t = newSession();
-  res.setHeader("Set-Cookie",
-    "matai_admin=" + t + "; HttpOnly; SameSite=Strict; Path=/; Max-Age=" + (SESSION_TTL / 1000));
-  res.json({ ok: true });
+  if (current) sessions.delete(current.token);
+  const token = newSession(true);
+  setSessionCookie(res, token);
+  res.json({ ok: true, csrf: sessions.get(token).csrf });
 });
 app.post("/admin/logout", (req, res) => {
   const c = parseCookies(req);
   if (c.matai_admin) sessions.delete(c.matai_admin);
-  res.setHeader("Set-Cookie", "matai_admin=; HttpOnly; Path=/; Max-Age=0");
+  res.setHeader("Set-Cookie", sessionCookie("", SECURE_COOKIES, 0));
   res.json({ ok: true });
 });
-app.get("/admin/api/session", (req, res) => res.json({ ok: true, authed: isAuthed(req) }));
+app.get("/admin/api/session", (req, res) => {
+  const current = getSession(req);
+  res.json({
+    ok: true,
+    authed: Boolean(current && current.session.authenticated),
+    username: current && current.session.authenticated ? ADMIN_USERNAME : "",
+    csrf: current ? current.session.csrf : ""
+  });
+});
 
 /* ---------- Public content ---------- */
 app.get("/api/content", async (_req, res) => {
@@ -582,10 +637,11 @@ async function applyStripeSession(session, outcome) {
       entry.stripeCheckoutSessionId === session.id);
     if (!record) return;
     if (outcome === "paid" && session.payment_status === "paid") {
-      record.paymentStatus = "Paid";
-      record.stripePaymentIntent = typeof session.payment_intent === "string" ? session.payment_intent : "";
+      applyVerifiedPaymentStatus(record, "Paid", {
+        stripePaymentIntent: typeof session.payment_intent === "string" ? session.payment_intent : ""
+      });
     } else if (outcome === "cancelled") {
-      record.paymentStatus = "Cancelled";
+      applyVerifiedPaymentStatus(record, "Cancelled");
     }
   });
 }
@@ -594,10 +650,7 @@ async function markRegistrationPaid(reference, providerId, provider, extra) {
   await updateArr("register", async (arr) => {
     const record = arr.find((entry) => entry.reference === reference &&
       entry[provider + "OrderId"] === providerId);
-    if (!record) return false;
-    record.paymentStatus = "Paid";
-    Object.assign(record, extra || {});
-    return true;
+    return applyVerifiedPaymentStatus(record, "Paid", extra);
   });
 }
 
@@ -639,7 +692,7 @@ async function processRazorpayWebhook(rawBody, signatureHeader) {
   } else if (event.event === "payment.failed" && payment && payment.order_id) {
     await updateArr("register", async (arr) => {
       const record = arr.find((entry) => entry.razorpayOrderId === payment.order_id);
-      if (record && record.paymentStatus !== "Paid") record.paymentStatus = "Failed";
+      applyVerifiedPaymentStatus(record, "Failed");
     });
   }
 }
@@ -944,7 +997,7 @@ app.post("/api/checkout/razorpay/cancel", async (req, res) => {
   try {
     await updateArr("register", async (arr) => {
       const record = arr.find((entry) => entry.razorpayOrderId === orderId);
-      if (record && record.paymentStatus === "Pending") record.paymentStatus = "Cancelled";
+      applyVerifiedPaymentStatus(record, "Cancelled");
     });
     res.json({ ok: true });
   } catch (err) {

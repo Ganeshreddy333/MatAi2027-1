@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261016-color-audit">
+  <link rel="stylesheet" href="css/styles.css?v=20261020-public-refresh">
 </head>
 <body>
   <div id="site-header"></div>
@@ -193,22 +193,22 @@
       <form class="form-card reveal mt-2" data-form="abstract">
         <div class="form-status"></div>
         <div class="form-grid">
-          <div class="field"><label>Abstract Title <span class="req">*</span></label><input type="text" name="title" required><div class="error-msg">Required</div></div>
-          <div class="field"><label>Preferred Category <span class="req">*</span></label>
-            <select name="category" required>
+          <div class="field"><label for="abstract-title">Abstract Title <span class="req">*</span></label><input id="abstract-title" type="text" name="title" required><div class="error-msg">Required</div></div>
+          <div class="field"><label for="abstract-category">Preferred Category <span class="req">*</span></label>
+            <select id="abstract-category" name="category" required>
               <option value="">Select…</option>
               <option>Oral Presentation</option>
               <option>Poster Presentation</option>
               <option>Invited Presentation</option>
               <option>Keynote / Plenary</option>
             </select><div class="error-msg">Required</div></div>
-          <div class="field"><label>Corresponding Author Name <span class="req">*</span></label><input type="text" name="authorName" required><div class="error-msg">Required</div></div>
-          <div class="field"><label>Email <span class="req">*</span></label><input type="email" name="email" required><div class="error-msg">Valid email required</div></div>
-          <div class="field"><label>Institution / Affiliation <span class="req">*</span></label><input type="text" name="institution" required><div class="error-msg">Required</div></div>
-          <div class="field"><label>Country <span class="req">*</span></label><input type="text" name="country" required><div class="error-msg">Required</div></div>
-          <div class="field full"><label>Co-Authors &amp; Affiliations</label><input type="text" name="coAuthors" placeholder="Full names and affiliations"></div>
-          <div class="field full"><label>Scientific Session / Research Area <span class="req">*</span></label>
-            <select name="session" required>
+          <div class="field"><label for="abstract-author">Corresponding Author Name <span class="req">*</span></label><input id="abstract-author" type="text" name="authorName" required><div class="error-msg">Required</div></div>
+          <div class="field"><label for="abstract-email">Email <span class="req">*</span></label><input id="abstract-email" type="email" name="email" required><div class="error-msg">Valid email required</div></div>
+          <div class="field"><label for="abstract-institution">Institution / Affiliation <span class="req">*</span></label><input id="abstract-institution" type="text" name="institution" required><div class="error-msg">Required</div></div>
+          <div class="field"><label for="abstract-country">Country <span class="req">*</span></label><input id="abstract-country" type="text" name="country" required><div class="error-msg">Required</div></div>
+          <div class="field full"><label for="abstract-coauthors">Co-Authors &amp; Affiliations</label><input id="abstract-coauthors" type="text" name="coAuthors" placeholder="Full names and affiliations"></div>
+          <div class="field full"><label for="abstract-session">Scientific Session / Research Area <span class="req">*</span></label>
+            <select id="abstract-session" name="session" required>
               <option value="">Select one scientific session</option>
               <option>Session 01 — Advanced Materials &amp; Materials Engineering</option>
               <option>Session 02 — Nanomaterials &amp; Nanotechnology</option>
@@ -242,8 +242,8 @@
               <option>Session 30 — Future Directions in Materials Science, Engineering &amp; AI</option>
             </select><div class="error-msg">Please select a scientific session.</div>
           </div>
-          <div class="field full"><label>Abstract Text <span class="req">*</span></label><textarea name="abstract" required placeholder="Background, objectives, methodology, results, conclusion…"></textarea><div class="error-msg">Required</div></div>
-          <div class="field full"><label>Keywords</label><input type="text" name="keywords" placeholder="Comma-separated scientific keywords"></div>
+          <div class="field full"><label for="abstract-text">Abstract Text <span class="req">*</span></label><textarea id="abstract-text" name="abstract" required placeholder="Background, objectives, methodology, results, conclusion…"></textarea><div class="error-msg">Required</div></div>
+          <div class="field full"><label for="abstract-keywords">Keywords</label><input id="abstract-keywords" type="text" name="keywords" placeholder="Comma-separated scientific keywords"></div>
           <div class="field full"><label for="abstract-attachment">Upload Abstract Document (optional)</label><input id="abstract-attachment" type="file" name="attachment" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"><small>PDF or Word document (.doc, .docx), maximum 5 MB.</small><div class="error-msg">Choose a PDF or Word document up to 5 MB.</div></div>
           <div class="field full"><label class="chk"><input type="checkbox" name="integrity" required> I confirm the work is original, free from plagiarism, and complies with applicable research integrity requirements. <span class="req">*</span></label><div class="error-msg">Please confirm</div></div>
           <div class="field full human-verification" data-human-verification></div>
@@ -254,8 +254,8 @@
   </section>
 
   <div id="site-footer"></div>
-  <script src="js/site.js?v=20261016-color-audit"></script>
-  <script src="js/forms.js"></script>
+  <script src="js/site.js?v=20261020-public-refresh"></script>
+  <script src="js/forms.js?v=20261020-public-refresh"></script>
   <script src="js/human-verification.js?v=20261016-color-audit"></script>
 </body>
 </html>

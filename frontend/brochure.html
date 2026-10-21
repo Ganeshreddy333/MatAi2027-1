@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261016-color-audit">
+  <link rel="stylesheet" href="css/styles.css?v=20261020-public-refresh">
 </head>
 <body>
   <div id="site-header"></div>
@@ -44,10 +44,10 @@
           <form class="form-card mt-2" data-form="brochure">
             <div class="form-status"></div>
             <div class="form-grid">
-              <div class="field"><label>Full Name <span class="req">*</span></label><input type="text" name="fullName" required><div class="error-msg">Required</div></div>
-              <div class="field"><label>Email <span class="req">*</span></label><input type="email" name="email" required><div class="error-msg">Valid email required</div></div>
-              <div class="field"><label>Organization</label><input type="text" name="organization"></div>
-              <div class="field"><label>Country</label><input type="text" name="country"></div>
+              <div class="field"><label for="brochure-name">Full Name <span class="req">*</span></label><input id="brochure-name" type="text" name="fullName" required><div class="error-msg">Required</div></div>
+              <div class="field"><label for="brochure-email">Email <span class="req">*</span></label><input id="brochure-email" type="email" name="email" required><div class="error-msg">Valid email required</div></div>
+              <div class="field"><label for="brochure-organization">Organization</label><input id="brochure-organization" type="text" name="organization"></div>
+              <div class="field"><label for="brochure-country">Country</label><input id="brochure-country" type="text" name="country"></div>
               <div class="field full"><label class="chk"><input type="checkbox" name="consent"> I agree to receive conference updates by email.</label></div>
             </div>
             <div class="btn-row mt-2"><button type="submit" class="btn btn-primary">Download Brochure ↓</button></div>
@@ -116,7 +116,7 @@
   </section>
 
   <div id="site-footer"></div>
-  <script src="js/site.js?v=20261016-color-audit"></script>
-  <script src="js/forms.js"></script>
+  <script src="js/site.js?v=20261020-public-refresh"></script>
+  <script src="js/forms.js?v=20261020-public-refresh"></script>
 </body>
 </html>

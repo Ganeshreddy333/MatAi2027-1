@@ -76,6 +76,8 @@
       }).join("");
     });
 
+    renderRegistrationPlans(content);
+
     // Fee cells: <td data-fee="Period|Category">
     var fees = content.fees || {};
     document.querySelectorAll("[data-fee]").forEach(function (cell) {
@@ -171,6 +173,47 @@
           "<h4>" + name + '</h4><div class="role">' + role +
           '</div><div class="org">' + org +
           '</div><span class="view-profile">View Profile →</span></div>';
+      }).join("");
+    });
+  }
+
+  function renderRegistrationPlans(content) {
+    var containers = document.querySelectorAll("[data-registration-plans]");
+    if (!containers.length) return;
+
+    var periods = content.registrationPeriods || {};
+    var order = ["Early Bird", "Mid-Term", "On-Spot"];
+    var index = order.indexOf(periods.active);
+    if (index < 0) index = 0;
+    var today = new Date().toISOString().slice(0, 10);
+    while (index < order.length - 1) {
+      var current = periods[order[index]] || {};
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(current.deadline || "") || current.deadline >= today) break;
+      index += 1;
+    }
+
+    var period = order[index];
+    var label = periods[period] && periods[period].label || period + " Registration";
+    var fees = content.fees && content.fees[period] || {};
+    var categories = ["Speaker", "Delegate", "Poster", "Student", "Virtual"];
+    var plans = categories.filter(function (category) {
+      return fees[category] != null && isFinite(Number(fees[category])) && Number(fees[category]) >= 0;
+    });
+
+    containers.forEach(function (container) {
+      if (!plans.length) {
+        container.innerHTML = '<p class="placeholder-note center">Registration prices are temporarily unavailable. Please contact the organizers.</p>';
+        return;
+      }
+      container.innerHTML = plans.map(function (category) {
+        return '<article class="card registration-plan">' +
+          '<span class="eyebrow">' + escapeHtml(label) + '</span>' +
+          '<h3>' + escapeHtml(category) + '</h3>' +
+          '<p class="registration-plan-price">€' + Number(fees[category]).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+          '<small> / participant</small></p>' +
+          '<p>Plus 5% tax. Optional items are priced separately.</p>' +
+          '<a class="btn btn-outline mt-2" href="registration.html">Registration Details</a>' +
+          '</article>';
       }).join("");
     });
   }

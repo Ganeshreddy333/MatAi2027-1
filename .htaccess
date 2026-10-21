@@ -1,0 +1,10 @@
+Options -Indexes
+RewriteEngine On
+
+# Never expose source, private data, dependency metadata, or local configuration
+# if the repository root is accidentally selected as the web document root.
+RewriteRule ^(?:backend|vendor|node_modules|tests|\.github)(?:/|$) - [F,L,NC]
+
+<FilesMatch "(^\.|^composer\.(?:json|lock)$|^package(?:-lock)?\.json$|^README\.md$|\.log$)">
+    Require all denied
+</FilesMatch>

@@ -4,10 +4,11 @@
 (function () {
   "use strict";
 
-  var PAY = ["Pending", "Paid", "Refunded", "Cancelled", "Failed"];
   var STATUS = ["New", "Reviewed", "Approved", "Rejected", "Completed"];
+  var BANK_PAYMENT_STATUSES = ["Pending", "Paid", "Cancelled"];
   var KIND_LABEL = { all: "All Submissions", register: "Registrations", abstract: "Abstracts", contact: "Contacts", brochure: "Brochure Requests" };
   var current = "content";
+  var csrfToken = "";
   var cache = {};      // kind -> items
   var contentData = null;
   var currentEditPage = "index.html";
@@ -58,7 +59,12 @@
   function fmt(iso) { if (!iso) return ""; var dt = new Date(iso); return isNaN(dt) ? "" : dt.toLocaleString(); }
 
   function api(url, opts) {
-    return fetch(url, opts || {}).then(function (r) {
+    opts = opts || {};
+    opts.headers = opts.headers || {};
+    if (opts.method && opts.method.toUpperCase() !== "GET" && csrfToken) {
+      opts.headers["X-CSRF-Token"] = csrfToken;
+    }
+    return fetch(url, opts).then(function (r) {
       if (r.status === 401) { showLogin(); throw new Error("unauth"); }
       var ct = r.headers.get("content-type") || "";
       return (ct.indexOf("json") > -1 ? r.json() : r.text()).then(function (body) {
@@ -199,10 +205,7 @@
   };
 
   function paySelect(r) {
-    var v = r.paymentStatus || "Pending";
-    return '<select class="a-select" data-kind="' + esc(r.kind || current) + '" data-pay="' + esc(r.reference) + '">' + PAY.map(function (o) {
-      return '<option' + (o === v ? " selected" : "") + ">" + o + "</option>";
-    }).join("") + "</select>";
+    return '<span class="a-readonly">' + esc(r.paymentStatus || "Pending") + "</span>";
   }
   function statusPill(r) {
     var v = r.status || "New";
@@ -248,17 +251,6 @@
   }
 
   // Delegated events on table body
-  el("tbody").addEventListener("change", function (e) {
-    var sel = e.target.closest("[data-pay]"); if (!sel) return;
-    var ref = sel.getAttribute("data-pay");
-    var kind = sel.getAttribute("data-kind") || current;
-    api("/admin/api/submissions/" + encodeURIComponent(kind) + "/" + encodeURIComponent(ref), {
-      method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paymentStatus: sel.value })
-    }).then(function (j) {
-      if (j && j.ok) { toast("Payment status updated"); loadAll(); }
-    }).catch(function () { toast("Update failed", true); });
-  });
   el("tbody").addEventListener("click", function (e) {
     if (e.target.closest("select") || e.target.closest("button")) return;
     var tr = e.target.closest("tr[data-ref]"); if (!tr) return;
@@ -266,21 +258,25 @@
   });
 
   /* ---------- Detail drawer ---------- */
-  var drawerRef = null, drawerKind = null;
+  var drawerRef = null, drawerKind = null, drawerRecord = null;
 
   function openDrawer(kind, ref) {
     var items = cache[kind] || [];
     var rec = items.filter(function (x) { return x.reference === ref; })[0];
     if (!rec) return;
-    drawerRef = ref; drawerKind = kind;
+    drawerRef = ref; drawerKind = kind; drawerRecord = rec;
     el("d-title").textContent = (KIND_LABEL[kind] || kind).replace(/s$/, "") + " · " + ref;
 
     var data = rec.data || {};
-    var ctrls = "<h4>Submission details</h4><p class='a-muted'>Edit submitted form data. Changes are stored in the backend.</p>";
+    var ctrls = "<h4>Submission details</h4><p class='a-muted'>" +
+      (kind === "register" ? "Registration and pricing details are read-only; use Admin notes for corrections." :
+        "Edit submitted form data. Changes are stored in the backend.") + "</p>";
     Object.keys(data).forEach(function (key) {
       var value = data[key];
       var label = key.replace(/([A-Z])/g, " $1").replace(/_/g, " ");
-      if (typeof value === "boolean") {
+      if (kind === "register") {
+        ctrls += field(label, "<div class='a-readonly'>" + esc(value) + "</div>");
+      } else if (typeof value === "boolean") {
         ctrls += field(label, "<label class='switch'><input type='checkbox' data-submission-field='" + esc(key) +
           "'" + (value ? " checked" : "") + "> Yes</label>");
       } else if (typeof value === "number") {
@@ -304,8 +300,19 @@
     ctrls += field("Received", "<div class='a-readonly'>" + esc(fmt(rec.receivedAt)) + "</div>");
     if (rec.ip) ctrls += field("IP address", "<div class='a-readonly'>" + esc(rec.ip) + "</div>");
     if (kind === "register") {
-      ctrls += field("Payment status", selectHtml("d-pay", PAY, rec.paymentStatus || "Pending"));
-      ctrls += field("Payment amount (€)", "<input class='a-input' id='d-amount' type='number' min='0' step='0.01' value='" + esc(rec.amount || 0) + "'>");
+      var isManualBankTransfer = (data.paymentGateway || data.paymentMethod) === "Bank Transfer" &&
+        (rec.paymentStatus || "Pending") === "Pending";
+      ctrls += field("Payment status", isManualBankTransfer
+        ? selectHtml("d-pay", BANK_PAYMENT_STATUSES, rec.paymentStatus || "Pending")
+        : "<div class='a-readonly'>" + esc(rec.paymentStatus || "Pending") + "</div>");
+      if (isManualBankTransfer) {
+        ctrls += field("Payment verification reference or cancellation reason",
+          "<input class='a-input' id='d-payment-evidence' type='text' maxlength='200' autocomplete='off'>");
+      } else if (rec.paymentVerification && rec.paymentVerification.evidence) {
+        ctrls += field("Manual payment verification", "<div class='a-readonly'>" +
+          esc(rec.paymentVerification.outcome) + " · " + esc(rec.paymentVerification.evidence) + "</div>");
+      }
+      ctrls += field("Payment amount (€)", "<div class='a-readonly'>" + Number(rec.amount || 0).toFixed(2) + "</div>");
     }
     ctrls += field("Review status", selectHtml("d-status", STATUS, rec.status || "New"));
     ctrls += field("Admin notes", "<textarea class='a-input' id='d-notes'>" + esc(rec.adminNotes || "") + "</textarea>");
@@ -330,7 +337,7 @@
   function closeDrawer() {
     el("drawer").classList.remove("open");
     el("drawer-bg").classList.remove("open");
-    drawerRef = null; drawerKind = null;
+    drawerRef = null; drawerKind = null; drawerRecord = null;
   }
   el("d-close").addEventListener("click", closeDrawer);
   el("drawer-bg").addEventListener("click", closeDrawer);
@@ -338,16 +345,22 @@
   function saveDrawer() {
     if (!drawerRef) return;
     var data = {};
-    document.querySelectorAll("#d-body [data-submission-field]").forEach(function (input) {
+    if (drawerKind !== "register") document.querySelectorAll("#d-body [data-submission-field]").forEach(function (input) {
       var key = input.getAttribute("data-submission-field");
       if (input.type === "checkbox") data[key] = input.checked;
       else if (input.type === "number") data[key] = input.value === "" ? "" : Number(input.value);
       else data[key] = input.value;
     });
-    var body = { data: data, adminNotes: el("d-notes").value, status: el("d-status").value };
-    if (drawerKind === "register") {
-      body.paymentStatus = el("d-pay").value;
-      body.amount = el("d-amount").value;
+    var body = { adminNotes: el("d-notes").value, status: el("d-status").value };
+    if (drawerKind !== "register") body.data = data;
+    if (drawerKind === "register" && el("d-pay")) {
+      var paymentStatus = el("d-pay").value;
+      if (paymentStatus !== (drawerRecord.paymentStatus || "Pending")) {
+        var evidence = el("d-payment-evidence").value.trim();
+        if (!evidence) { toast("Enter the bank verification reference or cancellation reason", true); return; }
+        body.paymentStatus = paymentStatus;
+        body.paymentEvidence = evidence;
+      }
     }
     api("/admin/api/submissions/" + encodeURIComponent(drawerKind) + "/" + encodeURIComponent(drawerRef), {
       method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
@@ -857,24 +870,39 @@
   /* ---------- Boot ---------- */
   function showLogin() { el("login-view").style.display = "grid"; el("shell").style.display = "none"; }
   function showShell() { el("login-view").style.display = "none"; el("shell").style.display = "block"; loadAll(); }
+  function setAdminUser(username) { el("admin-user").textContent = username || "Administrator"; }
 
   el("login-form").addEventListener("submit", function (e) {
     e.preventDefault();
     var username = el("user").value;
     var pw = el("pw").value;
-    fetch("/admin/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username: username, password: pw }) })
+    fetch("/api/csrf").then(function (csrfResponse) {
+      return csrfResponse.json().then(function (csrf) {
+        if (!csrfResponse.ok || !csrf.token) throw new Error("Could not initialize request security.");
+        return fetch("/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf.token },
+          body: JSON.stringify({ username: username, password: pw })
+        });
+      });
+    })
       .then(function (r) { return r.json(); })
       .then(function (j) {
-        if (j.ok) { el("pw").value = ""; el("login-msg").textContent = ""; showShell(); }
+        if (j.ok) { csrfToken = j.csrf || ""; setAdminUser(username); el("pw").value = ""; el("login-msg").textContent = ""; showShell(); }
         else { el("login-msg").textContent = j.error || "Login failed."; }
       })
       .catch(function () { el("login-msg").textContent = "Could not reach the server."; });
   });
 
   el("logout-btn").addEventListener("click", function () {
-    fetch("/admin/logout", { method: "POST" }).then(function () { showLogin(); });
+    fetch("/admin/logout", { method: "POST", headers: { "X-CSRF-Token": csrfToken } })
+      .then(function () { csrfToken = ""; showLogin(); });
   });
   fetch("/admin/api/session").then(function (r) { return r.json(); })
-    .then(function (j) { if (j.authed) showShell(); else showLogin(); })
+    .then(function (j) {
+      csrfToken = j.csrf || "";
+      if (j.authed) { setAdminUser(j.username); showShell(); }
+      else showLogin();
+    })
     .catch(showLogin);
 })();

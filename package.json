@@ -6,7 +6,9 @@
   "type": "commonjs",
   "scripts": {
     "start": "node backend/server.js",
-    "db:setup": "node backend/setup-database.js"
+    "db:setup": "node backend/setup-database.js",
+    "admin:hash": "node backend/create-admin-password-hash.js",
+    "test": "node --test"
   },
   "engines": {
     "node": ">=18"

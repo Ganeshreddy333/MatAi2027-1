@@ -1,110 +1,131 @@
-# MatAi 2027 — Conference Website
+# MatAi 2027 — Materials Science, Engineering & AI Conference
 
-International Conference on Materials Science, Engineering & Artificial Intelligence
-**October 13–14, 2027 · Berlin, Germany**
+The existing conference content and 12 public pages, plus the admin console, are retained. The frontend remains HTML, CSS, JavaScript, and Bootstrap 5 CSS; the backend now includes a PHP 8.2+, Composer, PDO, and MySQL implementation while keeping the current browser API contract.
 
-A fully functional multi-page conference website with a backend for editable content, form submissions, and payment management. It works two ways:
-
-- **Open directly** — double-click any `.html` file. Forms still work and save submissions to the browser's `localStorage`.
-- **Run the server** — serves the site and stores submissions in MySQL when configured, or in local JSON files for development without a database.
-
-## Pages
+## Preserved pages and features
 
 | Page | File |
-|------|------|
+| --- | --- |
 | Home | `frontend/index.html` |
-| About the Conference | `frontend/about.html` |
+| About | `frontend/about.html` |
 | Scientific Committee | `frontend/committee.html` |
 | Speakers | `frontend/speakers.html` |
 | Abstract Submission | `frontend/abstract-submission.html` |
-| Scientific Sessions (30) | `frontend/sessions.html` |
+| Scientific Sessions | `frontend/sessions.html` |
 | Venue | `frontend/venue.html` |
-| Information (guidelines, publication, awards, terms, refund, privacy, FAQ) | `frontend/information.html` |
-| Sponsors & Exhibition | `frontend/sponsors.html` |
+| Conference Information and policies | `frontend/information.html` |
+| Sponsors and Exhibition | `frontend/sponsors.html` |
 | Registration | `frontend/registration.html` |
 | Contact | `frontend/contact.html` |
+| Brochure | `frontend/brochure.html` |
+| Admin | `frontend/admin.html` |
 
-## Project structure
+The PHP API retains editable public content, committee/speaker/page administration, form submissions, private abstract attachments, CSV export, server-calculated registration totals, and Stripe, PayPal, and Razorpay checkout and payment verification. The reference website is a different event; only general design ideas should be borrowed, not its dates, venue, branding, or event content.
 
-```
-mat/
-├── frontend/
-│   ├── *.html            public pages and admin panel
-│   ├── css/              design system (colors, layout, components)
-│   └── js/               shared site behavior, forms, and admin UI
-├── backend/
-│   ├── server.js         Express API and static-site server
-│   ├── storage.js        MySQL and legacy JSON storage
-│   ├── setup-database.js MySQL schema setup and one-time JSON import
-│   └── data/             private JSON files and uploaded documents
-├── package.json
-├── package-lock.json
-├── .env.example
-└── README.md
+Bootstrap 5.3.3 CSS is loaded from jsDelivr before the existing custom design system; the existing vanilla JavaScript remains in place for the site's current interactions.
+
+## Local development
+
+Requirements: PHP 8.2+, Composer, and the PHP extensions `pdo_mysql`, `curl`, `fileinfo`, `json`, `mbstring`, and `openssl`.
+
+```sh
+composer install
+cp .env.example .env
+# Edit .env with local values; set APP_URL=http://localhost:8000.
+php -S 127.0.0.1:8000 -t frontend backend/php/router.php
 ```
 
-## Run the live server
+On Windows, if `php -m` does not list `pdo_mysql`, enable the bundled extension when starting the server:
 
-Requires Node.js 18+ (tested on Node v24).
-
-```bash
-npm install
-npm start
+```powershell
+$phpDir = Split-Path (Get-Command php).Source
+php -d "extension_dir=$phpDir\ext" -d extension=php_pdo_mysql.dll -S 127.0.0.1:8000 -t frontend backend/php/router.php
 ```
 
-Then open **http://localhost:3000**.
+The built-in PHP router sends `/api/*`, `/admin/*`, and `/uploads/*` to the PHP API while serving the existing static pages. The existing Node server remains available for the legacy development workflow (`npm install && npm start`); do not run both backends against the same database while accepting submissions.
 
-Set a custom port with `PORT=8080 npm start`.
+Without MySQL settings, the PHP backend uses the existing private JSON files under `backend/data/`. If any MySQL setting is supplied, all required MySQL connection settings must be valid; connection failures are reported, not silently switched to JSON.
 
-## MySQL database
+## MySQL and data preservation
 
-The server supports MySQL 8 for website content, registrations, abstracts, contact messages, brochure requests, and payment status. Uploaded abstract documents remain in the private `backend/data/uploads/` folder; only their metadata is stored in MySQL.
+1. Back up the existing database and `backend/data/` files using your hosting provider's secure backup facility.
+2. Create a least-privilege MySQL database/user. The app needs table creation for the first migration and read/write access to the application tables.
+3. Copy `.env.example` to `.env` outside the public document root, and set `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, and `MYSQL_PASSWORD`.
+4. Install dependencies and apply migrations:
 
-1. Install/start MySQL Server and create an application database and user:
-
-   ```sql
-   CREATE DATABASE matai_2027 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   CREATE USER 'matai_app'@'localhost' IDENTIFIED BY 'choose-a-private-password';
-   GRANT ALL PRIVILEGES ON matai_2027.* TO 'matai_app'@'localhost';
+   ```sh
+   composer install --no-dev --classmap-authoritative
+   php backend/bin/migrate.php
    ```
 
-2. Copy `.env.example` to `.env` in the project root. Set `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, and `MYSQL_DATABASE`. Do not commit or share `.env`.
-3. Run `npm run db:setup`. The backend creates its tables and imports the existing JSON content and submission files once. The original JSON files are kept unchanged as a backup. On later starts, the migration marker prevents deleted records from being imported again.
-4. Run `npm start` as usual. If the MySQL settings are absent, the current JSON-file storage remains available; if MySQL is configured but unreachable, the server reports the connection error instead of silently switching stores.
+The initial migration uses `CREATE TABLE IF NOT EXISTS` and the existing `matai_submissions`, `matai_submission_locks`, `matai_site_content`, and `matai_migrations` table names and columns. Legacy JSON submissions/content are imported once using the existing `legacy-json-v1` migration marker. Original JSON files are not deleted or rewritten. Existing schema, content, identifiers, and records are never dropped or reset.
 
-Tables are created automatically: `matai_submissions`, `matai_site_content`, `matai_submission_locks`, and `matai_migrations`.
+Do not run migrations against production before taking a backup and confirming the target database. No database was contacted while preparing this migration.
 
-## Form submissions
+## Admin, uploads, and security
 
-The registration, contact, and brochure forms POST JSON to the backend. The abstract form sends multipart data so it can include an optional PDF or Word document:
+- Set unique `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH`; create the password hash with PHP's `password_hash()` (for example, run `php -r 'echo password_hash(readline("Admin password: "), PASSWORD_DEFAULT), PHP_EOL;'` in a trusted terminal). Login verifies the secret using `password_verify()`; there is no source-code default credential.
+- The PHP admin uses secure/HTTP-only/SameSite session cookies, rotates the session on login, requires CSRF headers on state-changing routes, and rate-limits failed logins.
+- The legacy Node backend does not accept a plaintext admin password. Configure `NODE_ADMIN_PASSWORD_HASH` separately using `npm run admin:hash` in an interactive terminal; it creates a Node scrypt hash and does not echo the password. Keep `ADMIN_PASSWORD_HASH` for the PHP backend only. The Node app issues `/api/csrf` tokens for state-changing requests, rotates the session on successful login, and sets `Secure` cookies when `APP_ENV=production` or `PUBLIC_BASE_URL` uses HTTPS. Production requires an HTTPS `PUBLIC_BASE_URL`.
+- Keep `backend/` and `.env` outside the public document root. Set private data/upload directory permissions to the PHP process user only (for example, directories `0700`, files `0600`).
+- Abstract uploads are limited to 5 MB and PDF/DOC/DOCX signatures are checked. They are stored outside public access and downloaded only by an authenticated administrator.
+- Admin-uploaded images are signature-checked and served through a strict allowlisted image route.
+- Configure HTTPS and use a database account limited to the application database. Review web-server and PHP logs privately.
 
-- With MySQL configured, submissions are stored in `matai_submissions`.
-- Without MySQL configured, submissions are stored in `backend/data/abstract.json`, `backend/data/register.json`, `backend/data/contact.json`, and `backend/data/brochure.json`; optional `.pdf`, `.doc`, or `.docx` attachments (maximum 5 MB) are stored in `backend/data/uploads/`.
+## Email setup
 
-Each submission gets a reference like `MATAI-XXXXXX` and a timestamp. Abstract attachments are downloadable only from the authenticated admin submission details. When the page is opened from `file://` (no server), `frontend/js/forms.js` automatically falls back to saving in `localStorage`; document files are not uploaded or persisted in that mode.
+Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` (`tls` or `ssl`), `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM_ADDRESS`, `SMTP_FROM_NAME`, and `ADMIN_NOTIFICATION_EMAIL`. PHPMailer sends an administrative notification and a brief receipt to the submitter after a submission is durably stored. SMTP is optional until configured; failures are logged without undoing saved submissions. Credentials and message bodies are not written to application logs. Test with a dedicated mailbox before enabling production delivery.
 
-## Payment gateway setup
+## Payments
 
-Online registration checkout supports Stripe Checkout, PayPal Orders, and Razorpay Standard Checkout. The server calculates the amount from saved registration prices, active period, coupon, and service charge; it does not trust the total sent by the browser. Configure credentials in the server environment (never in browser code or source control):
+Configure provider credentials in `.env`; do not put secrets in browser code. Keep Stripe test keys, PayPal sandbox mode, and Razorpay test keys active until checkout and webhook verification are tested end-to-end. Registration pricing, taxes, and coupons are recalculated server-side from saved content. A paid state is set only after provider-side verification or a valid provider webhook.
 
-- `STRIPE_SECRET_KEY` — Stripe test or live secret key; never put this value in browser code or commit it.
-- `STRIPE_WEBHOOK_SECRET` — signing secret for the Stripe webhook endpoint `POST /api/stripe/webhook`.
-- `PAYPAL_CLIENT_ID` and `PAYPAL_CLIENT_SECRET` — credentials from the PayPal developer dashboard.
-- `PAYPAL_MODE` — `sandbox` (default) or `live`.
-- `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` — API credentials from the Razorpay dashboard.
-- `RAZORPAY_WEBHOOK_SECRET` — webhook signing secret for `POST /api/razorpay/webhook`.
-- `PUBLIC_BASE_URL` — public HTTPS origin for provider redirects (for local test mode, use `http://localhost:3001`).
+- Stripe webhook: `POST /api/stripe/webhook`; subscribe to `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`, and `checkout.session.async_payment_failed`.
+- Razorpay webhook: `POST /api/razorpay/webhook`; subscribe to `payment.captured` and `payment.failed`.
+- PayPal uses the Orders API and server-side capture verification.
+- Set the webhook secrets in `.env`; never expose them to the browser.
+- All providers use EUR, matching the existing published fees. Check merchant account currency/international-payment support before enabling.
 
-All providers charge in EUR, matching the published conference fees. Razorpay must have EUR/international payments enabled for the merchant account or its API will reject order creation. Configure Stripe webhook events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`, and `checkout.session.async_payment_failed`. Configure Razorpay webhook events `payment.captured` and `payment.failed`. Stripe and PayPal payments are confirmed server-to-server; Razorpay signatures are checked server-side and the payment is independently fetched from Razorpay before marking it paid. If a provider is not configured, its option is disabled and bank-transfer registrations remain available for manual follow-up. Use test credentials and provider sandbox/test modes before enabling live checkout; Stripe live mode requires HTTPS.
+Do not make real charges or use live credentials for development tests.
 
-## Security notes
+## Tests, static analysis, and CI
 
-- Submissions can contain **personal information** (names, emails, affiliations). The server deliberately provides **no public endpoint to read submissions back** — submissions are available only through the authenticated admin API or directly to the database/server administrator.
-- Do **not** add an unauthenticated "view submissions" route. Any admin view must sit behind real authentication and access control.
-- Do not commit the `backend/data/` submission files or expose them publicly.
-- The server validates required fields, checks email format, caps JSON request bodies at 256 KB, and stores only string/boolean/number form fields. Abstract uploads are limited to one PDF, DOC, or DOCX file no larger than 5 MB and are checked against their file signatures.
-- Placeholder content (speaker names, committee members, venue name/address, important dates) is intentionally marked `[…]` / "To Be Announced" and should be replaced as details are confirmed.
+```sh
+composer install
+composer test
+composer analyse
+composer validate --strict
+```
 
-## Content source
+The GitHub Actions workflow runs Composer validation, PHPUnit, PHPStan, PHP syntax checks, and JavaScript syntax checks on PHP 8.2, 8.3, and 8.4. Payment-provider, SMTP, MySQL integration, and responsive-browser tests require appropriately isolated test services/credentials and are not run against production.
 
-All content and page/navigation structure follow the conference specification in `MatAi-2027-pdf.pdf` (extracted to `_extracted.txt`).
+The workflow requires a committed `composer.lock`, runs `composer audit`, and scans repository history for secrets. A lockfile is present; local Composer validation and audit passed on PHP 8.2.33, but the GitHub Actions matrix has not been run. Dependabot proposes Composer, npm, and GitHub Actions updates; updates still require review and tests.
+
+## Production-readiness operations
+
+See [docs/production-readiness.md](docs/production-readiness.md) for operational runbooks, threat-model coverage, privacy and legal review requirements, release procedure, monitoring/backup plans, limitations, and the explicit launch-blocking readiness list. The authenticated `/admin/api/ops-status` endpoint only checks application storage and basic database connectivity; it does not configure external monitoring or alert delivery. No backup schedule, staging environment, production monitoring, legal approval, restore test, or provider sandbox test is established by this repository alone.
+
+## Hostinger deployment
+
+1. Select PHP 8.2 or newer and enable `pdo_mysql`, `curl`, `fileinfo`, `mbstring`, `json`, and `openssl`.
+2. Keep `backend/`, `vendor/`, and `.env` outside `public_html` where possible. Set the site document root to the project `frontend/` directory.
+3. Enable Apache `mod_rewrite` and deploy `frontend/.htaccess`; verify `/api/content` and `/api/csrf` before opening public forms.
+4. Upload application files through the chosen Git deployment/CI workflow or Hostinger file manager. Install Composer dependencies in the private project directory.
+5. Create the MySQL database/user, configure `.env` privately, back up existing records/files, then run `php backend/bin/migrate.php` once.
+6. Set private data and upload directory ownership/permissions for the PHP process. Never make submission documents or `.env` world-readable.
+7. Enforce HTTPS, configure SMTP, then configure provider webhooks to the HTTPS endpoints above. Use test credentials until verified.
+8. Review PHP/web-server logs and run a harmless public-page/API and test-mode submission check after each deployment.
+
+Hostinger plan details vary; confirm document-root, CLI Composer/PHP version, scheduled-job, webhook, and rewrite support in the account before deployment. No deployment was performed.
+
+## Rollback
+
+1. Disable checkout and form submission temporarily if data may be written during rollback.
+2. Restore the previous application release without deleting the migrated PHP files or original content.
+3. Keep the database and JSON backups intact. Do not drop tables during code rollback.
+4. If a schema rollback is needed, take a fresh backup and use a reviewed forward migration or restore an explicitly chosen backup with authorization; never reset production data as a rollback shortcut.
+5. Re-enable forms/payments only after verifying the restored application and storage target.
+
+## Legacy Node backend
+
+The current Node/Express backend (`backend/server.js`) is retained during the staged migration and remains a separate, legacy runtime. Its local start command is `npm start`. Hostinger PHP deployments should route the site to the PHP bridge and must not expose both backends as writers to the same storage during cutover.
