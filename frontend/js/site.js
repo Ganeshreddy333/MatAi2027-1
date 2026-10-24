@@ -1,4 +1,4 @@
-﻿/* ================================================================
+/* ================================================================
    MatAi 2027 — shared site script
    Injects header + footer, handles nav, reveal, tabs, accordion,
    countdown. Pure DOM (works via file:// or a server).
@@ -11,38 +11,9 @@
   var revealObserver = null;
 
   var PAGE_SECTION_NAV = {
-    "about.html": [
-      { id: "about-overview", label: "About the Conference" },
-      { id: "aims-objectives", label: "Aims & Objectives" },
-      { id: "why-attend", label: "Why Attend" },
-      { id: "target-audience", label: "Target Audience" },
-      { id: "agenda", label: "Conference Agenda" },
-      { id: "conference-highlights", label: "Conference Highlights" },
-      { id: "at-a-glance", label: "At a Glance" },
-      { id: "about-cta", label: "Be Part of MatAi 2027" }
-    ],
-    "committee.html": [
-      { id: "committee-overview", label: "Committee Overview" },
-      { id: "committee-responsibilities", label: "Committee Responsibilities" },
-      { id: "scientific-committee", label: "Scientific Committee" },
-      { id: "international-advisory", label: "International Advisory Committee" },
-      { id: "committee-cta", label: "Join the Scientific Community" }
-    ],
-    "contact.html": [
-      { id: "contact-overview", label: "Contact Overview" },
-      { id: "contact-details", label: "MatAi 2027" },
-      { id: "contact-help", label: "What We Can Help With" },
-      { id: "contact-glance", label: "At a Glance" }
-    ],
     "brochure.html": [
       { id: "brochure-glance", label: "MatAi 2027 at a Glance" },
       { id: "brochure-details", label: "Conference Brochure" }
-    ],
-    "sessions.html": [
-      { id: "sessions-overview", label: "Scientific Sessions Overview" },
-      { id: "sessions-pillars", label: "Four Major Scientific Pillars" },
-      { id: "sessions-accommodation", label: "Session Formats" },
-      { id: "sessions-present", label: "Present Your Research" }
     ],
     "registration.html": [
       { id: "registration-steps", label: "Registration Steps" },
@@ -57,53 +28,6 @@
       { id: "oral-poster-presentations", label: "Oral & Poster Presentations" },
       { id: "speaker-program-coverage", label: "Speaker Program Coverage" },
       { id: "speaker-participation", label: "Speaker Participation" }
-    ],
-    "abstract-submission.html": [
-      { id: "call-for-abstracts", label: "Call for Abstracts" },
-      { id: "submission-areas", label: "Submission Areas" },
-      { id: "presentation-categories", label: "Presentation Categories" },
-      { id: "guidelines", label: "Abstract Preparation" },
-      { id: "process", label: "Submission & Review Process" },
-      { id: "dates", label: "Important Dates" },
-      { id: "eligibility", label: "Eligibility" },
-      { id: "checklist", label: "Final Checklist" },
-      { id: "submit", label: "Abstract Submission Form" }
-    ],
-    "venue.html": [
-      { id: "venue-overview", label: "Berlin, Germany" },
-      { id: "venue-information", label: "Venue Information" },
-      { id: "venue-facilities", label: "Venue Facilities" },
-      { id: "poster-topics", label: "Poster Topics" },
-      { id: "presentation-av-facilities", label: "Presentation & AV Facilities" },
-      { id: "room-arrangement", label: "Conference Room Arrangement" },
-      { id: "venue-location", label: "Location & Map" },
-      { id: "nearby-accommodation", label: "Nearby Accommodation" },
-      { id: "explore-berlin", label: "Explore Berlin" },
-      { id: "recommended-arrival", label: "Recommended Arrival" },
-      { id: "venue-highlights", label: "Venue Highlights" },
-      { id: "venue-conduct-safety", label: "Code of Conduct & Safety" },
-      { id: "speaker-exhibitor-info", label: "Speakers & Exhibitors" },
-      { id: "venue-summary", label: "Venue Information Summary" },
-      { id: "venue-cta", label: "Join Us in Berlin" }
-    ],
-    "information.html": [
-      { id: "information-overview", label: "Conference Information" },
-      { id: "abstract-guidelines", label: "Abstract Submission Guidelines" },
-      { id: "speaker-guidelines", label: "Speaker Guidelines" },
-      { id: "conference-guidelines", label: "Conference Guidelines" },
-      { id: "participation", label: "Participation Guidelines" },
-      { id: "presentation", label: "Oral Presentation Guidelines" },
-      { id: "poster-guidelines", label: "Poster Presentation Guidelines" },
-      { id: "guidelines", label: "Registration Guidelines" },
-      { id: "publication", label: "Publication & Proceedings" },
-      { id: "certificates", label: "Certificates" },
-      { id: "awards", label: "Awards & Recognition" },
-      { id: "conduct", label: "Code of Conduct" },
-      { id: "terms", label: "Terms & Conditions" },
-      { id: "refund", label: "Cancellation & Refund Policy" },
-      { id: "privacy", label: "Privacy Policy" },
-      { id: "faq", label: "Frequently Asked Questions" },
-      { id: "information-cta", label: "Still Have Questions?" }
     ],
     "sponsors.html": [
       { id: "sponsor-overview", label: "Sponsor & Exhibition Overview" },
@@ -120,6 +44,33 @@
       { id: "exhibition-guidelines", label: "Exhibition Guidelines" },
       { id: "sponsorship-terms", label: "Sponsorship Terms" },
       { id: "sponsor-cta", label: "Become a Sponsor or Exhibitor" }
+    ],
+    "meet-our-experts.html": [
+      { id: "organize-committee-members", label: "Organize Committee members" },
+      { id: "plenary-speaker", label: "Plenary Speaker" },
+      { id: "keynote-speaker", label: "Keynote Speaker" },
+      { id: "invited-speaker", label: "Invited Speaker" }
+    ],
+    "abstracts.html": [
+      { id: "abstract-guidelines", label: "Abstract Guidelines" },
+      { id: "abstract-submission", label: "Abstract Submission" },
+      { id: "abstract-sessions", label: "Sessions" }
+    ],
+    "general-information.html": [
+      { id: "abstract-submission-guidelines", label: "ABSTRACT SUBMISSION GUIDELINES" },
+      { id: "speaker-guidelines", label: "SPEAKER GUIDELINES" },
+      { id: "conference-guidelines", label: "CONFERENCE GUIDELINES" },
+      { id: "participation-guidelines", label: "PARTICIPATION GUIDELINES" },
+      { id: "presentation-guidelines", label: "PRESENTATION GUIDELINES" },
+      { id: "registration-guidelines", label: "REGISTRATION GUIDELINES" },
+      { id: "publication-proceedings", label: "PUBLICATION & PROCEEDINGS" },
+      { id: "certificates", label: "CERTIFICATES" },
+      { id: "awards-recognition", label: "AWARDS & RECOGNITION" },
+      { id: "terms-conditions", label: "TERMS & CONDITIONS" },
+      { id: "cancellation-refund-policy", label: "CANCELLATION & REFUND POLICY" },
+      { id: "privacy-policy", label: "PRIVACY POLICY" },
+      { id: "frequently-asked-questions", label: "FREQUENTLY ASKED QUESTIONS" },
+      { id: "contact-information", label: "CONTACT INFORMATION" }
     ]
   };
 
@@ -134,35 +85,30 @@
       href: "index.html",
       label: "Home"
     },
+    { href: "about.html", label: "About" },
     {
-      href: "about.html",
-      label: "About",
+      href: "meet-our-experts.html",
+      label: "Meet Our Experts",
       drop: [
-        { href: "about.html", label: "About the Conference", drop: pageDrop("about.html") },
-        { href: "committee.html", label: "Scientific Committee", drop: pageDrop("committee.html") }
+        { href: "meet-our-experts.html#organize-committee-members", label: "Organize Committee members" },
+        { href: "meet-our-experts.html#plenary-speaker", label: "Plenary Speaker" },
+        { href: "meet-our-experts.html#keynote-speaker", label: "Keynote Speaker" },
+        { href: "meet-our-experts.html#invited-speaker", label: "Invited Speaker" }
       ]
     },
+    { href: "abstracts.html", label: "Abstracts", drop: pageDrop("abstracts.html") },
     {
-      href: "sessions.html",
-      label: "Program",
+      href: "sponsors-exhibition.html",
+      label: "Sponsors & Exhibition",
       drop: [
-        { href: "sessions.html", label: "Scientific Sessions", drop: pageDrop("sessions.html") },
-        { href: "speakers.html", label: "Speakers", drop: pageDrop("speakers.html") },
-        { href: "abstract-submission.html", label: "Abstract Submission", drop: pageDrop("abstract-submission.html") }
+        { href: "sponsors-exhibition.html", label: "Partner with MatAi 2027" },
+        { href: "sponsors-brochure.html", label: "Sponsorship & Exhibition Brochure" }
       ]
     },
-    { href: "venue.html", label: "Venue", drop: pageDrop("venue.html") },
-    {
-      href: "information.html",
-      label: "Resources",
-      drop: [
-        { href: "information.html", label: "Conference Information", drop: pageDrop("information.html") },
-        { href: "brochure.html", label: "Conference Brochure", drop: pageDrop("brochure.html") },
-        { href: "sponsors.html", label: "Sponsors & Exhibition", drop: pageDrop("sponsors.html") }
-      ]
-    },
-    { href: "registration.html", label: "Registration" },
-    { href: "contact.html", label: "Contact", drop: pageDrop("contact.html") }
+    { href: "venue.html", label: "Venue" },
+    { href: "general-information.html", label: "General Information", drop: pageDrop("general-information.html") },
+    { href: "registration.html", label: "Registration", drop: pageDrop("registration.html") },
+    { href: "contact-us.html", label: "Contact Us" }
   ];
 
   var current = (location.pathname.split("/").pop() || "index.html").toLowerCase();
@@ -225,22 +171,20 @@
           '<div>' +
             '<h5>Explore</h5>' +
             '<ul>' +
-              '<li><a href="about.html">About</a></li>' +
-              '<li><a href="committee.html">Committee</a></li>' +
+              '<li><a href="about.html">About the Conference</a></li>' +
+              '<li><a href="meet-our-experts.html">Meet Our Experts</a></li>' +
               '<li><a href="speakers.html">Speakers</a></li>' +
-              '<li><a href="sessions.html">Sessions</a></li>' +
               '<li><a href="venue.html">Venue</a></li>' +
+              '<li><a href="general-information.html">General Information</a></li>' +
             '</ul>' +
           '</div>' +
           '<div>' +
             '<h5>Participate</h5>' +
             '<ul>' +
-              '<li><a href="abstract-submission.html">Submit Abstract</a></li>' +
+              '<li><a href="abstracts.html#abstract-submission">Submit Abstract</a></li>' +
               '<li><a href="registration.html">Registration</a></li>' +
               '<li><a href="brochure.html">Download Brochure</a></li>' +
-              '<li><a href="sponsors.html">Sponsor / Exhibit</a></li>' +
-              '<li><a href="information.html">Information</a></li>' +
-              '<li><a href="contact.html">Contact</a></li>' +
+              '<li><a href="sponsors-exhibition.html">Sponsor / Exhibit</a></li>' +
             '</ul>' +
           '</div>' +
           '<div>' +
@@ -323,28 +267,35 @@
   function initPagePanels() {
     var items = PAGE_SECTION_NAV[current];
     if (!items || !items.length) return;
+    var expertPage = current === "meet-our-experts.html";
+    var registrationPage = current === "registration.html";
+    var dropdownOnly = expertPage || current === "abstracts.html" || registrationPage;
 
-    var sections = Array.prototype.slice.call(document.querySelectorAll("body > section.section")).filter(function (section) {
+    var sections = Array.prototype.slice.call(document.querySelectorAll(expertPage
+      ? "body > section.expert-content-panel"
+      : "body > section.section")).filter(function (section) {
       return !section.classList.contains("page-section-picker") && !section.classList.contains("abstract-section-picker");
     });
     if (!sections.length) return;
 
-    var picker = document.getElementById("page-section-picker") || document.getElementById("abstract-section-picker");
-    if (!picker) {
-      picker = document.createElement("section");
-      picker.className = "section page-section-picker";
-      picker.id = "page-section-picker";
-      var hero = document.querySelector(".page-hero");
-      if (hero && hero.parentNode) hero.parentNode.insertBefore(picker, hero.nextSibling);
-    }
+    var picker = dropdownOnly ? null : document.getElementById("page-section-picker") || document.getElementById("abstract-section-picker");
+    if (!dropdownOnly) {
+      if (!picker) {
+        picker = document.createElement("section");
+        picker.className = "section page-section-picker";
+        picker.id = "page-section-picker";
+        var hero = document.querySelector(".page-hero");
+        if (hero && hero.parentNode) hero.parentNode.insertBefore(picker, hero.nextSibling);
+      }
 
-    picker.innerHTML =
-      '<div class="container">' +
-        '<div class="center reveal"><span class="eyebrow">' + pageTitle() + '</span><h2>Select a Section</h2></div>' +
-        '<div class="grid cols-3 mt-2">' + items.map(function (item) {
-          return '<a class="session-card reveal" href="#' + item.id + '"><h4>' + item.label + '</h4></a>';
-        }).join("") + '</div>' +
-      '</div>';
+      picker.innerHTML =
+        '<div class="container">' +
+          '<div class="center reveal"><span class="eyebrow">' + pageTitle() + '</span><h2>Select a Section</h2></div>' +
+          '<div class="grid cols-3 mt-2">' + items.map(function (item) {
+            return '<a class="session-card reveal" href="#' + item.id + '"><h4>' + item.label + '</h4></a>';
+          }).join("") + '</div>' +
+        '</div>';
+    }
 
     items.forEach(function (item, index) {
       if (!sections[index]) return;
@@ -360,14 +311,21 @@
 
     function selectedPanel() {
       var id = decodeURIComponent((location.hash || "").replace(/^#/, ""));
-      return panels.find(function (panel) { return panel.id === id; });
+      return panels.find(function (panel) { return panel.id === id; }) ||
+        (registrationPage && !id ? panels[0] : null);
     }
 
     function applySelection() {
       var active = selectedPanel();
-      picker.hidden = !!active;
+      if (picker) picker.hidden = !!active;
       panels.forEach(function (panel) { panel.hidden = !active || panel !== active; });
-      (active || picker).querySelectorAll(".reveal").forEach(function (el) { el.classList.add("in"); });
+      if (expertPage) {
+        document.querySelectorAll("body > section.section:not(.expert-content-panel)").forEach(function (section) {
+          section.hidden = true;
+        });
+      }
+      var visibleContent = active || picker;
+      if (visibleContent) visibleContent.querySelectorAll(".reveal").forEach(function (el) { el.classList.add("in"); });
       if (active) window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -415,17 +373,48 @@
 
   function initTabs() {
     document.querySelectorAll("[data-tabs]").forEach(function (group) {
-      var btns = group.querySelectorAll(".tab-btn");
-      btns.forEach(function (btn) {
+      group.querySelectorAll(".tab-btn").forEach(function (btn) {
+        if (btn.hasAttribute("data-tab-bound")) return;
+        btn.setAttribute("data-tab-bound", "true");
         btn.addEventListener("click", function () {
           var target = btn.getAttribute("data-tab");
-          btns.forEach(function (b) { b.classList.remove("active"); });
-          btn.classList.add("active");
-          group.querySelectorAll(".tab-panel").forEach(function (p) {
-            p.classList.toggle("active", p.getAttribute("data-panel") === target);
+          group.querySelectorAll(".tab-btn").forEach(function (item) {
+            item.classList.toggle("active", item === btn);
+          });
+          group.querySelectorAll(".tab-panel").forEach(function (panel) {
+            panel.classList.toggle("active", panel.getAttribute("data-panel") === target);
           });
         });
       });
+    });
+  }
+
+  function initAutoScrollRails() {
+    document.querySelectorAll(".partner-rail, .speaker-rail").forEach(function (rail) {
+      if (rail.querySelector(".auto-scroll-track")) return;
+      var cards = Array.prototype.slice.call(rail.children);
+      if (!cards.length) return;
+
+      var track = document.createElement("div");
+      track.className = "auto-scroll-track";
+      var firstSet = document.createElement("div");
+      firstSet.className = "auto-scroll-set";
+      cards.forEach(function (card) { firstSet.appendChild(card); });
+      track.appendChild(firstSet);
+      rail.appendChild(track);
+
+      var setWidth = firstSet.getBoundingClientRect().width;
+      var copies = 1;
+      while (setWidth < rail.clientWidth && copies < 12) {
+        cards.forEach(function (card) { firstSet.appendChild(card.cloneNode(true)); });
+        setWidth = firstSet.getBoundingClientRect().width;
+        copies += 1;
+      }
+
+      var secondSet = firstSet.cloneNode(true);
+      secondSet.setAttribute("aria-hidden", "true");
+      secondSet.querySelectorAll("[tabindex]").forEach(function (item) { item.removeAttribute("tabindex"); });
+      track.appendChild(secondSet);
     });
   }
 
@@ -523,6 +512,7 @@
     // don't already carry them (CMS-rendered cards include their own).
     function enhance(root) {
       (root || document).querySelectorAll(".person[data-profile]").forEach(function (card) {
+        if (card.closest('[aria-hidden="true"]')) { card.removeAttribute("tabindex"); return; }
         card.setAttribute("tabindex", "0");
         card.setAttribute("role", "button");
         if (!card.querySelector(".view-profile")) {
@@ -559,7 +549,7 @@
   /* ---------- Load public content loader once ---------- */
   function ensureContentScript() {
     if (window.MATAI_CONTENT || document.querySelector('script[data-matai-content]')) return;
-    var src = SITE_SRC.replace(/site\.js.*$/, "content.js?v=20261010-live-sync2");
+    var src = SITE_SRC.replace(/site\.js.*$/, "content.js?v=20261024-remove-saved-hero-gallery");
     var s = document.createElement("script");
     s.async = false;
     s.src = src; s.setAttribute("data-matai-content", "1");
@@ -577,8 +567,13 @@
     initReveal();
     initAccordion();
     initTabs();
+    initAutoScrollRails();
     initCountdown();
-    document.addEventListener("matai:content", revealContentSections);
+    document.addEventListener("matai:content", function () {
+      revealContentSections();
+      initTabs();
+      initAutoScrollRails();
+    });
     initProfiles();
     ensureContentScript();
   }

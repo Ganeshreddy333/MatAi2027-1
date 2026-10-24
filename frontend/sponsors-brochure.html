@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sponsorship &amp; Exhibition Brochure — MatAi 2027</title>
+  <meta name="description" content="Request the MatAi 2027 sponsorship and exhibition brochure.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css?v=20261024-responsive">
+</head>
+<body>
+  <div id="site-header"></div>
+  <section class="page-hero">
+    <div class="container">
+      <div class="breadcrumb"><a href="index.html">Home</a> / <a href="sponsors-exhibition.html">Sponsors &amp; Exhibition</a> / Brochure</div>
+      <h1>Sponsorship &amp; Exhibition Brochure</h1>
+      <p>Complete the form to download the MatAi 2027 sponsorship and exhibition brochure.</p>
+    </div>
+  </section>
+  <section class="section">
+    <div class="container narrow">
+      <div class="center"><span class="eyebrow">Partner with MatAi 2027</span><h2>Get the Brochure</h2></div>
+      <form class="form-card mt-2" data-form="brochure" data-download-url="/api/sponsors-brochure-file">
+        <div class="form-status" aria-live="polite"></div>
+        <div class="form-grid">
+          <div class="field"><label for="sponsor-brochure-name">Full Name <span class="req">*</span></label><input id="sponsor-brochure-name" type="text" name="fullName" autocomplete="name" required><div class="error-msg">Required</div></div>
+          <div class="field"><label for="sponsor-brochure-email">Email <span class="req">*</span></label><input id="sponsor-brochure-email" type="email" name="email" autocomplete="email" required><div class="error-msg">Valid email required</div></div>
+          <div class="field"><label for="sponsor-brochure-organization">Organization</label><input id="sponsor-brochure-organization" type="text" name="organization" autocomplete="organization"></div>
+          <div class="field"><label for="sponsor-brochure-country">Country</label><input id="sponsor-brochure-country" type="text" name="country" autocomplete="country-name"></div>
+          <div class="field full"><label class="chk"><input type="checkbox" name="consent"> I agree to receive conference updates by email.</label></div>
+        </div>
+        <div class="btn-row mt-2"><button type="submit" class="btn btn-primary">Submit &amp; Download Brochure</button></div>
+      </form>
+    </div>
+  </section>
+  <div id="site-footer"></div>
+  <script src="js/site.js?v=20261024-contact-us"></script>
+  <script src="js/forms.js?v=20261024-sponsors-brochure"></script>
+</body>
+</html>

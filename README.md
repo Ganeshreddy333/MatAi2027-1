@@ -8,15 +8,12 @@ The existing conference content and 12 public pages, plus the admin console, are
 | --- | --- |
 | Home | `frontend/index.html` |
 | About | `frontend/about.html` |
-| Scientific Committee | `frontend/committee.html` |
+| Meet Our Experts | `frontend/meet-our-experts.html` |
 | Speakers | `frontend/speakers.html` |
-| Abstract Submission | `frontend/abstract-submission.html` |
-| Scientific Sessions | `frontend/sessions.html` |
 | Venue | `frontend/venue.html` |
-| Conference Information and policies | `frontend/information.html` |
 | Sponsors and Exhibition | `frontend/sponsors.html` |
 | Registration | `frontend/registration.html` |
-| Contact | `frontend/contact.html` |
+| Contact Us | `frontend/contact-us.html` |
 | Brochure | `frontend/brochure.html` |
 | Admin | `frontend/admin.html` |
 
@@ -33,13 +30,6 @@ composer install
 cp .env.example .env
 # Edit .env with local values; set APP_URL=http://localhost:8000.
 php -S 127.0.0.1:8000 -t frontend backend/php/router.php
-```
-
-On Windows, if `php -m` does not list `pdo_mysql`, enable the bundled extension when starting the server:
-
-```powershell
-$phpDir = Split-Path (Get-Command php).Source
-php -d "extension_dir=$phpDir\ext" -d extension=php_pdo_mysql.dll -S 127.0.0.1:8000 -t frontend backend/php/router.php
 ```
 
 The built-in PHP router sends `/api/*`, `/admin/*`, and `/uploads/*` to the PHP API while serving the existing static pages. The existing Node server remains available for the legacy development workflow (`npm install && npm start`); do not run both backends against the same database while accepting submissions.

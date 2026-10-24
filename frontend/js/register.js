@@ -84,6 +84,15 @@
     });
   }
 
+  function quantityOptions(value) {
+    var selected = Math.max(0, Math.min(100, parseInt(value, 10) || 0));
+    var options = [];
+    for (var i = 0; i <= 100; i++) {
+      options.push('<option value="' + i + '"' + (i === selected ? ' selected' : '') + '>' + i + '</option>');
+    }
+    return options.join("");
+  }
+
   function sourceQuantity(name) {
     for (var i = 0; i < rows.length; i++) {
       var input = rows[i].querySelector("input[data-qty]");
@@ -113,16 +122,17 @@
         var price = Number(tr.getAttribute("data-" + period.code)) || 0;
         var qty = tr.querySelector("input[data-qty]");
         var control = active && qty
-          ? '<label class="registration-qty">Participants<input type="number" min="0" max="100" value="' + escapeHtml(qty.value || "0") + '" data-selection-for="' + escapeHtml(qty.name) + '" aria-label="Participants for ' + escapeHtml(item) + '"></label>'
+          ? '<label class="registration-qty"><input type="radio" name="registration-category-choice" value="' + escapeHtml(qty.name) + '" data-registration-category aria-label="Select ' + escapeHtml(item) + ' registration"></label>'
           : '<span class="registration-qty-unavailable">' + (deadlinePassed ? "Period completed" : "Period not active") + "</span>";
         return '<div class="registration-choice"><div><strong>' + escapeHtml(item) + '</strong><span class="registration-choice-price">' + fmt(price) + '</span></div>' + control + '</div>';
       }).join("");
       return '<section class="registration-period-card' + (active ? ' active' : '') + '"><header><div><h4>' + escapeHtml(label) + '</h4><p>' + escapeHtml(deadline) + '</p></div>' + (active ? '<span class="period-active">Available</span>' : '') + '</header><div class="registration-choices">' + choices + '</div></section>';
     }).join("");
-    target.querySelectorAll("[data-selection-for]").forEach(function (visible) {
-      visible.defaultValue = "0";
-      var source = sourceQuantity(visible.getAttribute("data-selection-for"));
-      if (source) visible.value = source.value;
+    var hasSelectedCategory = false;
+    target.querySelectorAll("[data-registration-category]").forEach(function (visible) {
+      var source = sourceQuantity(visible.value);
+      visible.checked = !hasSelectedCategory && !!(source && parseInt(source.value, 10) > 0);
+      if (visible.checked) hasSelectedCategory = true;
     });
   }
 
@@ -136,7 +146,7 @@
       var qty = tr.querySelector("input[data-qty]");
       var label = tr.getAttribute("data-item") || key;
       var price = Number(tr.getAttribute("data-price")) || 0;
-      return '<div class="registration-addon-option"><div><strong>' + escapeHtml(label) + '</strong><span>' + escapeHtml(detail || "") + '</span></div><b>' + fmt(price) + '</b><label>Qty<input type="number" min="0" max="100" value="' + escapeHtml(qty ? qty.value : "0") + '" data-selection-for="' + escapeHtml(qty ? qty.name : "") + '" aria-label="Quantity for ' + escapeHtml(label) + '"></label></div>';
+      return '<div class="registration-addon-option"><div><strong>' + escapeHtml(label) + '</strong><span>' + escapeHtml(detail || "") + '</span></div><b>' + fmt(price) + '</b><label>Qty<select data-selection-for="' + escapeHtml(qty ? qty.name : "") + '" aria-label="Quantity for ' + escapeHtml(label) + '">' + quantityOptions(qty ? qty.value : "0") + '</select></label></div>';
     }
     var addons = id("registration-addon-list");
     if (addons) addons.innerHTML = optionHtml("addon_social", "per ticket") + optionHtml("addon_accompanying", "per person");
@@ -167,6 +177,12 @@
     form.querySelectorAll("[data-selection-for]").forEach(function (visible) {
       var source = sourceQuantity(visible.getAttribute("data-selection-for"));
       if (source) source.value = String(Math.max(0, Math.min(100, parseInt(visible.value, 10) || 0)));
+    });
+    var selectedCategory = form.querySelector('[data-registration-category]:checked');
+    rows.forEach(function (tr) {
+      if (tr.hasAttribute("data-fixed")) return;
+      var qty = tr.querySelector("input[data-qty]");
+      if (qty) qty.value = selectedCategory && selectedCategory.value === qty.name ? "1" : "0";
     });
     var type = id("accommodation-type");
     var nights = id("accommodation-nights");
@@ -562,8 +578,10 @@
     var preferredQty = preferred && preferred.querySelector("input[data-qty]");
     if (preferredQty) {
       preferredQty.value = "1";
-      var visibleQty = form.querySelector('[data-selection-for="' + preferredQty.name + '"]');
-      if (visibleQty) visibleQty.value = "1";
+      var visibleQty = Array.prototype.find.call(form.querySelectorAll("[data-registration-category]"), function (radio) {
+        return radio.value === preferredQty.name;
+      });
+      if (visibleQty) visibleQty.checked = true;
     }
   }
   recalc();

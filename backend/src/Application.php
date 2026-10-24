@@ -72,6 +72,17 @@ final class Application
 
     private function dispatch(string $method, string $path): never
     {
+        if ($method === 'GET' && $path === '/api/sponsors-brochure-file') {
+            $file = $this->root . '/uploads/Sponsors & Exhibition5.docx';
+            if (!is_file($file) || !is_readable($file)) {
+                Security::json(['ok' => false, 'error' => 'The sponsorship brochure is not available.'], 404);
+            }
+            header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+            header('Content-Disposition: attachment; filename="MatAi-2027-Sponsors-and-Exhibition-Brochure.docx"');
+            header('Content-Length: ' . (string) filesize($file));
+            readfile($file);
+            exit;
+        }
         if ($method === 'GET' && $path === '/api/csrf') {
             Security::json(['ok' => true, 'token' => $this->security->csrfToken()]);
         }

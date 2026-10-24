@@ -15,15 +15,15 @@
   var PAGE_FILES = [
     { href: "index.html", label: "Home Page" },
     { href: "about.html", label: "About the Conference" },
-    { href: "committee.html", label: "Scientific Committee" },
+    { href: "meet-our-experts.html", label: "Meet Our Experts" },
+    { href: "abstracts.html", label: "Abstracts" },
     { href: "speakers.html", label: "Speakers" },
-    { href: "abstract-submission.html", label: "Abstract Submission" },
-    { href: "sessions.html", label: "Scientific Sessions" },
     { href: "venue.html", label: "Venue" },
-    { href: "information.html", label: "Information" },
-    { href: "sponsors.html", label: "Sponsors & Exhibition" },
+    { href: "general-information.html", label: "General Information" },
+    { href: "sponsors-exhibition.html", label: "Sponsors & Exhibition" },
+    { href: "sponsors-brochure.html", label: "Sponsorship & Exhibition Brochure" },
     { href: "registration.html", label: "Registration" },
-    { href: "contact.html", label: "Contact" },
+    { href: "contact-us.html", label: "Contact Us" },
     { href: "brochure.html", label: "Brochure" }
   ];
   var FIXED_PRICE_ITEMS = [
@@ -542,7 +542,7 @@
       .then(function (r) { return r.text(); })
       .then(function (html) {
         var doc = new DOMParser().parseFromString(html, "text/html");
-        var sections = Array.prototype.slice.call(doc.querySelectorAll("body > section")).filter(function (section) {
+        var sections = Array.prototype.slice.call(doc.querySelectorAll("body > section, body > main > section")).filter(function (section) {
           return !section.classList.contains("page-section-picker") && !section.classList.contains("abstract-section-picker");
         });
         var saved = ((contentData && contentData.pages && contentData.pages[currentEditPage]) || {});
@@ -560,8 +560,10 @@
             "<div class='a-row section-title'><strong>" + esc(title || ("Section " + (i + 1))) + "</strong>" +
             "<div class='a-action-buttons'><button class='a-btn ghost sm' data-reset-section='" + key + "' type='button'>Use Original</button>" +
             "<button class='a-btn ghost sm' data-remove-section type='button'>Remove Section</button>" +
-            "<button class='a-btn ghost sm' data-restore-section type='button'>Undo Remove</button></div></div>" +
+            "<button class='a-btn ghost sm' data-restore-section type='button'>Undo Remove</button>" +
+            "<button class='a-btn ghost sm' data-toggle-html type='button'>Edit HTML</button></div></div>" +
             "<div class='a-input page-html' contenteditable='true' data-original='" + esc(section.innerHTML.trim()) + "'>" + currentHtml + "</div>" +
+            "<textarea class='a-input page-html-source' rows='12' hidden>" + esc(currentHtml) + "</textarea>" +
           "</div>";
         }).join("");
         var addedKeys = Object.keys(saved).filter(function (key) {
@@ -581,11 +583,35 @@
       });
   }
   el("page-sections-editor").addEventListener("click", function (e) {
+    var toggle = e.target.closest("[data-toggle-html]");
+    if (toggle) {
+      var toggleRow = toggle.closest("[data-sec]");
+      var visualEditor = toggleRow && toggleRow.querySelector(".page-html");
+      var sourceEditor = toggleRow && toggleRow.querySelector(".page-html-source");
+      if (visualEditor && sourceEditor) {
+        if (sourceEditor.hidden) {
+          sourceEditor.value = visualEditor.innerHTML;
+          visualEditor.hidden = true;
+          sourceEditor.hidden = false;
+          toggle.textContent = "Visual Edit";
+        } else {
+          visualEditor.innerHTML = sourceEditor.value;
+          sourceEditor.hidden = true;
+          visualEditor.hidden = false;
+          toggle.textContent = "Edit HTML";
+        }
+      }
+      return;
+    }
     var btn = e.target.closest("[data-reset-section]");
     if (btn) {
       var wrap = btn.closest("[data-sec]");
       var editor = wrap && wrap.querySelector("[contenteditable]");
-      if (editor) editor.innerHTML = editor.getAttribute("data-original") || "";
+      if (editor) {
+        editor.innerHTML = editor.getAttribute("data-original") || "";
+        var source = wrap.querySelector(".page-html-source");
+        if (source) source.value = editor.innerHTML;
+      }
       return;
     }
     var restore = e.target.closest("[data-restore-section]");
@@ -608,8 +634,10 @@
   function addedSectionEditor(key, html) {
     return "<div class='a-page-section' data-sec='" + esc(key) + "'>" +
       "<div class='a-row section-title'><strong>Added Section</strong>" +
-      "<div class='a-action-buttons'><button class='a-btn ghost sm' data-remove-section type='button'>Remove Section</button></div></div>" +
+      "<div class='a-action-buttons'><button class='a-btn ghost sm' data-remove-section type='button'>Remove Section</button>" +
+      "<button class='a-btn ghost sm' data-toggle-html type='button'>Edit HTML</button></div></div>" +
       "<div class='a-input page-html' contenteditable='true' data-original=''>" + html + "</div>" +
+      "<textarea class='a-input page-html-source' rows='12' hidden>" + esc(html) + "</textarea>" +
       "</div>";
   }
 
@@ -814,8 +842,11 @@
         if (row.getAttribute("data-deleted") === "true") {
           pages[currentEditPage][key] = { deleted: true };
         } else {
-          var editor = row.querySelector("[contenteditable='true']");
-          pages[currentEditPage][key] = { html: editor ? editor.innerHTML : "" };
+          var sourceEditor = row.querySelector(".page-html-source");
+          var visualEditor = row.querySelector("[contenteditable='true']");
+          var html = sourceEditor && !sourceEditor.hidden
+            ? sourceEditor.value : (visualEditor ? visualEditor.innerHTML : "");
+          pages[currentEditPage][key] = { html: html };
         }
       });
     }

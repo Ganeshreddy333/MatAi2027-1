@@ -385,6 +385,13 @@ app.get("/api/content", async (_req, res) => {
   }
 });
 
+app.get("/api/sponsors-brochure-file", (_req, res) => {
+  const brochurePath = path.join(ROOT, "..", "uploads", "Sponsors & Exhibition5.docx");
+  res.download(brochurePath, "MatAi-2027-Sponsors-and-Exhibition-Brochure.docx", (err) => {
+    if (err && !res.headersSent) res.status(404).json({ ok: false, error: "The sponsorship brochure is not available." });
+  });
+});
+
 /* ---------- Helpers ---------- */
 function isEmail(v) {
   return typeof v === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
@@ -1301,9 +1308,17 @@ app.post("/admin/api/upload-image", requireAuth, (req, res) => {
 
 /* ---------- Static site + SPA fallback ---------- */
 app.use("/uploads", express.static(IMAGE_UPLOAD_DIR, { dotfiles: "deny", index: false, maxAge: "1d" }));
-app.use(express.static(FRONTEND_DIR, { extensions: ["html"] }));
+app.use(express.static(FRONTEND_DIR, {
+  extensions: ["html"],
+  setHeaders: (res, filePath) => {
+    if (path.basename(filePath).toLowerCase() === "index.html") {
+      res.setHeader("Cache-Control", "no-store");
+    }
+  }
+}));
 
 app.get(/^\/(?!api\/|admin\/).*/, (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
   res.sendFile(path.join(FRONTEND_DIR, "index.html"));
 });
 

@@ -28,8 +28,21 @@
       "On-Spot": { label: "Late Registration", deadline: "To Be Announced" }
     },
     pages: {},
-    committee: [],
-    speakers: []
+    committee: [
+      { name: "Demo Committee Member 01", group: "Scientific Committee", role: "Demo Committee Member", org: "Institution to be confirmed", bio: "Demo profile for preview. Replace with the confirmed committee member biography before publication." },
+      { name: "Demo Committee Member 02", group: "Scientific Committee", role: "Demo Committee Member", org: "Institution to be confirmed", bio: "Demo profile for preview. Replace with the confirmed committee member biography before publication." },
+      { name: "Demo Committee Member 03", group: "Scientific Committee", role: "Demo Committee Member", org: "Institution to be confirmed", bio: "Demo profile for preview. Replace with the confirmed committee member biography before publication." }
+    ],
+    speakers: [
+      { name: "Demo Speaker 01", group: "Keynote Speakers", role: "Demo Keynote Speaker", org: "Institution to be confirmed", topic: "Advanced materials research", bio: "Demo profile for layout and scrolling review. Replace with the confirmed speaker biography before publication." },
+      { name: "Demo Speaker 02", group: "Keynote Speakers", role: "Demo Keynote Speaker", org: "Institution to be confirmed", topic: "Artificial intelligence in materials science", bio: "Demo profile for layout and scrolling review. Replace with the confirmed speaker biography before publication." },
+      { name: "Demo Speaker 03", group: "Plenary Speakers", role: "Demo Plenary Speaker", org: "Institution to be confirmed", topic: "Materials engineering and innovation", bio: "Demo profile for layout and scrolling review. Replace with the confirmed speaker biography before publication." },
+      { name: "Demo Speaker 04", group: "Plenary Speakers", role: "Demo Plenary Speaker", org: "Institution to be confirmed", topic: "Computational materials science", bio: "Demo profile for layout and scrolling review. Replace with the confirmed speaker biography before publication." },
+      { name: "Demo Speaker 05", group: "Featured / Invited Speakers", role: "Demo Invited Speaker", org: "Institution to be confirmed", topic: "Machine learning and materials informatics", bio: "Demo profile for layout and scrolling review. Replace with the confirmed speaker biography before publication." },
+      { name: "Demo Speaker 06", group: "Featured / Invited Speakers", role: "Demo Invited Speaker", org: "Institution to be confirmed", topic: "Nanomaterials and nanotechnology", bio: "Demo profile for layout and scrolling review. Replace with the confirmed speaker biography before publication." },
+      { name: "Demo Speaker 07", group: "Featured / Invited Speakers", role: "Demo Invited Speaker", org: "Institution to be confirmed", topic: "AI-driven materials discovery", bio: "Demo profile for layout and scrolling review. Replace with the confirmed speaker biography before publication." },
+      { name: "Demo Speaker 08", group: "Featured / Invited Speakers", role: "Demo Invited Speaker", org: "Institution to be confirmed", topic: "Intelligent manufacturing", bio: "Demo profile for layout and scrolling review. Replace with the confirmed speaker biography before publication." }
+    ]
   };
 
   function get(obj, path) {
@@ -89,11 +102,11 @@
     // Page section overrides saved from the admin panel.
     var current = (location.pathname.split("/").pop() || "index.html").toLowerCase();
     var pageOverrides = content.pages && content.pages[current];
-    document.querySelectorAll("body > section.page-added-section").forEach(function (section) {
+    document.querySelectorAll("body > section.page-added-section, body > main > section.page-added-section").forEach(function (section) {
       section.remove();
     });
     if (pageOverrides) {
-      var sections = Array.prototype.slice.call(document.querySelectorAll("body > section")).filter(function (section) {
+      var sections = Array.prototype.slice.call(document.querySelectorAll("body > section, body > main > section")).filter(function (section) {
         return !section.classList.contains("page-section-picker") &&
           !section.classList.contains("abstract-section-picker") &&
           !section.classList.contains("page-added-section");
@@ -120,20 +133,37 @@
         var section = document.createElement("section");
         section.className = "section page-added-section";
         section.innerHTML = saved.html;
-        var footer = document.querySelector("body > footer");
-        document.body.insertBefore(section, footer || null);
+        var main = document.querySelector("body > main");
+        if (main) {
+          main.appendChild(section);
+        } else {
+          var footer = document.querySelector("body > footer");
+          document.body.insertBefore(section, footer || null);
+        }
       });
     }
+
+    // The old Home hero gallery may remain in a saved page override.
+    document.querySelectorAll(".hero-photo-rail").forEach(function (rail) {
+      rail.remove();
+    });
 
     // Committee members: [data-committee-group="<key>"] containers.
     // Speakers: [data-speaker-group="<key>"] containers.
     // Members/speakers entered in the admin panel render here as clickable
     // profile cards; empty groups fall back to a "will be added" message.
+    var committeeData = Array.isArray(content.committee) && content.committee.length
+      ? content.committee : DEFAULTS.committee;
     renderPeople("[data-committee-group]", "data-committee-group",
-      Array.isArray(content.committee) ? content.committee : [],
+      committeeData,
       "Committee members will be added later.", "👤");
+    var speakerData = Array.isArray(content.speakers) && content.speakers.length
+      ? content.speakers : DEFAULTS.speakers;
     renderPeople("[data-speaker-group]", "data-speaker-group",
-      Array.isArray(content.speakers) ? content.speakers : [],
+      speakerData,
+      "Speaker names and profiles will be published in the final scientific program.", "🎤");
+    renderPeople("[data-speaker-carousel]", "data-speaker-carousel",
+      speakerData.concat(committeeData),
       "Speaker names and profiles will be published in the final scientific program.", "🎤");
 
     try { document.dispatchEvent(new CustomEvent("matai:content", { detail: content })); } catch (_) {}
@@ -147,7 +177,8 @@
     document.querySelectorAll(selector).forEach(function (box) {
       var key = box.getAttribute(attr);
       var avatarEmoji = box.getAttribute("data-avatar") || defaultAvatar || "👤";
-      var mine = people.filter(function (m) { return m && m.group === key; });
+      var allGroups = attr === "data-speaker-carousel" || key === "all";
+      var mine = people.filter(function (m) { return m && (allGroups || m.group === key); });
       var fallback = box.getAttribute("data-empty") || defaultEmpty;
       if (!mine.length) {
         box.innerHTML = '<p class="placeholder-note center mt-2">' +
