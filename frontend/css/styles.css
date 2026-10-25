@@ -88,6 +88,8 @@ li { margin-bottom: .35rem; }
 .section.alt { background: linear-gradient(180deg, var(--bg-soft) 0%, var(--bg-soft-2) 100%); }
 .section.navy { background: var(--grad-hero); color: #e6f7f5; }
 .section.navy h2, .section.navy h3 { color: #fff; }
+#home-introduction { padding-bottom: 24px; }
+#welcome { padding-top: 24px; }
 .narrow { max-width: 860px; margin-left: auto; margin-right: auto; }
 .center { text-align: center; }
 .section.navy .card h3 { color:var(--ink); }
@@ -1688,4 +1690,21 @@ table.tbl tbody tr:hover { background:#fff0e3; }
   .agenda .row { grid-template-columns:minmax(0,1fr); gap:.15rem; }
   .agenda .time { font-size:.78rem; }
   .form-card { padding:1rem; }
+}
+
+/* Larger event date and countdown on the home page. */
+.hero .hero-datepill {
+  font-size:clamp(1.35rem,2vw,1.65rem);
+  padding:1rem 1.8rem;
+}
+.hero .countdown .cd {
+  min-width:clamp(88px,10vw,104px);
+  padding:1rem 1.15rem;
+}
+.hero .countdown .cd b { font-size:clamp(1.9rem,2.8vw,2.2rem); }
+.hero .countdown .cd small { font-size:.78rem; }
+@media (max-width:700px) {
+  .hero .hero-datepill { font-size:1.1rem; padding:.85rem 1rem; }
+  .hero .countdown .cd { min-width:78px; padding:.85rem .8rem; }
+  .hero .countdown .cd b { font-size:1.8rem; }
 }
