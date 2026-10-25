@@ -11,6 +11,7 @@
   var DEFAULTS = {
     banner: { enabled: true, text: "Abstract submissions for MatAi 2027 are now open. Register early to secure Early-Bird rates." },
     site: { theme: "Advancing Materials Innovation through Science, Engineering & Artificial Intelligence", dateText: "October 13–14, 2027", city: "Berlin, Germany" },
+    homeGallery: { heading: "", photos: [] },
     dates: [
       { label: "Abstract Submission Deadline", value: "To Be Announced" },
       { label: "Early-Bird Registration Deadline", value: "To Be Announced" },
@@ -29,9 +30,14 @@
     },
     pages: {},
     committee: [
-      { name: "Demo Committee Member 01", group: "Scientific Committee", role: "Demo Committee Member", org: "Institution to be confirmed", bio: "Demo profile for preview. Replace with the confirmed committee member biography before publication." },
-      { name: "Demo Committee Member 02", group: "Scientific Committee", role: "Demo Committee Member", org: "Institution to be confirmed", bio: "Demo profile for preview. Replace with the confirmed committee member biography before publication." },
-      { name: "Demo Committee Member 03", group: "Scientific Committee", role: "Demo Committee Member", org: "Institution to be confirmed", bio: "Demo profile for preview. Replace with the confirmed committee member biography before publication." }
+      { name: "Demo Committee Member 01", group: "Scientific Committee", role: "Demo Committee Member", org: "Demo University, Germany", bio: "Demo profile for preview only. Replace with the confirmed committee member's photo, affiliation, and biography before publication." },
+      { name: "Demo Committee Member 02", group: "Scientific Committee", role: "Demo Committee Member", org: "Demo Institute of Technology, USA", bio: "Demo profile for preview only. Replace with the confirmed committee member's photo, affiliation, and biography before publication." },
+      { name: "Demo Committee Member 03", group: "Scientific Committee", role: "Demo Committee Member", org: "Demo Research Centre, Belgium", bio: "Demo profile for preview only. Replace with the confirmed committee member's photo, affiliation, and biography before publication." },
+      { name: "Demo Committee Member 04", group: "Scientific Committee", role: "Demo Committee Member", org: "Demo Technical University, China", bio: "Demo profile for preview only. Replace with the confirmed committee member's photo, affiliation, and biography before publication." },
+      { name: "Demo Committee Member 05", group: "Scientific Committee", role: "Demo Committee Member", org: "Demo Materials Institute, Japan", bio: "Demo profile for preview only. Replace with the confirmed committee member's photo, affiliation, and biography before publication." },
+      { name: "Demo Committee Member 06", group: "Scientific Committee", role: "Demo Committee Member", org: "Demo Science University, South Korea", bio: "Demo profile for preview only. Replace with the confirmed committee member's photo, affiliation, and biography before publication." },
+      { name: "Demo Committee Member 07", group: "Scientific Committee", role: "Demo Committee Member", org: "Demo Polytechnic, India", bio: "Demo profile for preview only. Replace with the confirmed committee member's photo, affiliation, and biography before publication." },
+      { name: "Demo Committee Member 08", group: "Scientific Committee", role: "Demo Committee Member", org: "Demo Engineering University, Canada", bio: "Demo profile for preview only. Replace with the confirmed committee member's photo, affiliation, and biography before publication." }
     ],
     speakers: [
       { name: "Demo Speaker 01", group: "Keynote Speakers", role: "Demo Keynote Speaker", org: "Institution to be confirmed", topic: "Advanced materials research", bio: "Demo profile for layout and scrolling review. Replace with the confirmed speaker biography before publication." },
@@ -56,6 +62,58 @@
       .toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   }
 
+  function parseGoogleMapsLocation(value) {
+    try {
+      var url = new URL(value, window.location.href);
+      var host = url.hostname.toLowerCase();
+      var mapsHost = /^maps\.google\.[a-z.]+$/.test(host) || host === "maps.app.goo.gl" ||
+        (host === "goo.gl" && /^\/maps\//.test(url.pathname)) ||
+        ((host === "google.com" || host === "www.google.com" || /^(?:www\.)?google\.[a-z.]+$/.test(host)) &&
+          /^\/maps(?:\/|$)/.test(url.pathname));
+      if (!/^https?:$/.test(url.protocol) || !mapsHost) return null;
+
+      var destination = url.searchParams.get("q") || url.searchParams.get("query") ||
+        url.searchParams.get("destination") || url.searchParams.get("ll") || "";
+      var place = url.pathname.match(/\/place\/([^/?]+)/i);
+      var coordinates = url.pathname.match(/@(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/);
+      if (!destination && place) destination = decodeURIComponent(place[1].replace(/\+/g, " "));
+      if (!destination && coordinates) destination = coordinates[1] + "," + coordinates[2];
+      var placeId = url.searchParams.get("query_place_id") || url.searchParams.get("destination_place_id") || "";
+      var embedUrl = destination
+        ? "https://www.google.com/maps?q=" + encodeURIComponent(destination) + "&output=embed"
+        : url.href;
+      var directionsUrl = url.href;
+      if (destination) {
+        directionsUrl = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(destination);
+        if (placeId) directionsUrl += "&destination_place_id=" + encodeURIComponent(placeId);
+      }
+      return { embedUrl: embedUrl, directionsUrl: directionsUrl, destination: destination };
+    } catch (_) { return null; }
+  }
+
+  function updateVenueMap(content) {
+    var frame = document.querySelector("#venue-map-frame iframe, main iframe[src*='google.com/maps'], main iframe[src*='maps.google.']");
+    if (!frame) return;
+    var site = content && content.site || {};
+    var source = String(site.mapUrl || frame.getAttribute("src") || "").trim();
+    var location = parseGoogleMapsLocation(source);
+    if (!location) return;
+
+    frame.src = location.embedUrl;
+    if (location.destination) frame.title = "Google Map showing " + location.destination;
+    var directions = document.getElementById("venue-directions-link");
+    if (!directions) {
+      directions = document.createElement("a");
+      directions.id = "venue-directions-link";
+      directions.className = "btn btn-primary mt-1";
+      directions.target = "_blank";
+      directions.rel = "noopener noreferrer";
+      frame.parentNode.insertAdjacentElement("afterend", directions);
+    }
+    directions.href = location.directionsUrl;
+    directions.textContent = location.destination ? "Get Directions to the Venue" : "Open Venue Location in Google Maps";
+    directions.hidden = false;
+  }
   function apply(content) {
     window.MATAI_CONTENT = content;
 
@@ -143,6 +201,8 @@
       });
     }
 
+    renderHomeGallery(content.homeGallery || {});
+
     // The old Home hero gallery may remain in a saved page override.
     document.querySelectorAll(".hero-photo-rail").forEach(function (rail) {
       rail.remove();
@@ -166,9 +226,59 @@
       speakerData.concat(committeeData),
       "Speaker names and profiles will be published in the final scientific program.", "🎤");
 
+    updateVenueMap(content);
     try { document.dispatchEvent(new CustomEvent("matai:content", { detail: content })); } catch (_) {}
   }
 
+  function renderHomeGallery(gallery) {
+    var photos = gallery && Array.isArray(gallery.photos) ? gallery.photos.filter(function (photo) {
+      return typeof photo === "string" && /^(https?:\/\/|\/|\.\.?\/)/i.test(photo.trim());
+    }) : [];
+    var section = document.getElementById("home-photo-gallery");
+    if (!section && photos.length) {
+      var dates = document.getElementById("home-dates");
+      if (!dates) return;
+      section = document.createElement("section");
+      section.className = "section home-photo-gallery";
+      section.id = "home-photo-gallery";
+      section.setAttribute("aria-labelledby", "home-photo-gallery-heading");
+      dates.insertAdjacentElement("afterend", section);
+      section.innerHTML = '<div class="container"><div class="center reveal"><span class="eyebrow">MatAi 2027</span><h2 id="home-photo-gallery-heading"></h2></div><div class="home-gallery-shell mt-2"><button class="home-gallery-arrow prev" type="button" data-home-gallery-prev aria-label="Scroll photos left">‹</button><div class="home-gallery-track" data-home-gallery-track aria-label="Conference photos" tabindex="0"></div><button class="home-gallery-arrow next" type="button" data-home-gallery-next aria-label="Scroll photos right">›</button></div></div>';
+    }
+    if (!section) return;
+    if (!photos.length) {
+      section.hidden = true;
+      return;
+    }
+    section.hidden = false;
+    var heading = document.getElementById("home-photo-gallery-heading");
+    var headingText = String(gallery.heading || "").trim();
+    var headingBlock = heading && heading.closest(".center");
+    if (heading) heading.textContent = headingText;
+    if (headingBlock) headingBlock.hidden = !headingText;
+    if (headingText) {
+      section.setAttribute("aria-labelledby", "home-photo-gallery-heading");
+      section.removeAttribute("aria-label");
+    } else {
+      section.removeAttribute("aria-labelledby");
+      section.setAttribute("aria-label", "Conference photo gallery");
+    }
+    var track = section.querySelector("[data-home-gallery-track]");
+    if (!track) return;
+    track.innerHTML = photos.map(function (photo, i) {
+      return '<figure class="home-gallery-slide"><img src="' + escapeHtml(photo.trim()) + '" alt="MatAi 2027 conference photo ' + (i + 1) + '" loading="lazy"></figure>';
+    }).join("");
+    section.querySelectorAll(".home-gallery-arrow").forEach(function (button) {
+      button.hidden = photos.length < 2;
+    });
+    section.onclick = function (event) {
+      var button = event.target.closest("[data-home-gallery-prev], [data-home-gallery-next]");
+      if (!button) return;
+      var firstSlide = track.querySelector(".home-gallery-slide");
+      var step = firstSlide ? firstSlide.getBoundingClientRect().width + 20 : track.clientWidth * 0.85;
+      track.scrollBy({ left: button.hasAttribute("data-home-gallery-next") ? step : -step, behavior: "smooth" });
+    };
+  }
   // Render a set of profile cards into every container matching `selector`,
   // filtered by the group value read from `attr`. Shows a placeholder note
   // when a group has no people. Cards reuse .person[data-profile] so the

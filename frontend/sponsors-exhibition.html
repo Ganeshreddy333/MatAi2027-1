@@ -6,120 +6,72 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=20261024-responsive">
-<style>.sponsor-doc-content h2{margin-top:2rem}.sponsor-doc-content h3{margin-top:1.4rem}.sponsor-doc-content p{margin:.55rem 0}.sponsor-doc-content ul{margin:.5rem 0 1rem}.sponsor-doc-content table{margin:1.25rem 0}</style>
-</head><body>
+<link rel="stylesheet" href="css/styles.css?v=20261025-registration-details-nav">
+<style>
+body.sponsors-exhibition-page { background:#f4f5f1; }
+body.sponsors-exhibition-page .page-hero {
+  position:relative; overflow:hidden; padding:clamp(5.5rem,10vw,8.5rem) 0;
+  color:#fff; background:linear-gradient(125deg,#17202e 0%,#213b42 52%,#0d6049 100%);
+}
+body.sponsors-exhibition-page .page-hero::after {
+  content:""; position:absolute; width:min(52vw,620px); aspect-ratio:1; right:-10%; top:-58%;
+  border:1px solid rgba(255,255,255,.14); border-radius:50%;
+  box-shadow:0 0 0 46px rgba(255,255,255,.035),0 0 0 92px rgba(255,255,255,.025);
+}
+body.sponsors-exhibition-page .page-hero .container { position:relative; z-index:1; }
+body.sponsors-exhibition-page .page-hero .breadcrumb { color:#c7ddd5; font-size:.82rem; letter-spacing:.04em; }
+body.sponsors-exhibition-page .page-hero .breadcrumb a { color:#e4f4ec; }
+body.sponsors-exhibition-page .page-hero h1 { max-width:800px; margin:.8rem 0 .45rem; color:#fff; font-size:clamp(2.5rem,6vw,4.5rem); letter-spacing:-.045em; }
+body.sponsors-exhibition-page .page-hero h2 { margin:0; color:#c8f1db; font-size:clamp(1.05rem,2vw,1.4rem); font-weight:500; }
+body.sponsors-exhibition-page .section { padding-top:0; background:transparent; }
+body.sponsors-exhibition-page .sponsor-doc-content {
+  position:relative; z-index:2; max-width:1060px; margin:-2.2rem auto 4rem; padding:clamp(1.25rem,4vw,3.25rem);
+  border:1px solid rgba(27,75,62,.1); border-radius:24px; background:#fff; box-shadow:0 24px 70px rgba(23,32,46,.12);
+}
+body.sponsors-exhibition-page .sponsor-doc-content h2 { margin:0 0 1rem; color:#173c35; font-size:clamp(1.35rem,2.6vw,1.85rem); line-height:1.35; }
+body.sponsors-exhibition-page .sponsor-doc-content h2:first-of-type { padding-bottom:1rem; border-bottom:1px solid #e5ece8; }
+body.sponsors-exhibition-page .sponsor-doc-content h3 {
+  margin:2.2rem 0 .8rem; padding:.7rem .9rem; border-left:4px solid #15945d; border-radius:0 12px 12px 0;
+  background:linear-gradient(90deg,#eef7f1,#f8faf8 76%); color:#173c35; font-size:clamp(1.02rem,1.8vw,1.25rem); line-height:1.35;
+}
+body.sponsors-exhibition-page .sponsor-doc-content p { margin:.7rem 0; color:#52615d; font-size:.94rem; line-height:1.75; }
+body.sponsors-exhibition-page .sponsor-doc-content ul { margin:.35rem 0 .65rem; padding:0; list-style:none; }
+body.sponsors-exhibition-page .sponsor-doc-content li {
+  position:relative; margin:.35rem 0; padding:.62rem .8rem .62rem 2rem; border:1px solid #e8efeb; border-radius:11px;
+  background:#f8faf9; color:#43554f; font-size:.88rem; line-height:1.5;
+}
+body.sponsors-exhibition-page .sponsor-doc-content li::before { content:"✓"; position:absolute; left:.8rem; top:.61rem; color:#13804e; font-weight:800; }
+body.sponsors-exhibition-page .sponsor-doc-content table { width:100%; margin:1.25rem 0; border-collapse:separate; border-spacing:0; overflow:hidden; border:1px solid #e2ebe6; border-radius:14px; }
+body.sponsors-exhibition-page .sponsor-doc-content td { padding:.8rem 1rem; border-bottom:1px solid #e9efeb; }
+body.sponsors-exhibition-page .sponsor-doc-content tr:last-child td { border-bottom:0; }
+@media(max-width:640px) {
+  body.sponsors-exhibition-page .page-hero { padding:5rem 0 4.5rem; }
+  body.sponsors-exhibition-page .sponsor-doc-content { margin:-1.5rem auto 2.5rem; padding:1.15rem; border-radius:18px; }
+  body.sponsors-exhibition-page .sponsor-doc-content h3 { margin-top:1.65rem; }
+}
+
+body.sponsors-exhibition-page .sponsor-doc-content > h3 { border:1px solid #dfece5; border-left:5px solid #138a58; box-shadow:0 6px 18px rgba(23,60,53,.07); }
+body.sponsors-exhibition-page .sponsor-doc-content h2:last-of-type { margin:1.8rem 0; padding:1.15rem 1.3rem; border:0; border-radius:16px; background:linear-gradient(120deg,#173c35,#16734f); color:#fff; text-align:center; box-shadow:0 12px 28px rgba(19,91,62,.18); }
+body.sponsors-exhibition-page .sponsor-doc-content h2:first-of-type + p { display:inline-block; margin:.1rem 0 1rem; padding:.38rem .75rem; border:1px solid #dcebe2; border-radius:999px; background:#f2f8f4; color:#266348; font-size:.82rem; font-weight:700; }
+body.sponsors-exhibition-page .sponsor-tier-grid, body.sponsors-exhibition-page .exhibition-package-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; align-items:stretch; margin:1.2rem 0 2rem; }
+body.sponsors-exhibition-page .sponsor-package-card, body.sponsors-exhibition-page .exhibition-package-card { --tier-color:#168354; --tier-soft:#eff8f2; --tier-ink:#174c36; min-width:0; padding:1.25rem; border:1px solid #e4ece7; border-top:4px solid var(--tier-color); border-radius:18px; background:linear-gradient(155deg,#fff,#f9fbfa); box-shadow:0 8px 24px rgba(23,32,46,.07); transition:transform .2s,box-shadow .2s; }
+body.sponsors-exhibition-page .sponsor-package-card:hover, body.sponsors-exhibition-page .exhibition-package-card:hover { transform:translateY(-3px); box-shadow:0 16px 34px rgba(23,32,46,.12); }
+body.sponsors-exhibition-page .diamond-tier { --tier-color:#ba8b27; --tier-soft:#fbf4e3; --tier-ink:#735719; grid-column:1/-1; }
+body.sponsors-exhibition-page .platinum-tier { --tier-color:#68778b; --tier-soft:#eef2f6; --tier-ink:#39485c; }
+body.sponsors-exhibition-page .gold-tier { --tier-color:#d39b22; --tier-soft:#fff7e5; --tier-ink:#795b12; }
+body.sponsors-exhibition-page .silver-tier { --tier-color:#8091a1; --tier-soft:#f0f3f5; --tier-ink:#455564; }
+body.sponsors-exhibition-page .bronze-tier { --tier-color:#ad6743; --tier-soft:#fbf0ea; --tier-ink:#75442c; }
+body.sponsors-exhibition-page .sponsor-package-card h3:first-child, body.sponsors-exhibition-page .exhibition-package-card h3:first-child { display:inline-flex; width:auto; margin:.05rem 0 .8rem; padding:.42rem .75rem; border:0; border-radius:999px; background:var(--tier-soft); color:var(--tier-ink); font-size:.72rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+body.sponsors-exhibition-page .sponsor-package-card h3:not(:first-child), body.sponsors-exhibition-page .exhibition-package-card h3:not(:first-child) { width:max-content; max-width:100%; margin:1rem 0 .35rem; padding:.28rem .55rem; border:0; border-radius:6px; background:var(--tier-soft); color:var(--tier-ink); font-size:.68rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; }
+body.sponsors-exhibition-page .sponsor-package-card p, body.sponsors-exhibition-page .exhibition-package-card p { margin:.35rem 0 .65rem; font-size:.86rem; line-height:1.62; }
+body.sponsors-exhibition-page .sponsor-package-card p:has(br), body.sponsors-exhibition-page .exhibition-package-card p:has(br) { padding:.7rem .8rem; border-radius:11px; background:var(--tier-soft); color:#394b45; }
+body.sponsors-exhibition-page .sponsor-doc-content li::before { content:"\2713"; }
+@media(max-width:720px) { body.sponsors-exhibition-page .sponsor-tier-grid, body.sponsors-exhibition-page .exhibition-package-grid { grid-template-columns:1fr; gap:.75rem; } body.sponsors-exhibition-page .diamond-tier { grid-column:auto; } }
+</style>
+</head><body class="sponsors-exhibition-page">
 <div id="site-header"></div>
 <section class="page-hero"><div class="container"><div class="breadcrumb"><a href="index.html">Home</a> / Sponsors &amp; Exhibition</div><h1>Sponsors &amp; Exhibition</h1><h2>Partner with MatAi 2027</h2></div></section>
 <section class="section"><div class="container narrow sponsor-doc-content">
-<h3>Sponsors &amp; Exhibition</h3>
-<h3>Partner with MatAi 2027</h3>
-<h2>International Conference on Materials Science, Engineering &amp; Artificial Intelligence</h2>
-<p>October 13–14, 2027 | Berlin, Germany</p>
-<p>Advancing Materials Innovation through Science, Engineering &amp; Artificial Intelligence</p>
-<h3>Become a Sponsor or Exhibitor</h3>
-<p>The International Conference on Materials Science, Engineering &amp; Artificial Intelligence (MatAi 2027) invites companies, technology providers, research organizations, academic institutions, manufacturers, and industry leaders to participate as sponsors and exhibitors.</p>
-<p>MatAi 2027 will bring together researchers, scientists, engineers, academicians, industry professionals, innovators, and emerging researchers to exchange knowledge and explore advances in materials science, engineering, and artificial intelligence.</p>
-<p>The conference offers an opportunity for organizations to showcase their products, technologies, services, research capabilities, and innovations to an international audience interested in advanced materials, intelligent engineering, computational science, and AI-driven materials discovery.</p>
-<p>By supporting MatAi 2027, your organization can contribute to scientific exchange, strengthen professional relationships, and connect with a community working to advance materials innovation and engineering technologies.</p>
-<p>Join us as a sponsor or exhibitor and become part of the materials innovation community.</p>
-<p>Why Sponsor MatAi 2027?</p>
-<p>Sponsoring MatAi 2027 provides organizations with an opportunity to strengthen their visibility, engage with a specialized scientific audience, and demonstrate their commitment to research, technology, and innovation.</p>
-<h3>Key Sponsorship Benefits</h3>
-<ul><li>Brand Visibility: Increase your organization&#x27;s visibility among international researchers, scientists, engineers, academics, and industry professionals.</li></ul>
-<ul><li>Global Networking: Build connections with potential collaborators, institutional representatives, technology providers, and research groups.</li></ul>
-<ul><li>Technology Showcase: Present your latest products, materials, instruments, software, equipment, and engineering solutions.</li></ul>
-<ul><li>Research and Industry Engagement: Connect with experts working in materials science, AI-enabled research, manufacturing, and advanced engineering.</li></ul>
-<ul><li>Business Development: Explore opportunities for collaboration, technology adoption, professional partnerships, and future business relationships.</li></ul>
-<ul><li>Thought Leadership: Demonstrate your organization&#x27;s expertise and commitment to scientific progress and technological development.</li></ul>
-<ul><li>Recruitment and Talent Engagement: Interact with emerging researchers, postgraduate scholars, and professionals with relevant technical expertise.</li></ul>
-<h3>Exhibition Opportunities</h3>
-<p>MatAi 2027 welcomes exhibitors interested in presenting innovative products, services, technologies, and solutions relevant to materials science, engineering, artificial intelligence, and related industries.</p>
-<p>The exhibition will provide an opportunity to introduce your organization&#x27;s capabilities, engage directly with conference participants, and explore potential collaborations.</p>
-<p>Who Can Exhibit?</p>
-<p>Exhibition opportunities are suitable for:</p>
-<ul><li>Materials science and engineering companies</li></ul>
-<ul><li>Advanced materials and nanotechnology organizations</li></ul>
-<ul><li>Scientific instruments and laboratory equipment manufacturers</li></ul>
-<ul><li>Artificial intelligence, machine learning, and materials informatics companies</li></ul>
-<ul><li>Simulation, modelling, and computational engineering providers</li></ul>
-<ul><li>Semiconductor, electronics, and photonics companies</li></ul>
-<ul><li>Additive manufacturing and 3D-printing technology providers</li></ul>
-<ul><li>Energy storage, renewable energy, and sustainable technology companies</li></ul>
-<ul><li>Testing, characterization, and analytical service providers</li></ul>
-<ul><li>Research institutions, universities, laboratories, and technology-transfer organizations</li></ul>
-<ul><li>Scientific publishers and research-support service providers</li></ul>
-<p>What Can You Showcase?</p>
-<p>Exhibitors may present relevant products, services, and innovations, including:</p>
-<ul><li>Advanced materials, composites, polymers, ceramics, and alloys</li></ul>
-<ul><li>Nanomaterials and functional materials</li></ul>
-<ul><li>AI-driven materials discovery and design platforms</li></ul>
-<ul><li>Machine learning and computational materials science solutions</li></ul>
-<ul><li>Materials characterization and analytical technologies</li></ul>
-<ul><li>Manufacturing, processing, and additive manufacturing systems</li></ul>
-<ul><li>Energy materials and sustainable engineering solutions</li></ul>
-<ul><li>Research software, simulation tools, and digital engineering platforms</li></ul>
-<ul><li>Laboratory equipment, testing systems, and measurement technologies</li></ul>
-<ul><li>Scientific publications, research services, and institutional capabilities</li></ul>
-<p>All exhibits should be relevant to the conference themes and subject to the organizer&#x27;s approval.</p>
-<h3>Sponsorship Categories</h3>
-<p>MatAi 2027 welcomes organizations interested in supporting the conference at different levels. Sponsorship packages can be structured to accommodate different promotional objectives, organizational sizes, and levels of participation.</p>
-<h3>Platinum Sponsor</h3>
-<p>Designed for organizations seeking a prominent sponsorship presence and broad visibility throughout the conference.</p>
-<p>Potential benefits may include:</p>
-<ul><li>Prominent company logo placement on selected conference materials</li></ul>
-<ul><li>Recognition as a Platinum Sponsor on the conference website</li></ul>
-<ul><li>Enhanced visibility in applicable digital and promotional materials</li></ul>
-<ul><li>Opportunity to display approved promotional materials</li></ul>
-<ul><li>Priority consideration for exhibition opportunities</li></ul>
-<ul><li>Recognition during selected conference announcements</li></ul>
-<h3>Gold Sponsor</h3>
-<p>Suitable for organizations seeking strong brand exposure and engagement with conference participants.</p>
-<p>Potential benefits may include:</p>
-<ul><li>Company logo placement on designated conference materials</li></ul>
-<ul><li>Recognition on the conference website</li></ul>
-<ul><li>Inclusion in selected promotional communications</li></ul>
-<ul><li>Opportunity to display approved company materials</li></ul>
-<ul><li>Exhibition participation options, subject to package terms</li></ul>
-<h3>Silver Sponsor</h3>
-<p>An opportunity for organizations to support scientific exchange while gaining relevant brand visibility.</p>
-<p>Potential benefits may include:</p>
-<ul><li>Company logo placement in designated sponsor listings</li></ul>
-<ul><li>Recognition on the conference website</li></ul>
-<ul><li>Inclusion in selected conference materials</li></ul>
-<ul><li>Opportunities for networking and institutional engagement</li></ul>
-<h3>Exhibitor</h3>
-<p>Designed for companies and organizations interested in showcasing their products, technologies, services, and research capabilities.</p>
-<p>Potential benefits may include:</p>
-<ul><li>Exhibition space or an agreed alternative showcase format</li></ul>
-<ul><li>Company name and profile in relevant exhibitor listings</li></ul>
-<ul><li>Opportunities to interact with conference participants</li></ul>
-<ul><li>Product and technology presentation opportunities, subject to approval</li></ul>
-<p>Note: Sponsorship fees, booth availability, deliverables, and final package benefits will be communicated through the official sponsorship prospectus. All benefits are subject to confirmation by the conference organizers.</p>
-<h3>Advertising and Promotional Opportunities</h3>
-<p>Organizations may also explore advertising and promotional opportunities associated with MatAi 2027.</p>
-<p>Depending on availability and approval, options may include:</p>
-<ul><li>Logo placement on selected promotional materials</li></ul>
-<ul><li>Digital advertisements and promotional banners</li></ul>
-<ul><li>Company profile inclusion in designated conference materials</li></ul>
-<ul><li>Distribution of approved brochures and informational materials</li></ul>
-<ul><li>Sponsored promotional content on selected conference communication channels</li></ul>
-<ul><li>Product demonstrations or technical presentations, where applicable</li></ul>
-<p>All promotional arrangements will be confirmed in writing before the conference.</p>
-<h3>Industry Collaboration and Institutional Partnerships</h3>
-<p>MatAi 2027 encourages collaboration with universities, research institutions, scientific societies, professional associations, technology companies, and industry organizations.</p>
-<p>Institutional and industry partners can contribute by supporting scientific outreach, sharing conference announcements, encouraging participation, facilitating networking, and identifying opportunities for research and technology collaboration.</p>
-<p>We welcome proposals from organizations interested in contributing to the conference&#x27;s scientific and professional objectives.</p>
-<h3>Connect with Researchers and Industry Professionals</h3>
-<p>MatAi 2027 provides a platform for engagement across materials science, engineering, artificial intelligence, and computational research.</p>
-<p>Sponsors and exhibitors can use this opportunity to:</p>
-<ul><li>Introduce innovations to a relevant scientific audience</li></ul>
-<ul><li>Establish connections with researchers and potential collaborators</li></ul>
-<ul><li>Explore applications of emerging technologies</li></ul>
-<ul><li>Exchange ideas with academic and industrial professionals</li></ul>
-<ul><li>Identify potential research, development, and technology partnerships</li></ul>
-<p>Our goal is to encourage meaningful interaction between the scientific community and organizations developing solutions for current and future engineering challenges.</p>
-<h3>Partner with MatAi 2027</h3>
 <h2>International Conference on Materials Science, Engineering &amp; Artificial Intelligence</h2>
 <p>October 13–14, 2027 | Berlin, Germany</p>
 <p>MatAi 2027 brings together researchers, scientists, engineers, academics, technology specialists, industry professionals, and R&amp;D organizations working across Materials Science, Engineering, Artificial Intelligence, Machine Learning, Materials Informatics, Computational Science, Advanced Manufacturing, and Sustainable Materials.</p>
@@ -137,65 +89,65 @@
 <ul><li>Demonstrate emerging technologies and solutions</li></ul>
 <ul><li>Strengthen your presence within the materials and AI ecosystem</li></ul>
 <ul><li>Build relationships with potential research and industry partners</li></ul>
-<h3>Sponsorship Packages</h3>
-<p>MatAi 2027 welcomes organizations, research institutions, technology companies, publishers, and industry partners interested in supporting scientific exchange and increasing their visibility among conference participants.</p>
-<p>The following USD amounts are indicative conversions of the euro-denominated fees in the supplied sponsorship schedule.</p>
-<div class="table-wrap"><table class="tbl"><tbody><tr><td><h3>Sponsorship Package</h3></td><td></td></tr><tr><td><p>Diamond Sponsor</p></td><td></td></tr><tr><td><p>Platinum Sponsor</p></td><td></td></tr><tr><td><p>Gold Sponsor</p></td></tr><tr><td><p>Silver Sponsor</p></td><td></td></tr><tr><td><p>Bronze / Supporting Sponsor</p></td><td></td></tr><tr><td><p>Advertising Sponsor</p></td><td></td></tr><tr><td><p>Conference Kit Sponsor</p></td><td></td></tr><tr><td><p>Awards &amp; Young Researcher Sponsor</p></td><td></td></tr></tbody></table></div>
-<p>Sponsorship fees are fixed and do not have Mid-Term or On-Spot rates. Sponsorship benefits, branding placements, and deliverables should be confirmed in the applicable sponsorship agreement.</p>
-<h3>Exhibition Opportunities</h3>
-<p>MatAi 2027 offers potential exhibition opportunities for companies and organizations seeking to connect with researchers, academics, and industry professionals in materials science, engineering, and artificial intelligence.</p>
-<h3>Proposed Exhibition Options</h3>
-<div class="table-wrap"><table class="tbl"><tbody><tr><td><h3>Exhibition Package</h3></td><td></td></tr><tr><td><p>Standard Booth</p></td><td></td></tr><tr><td><p>Premium Booth</p></td><td></td></tr></tbody></table></div>
-<p>These amounts are illustrative conversions of the euro prices in the supplied content. Booth availability, dimensions, included facilities, location, and branding benefits must be confirmed by the organizers.</p>
-<h3>Exhibitor Benefits</h3>
-<p>Depending on the selected package and confirmed arrangements, exhibition participation may provide opportunities to:</p>
-<ul><li>Showcase products, technologies, and scientific services.</li></ul>
-<ul><li>Present laboratory equipment and materials characterization solutions.</li></ul>
-<ul><li>Introduce computational tools, AI applications, and research software.</li></ul>
-<ul><li>Connect with researchers, universities, and industry representatives.</li></ul>
-<ul><li>Share product information and promotional materials.</li></ul>
-<ul><li>Explore potential collaborations and business relationships.</li></ul>
 <p>Important: The supplied content also mentions an “Exhibitor” fee of 45,000 without a currency symbol or explanation. This conflicts with the booth prices above and should be clarified before publication.</p>
 <h3>SPONSORSHIP PACKAGES</h3>
+<div class="sponsor-tier-grid">
+<article class="sponsor-package-card diamond-tier">
 <h3>DIAMOND SPONSOR</h3>
 <p>The Diamond Sponsorship is the highest-level partnership package, providing prominent visibility throughout the conference and enhanced opportunities for direct engagement.</p>
 <h3>Benefits</h3>
 <p>✓ Premium Diamond Sponsor recognition<br>✓ Premium logo placement on the conference website<br>✓ Logo on the main conference backdrop<br>✓ Logo on selected conference signage<br>✓ Logo in the official conference programme<br>✓ Logo in selected digital conference communications<br>✓ Premium exhibition booth — 3 m × 3 m<br>✓ 5 complimentary full conference registrations<br>✓ Priority exhibition location<br>✓ Opportunity for a 20-minute Industry Presentation<br>✓ Company profile on the conference website<br>✓ Promotional material inclusion in delegate kits<br>✓ Recognition during Opening Ceremony<br>✓ Recognition during Closing Ceremony<br>✓ Sponsor acknowledgement on selected conference slides<br>✓ One full-page advertisement in the conference programme<br>✓ Dedicated sponsor recognition on conference social media<br>✓ Opportunity to display company banner/materials<br>✓ Access to networking and exhibition activities</p>
 <h3>Suitable For</h3>
 <p>Technology companies, advanced materials manufacturers, major R&amp;D organizations, scientific equipment providers, engineering companies, AI/ML companies, and established industry partners.</p>
+</article>
+<article class="sponsor-package-card platinum-tier">
 <h3>PLATINUM SPONSOR</h3>
 <p>The Platinum package provides strong visibility combined with exhibition and direct engagement with conference participants.</p>
 <h3>Benefits</h3>
 <p>✓ Platinum Sponsor recognition<br>✓ Logo on conference website<br>✓ Logo on conference backdrop<br>✓ Logo in conference programme<br>✓ Logo on selected venue signage<br>✓ Premium exhibition booth — 3 m × 3 m<br>✓ 4 complimentary full conference registrations<br>✓ Priority exhibition placement<br>✓ Opportunity for a 15-minute Industry Presentation<br>✓ Company profile on conference website<br>✓ Promotional material in delegate kits<br>✓ Recognition during Opening Ceremony<br>✓ Recognition during Closing Ceremony<br>✓ Sponsor acknowledgement on conference slides<br>✓ Half-page advertisement in conference programme<br>✓ Social media recognition<br>✓ Networking access</p>
 <h3>Suitable For</h3>
 <p>Engineering companies, technology providers, research organizations, scientific instrument manufacturers, software companies, and industrial R&amp;D organizations.</p>
+</article>
+<article class="sponsor-package-card gold-tier">
 <h3>GOLD SPONSOR</h3>
 <p>The Gold package provides a balanced combination of exhibition, brand visibility, and participant engagement.</p>
 <h3>Benefits</h3>
 <p>✓ Gold Sponsor recognition<br>✓ Logo on conference website<br>✓ Logo in conference programme<br>✓ Logo on selected conference signage<br>✓ Standard exhibition booth — 3 m × 2 m<br>✓ 3 complimentary full conference registrations<br>✓ Company profile on conference website<br>✓ Promotional material inclusion in delegate kits<br>✓ Recognition during Opening Ceremony<br>✓ Recognition during Closing Ceremony<br>✓ Sponsor acknowledgement on selected conference slides<br>✓ Half-page advertisement in conference programme<br>✓ Social media recognition<br>✓ Networking and exhibition access</p>
 <h3>Suitable For</h3>
 <p>Materials companies, laboratories, engineering firms, scientific service providers, software companies, technology start-ups, and research organizations.</p>
+</article>
+<article class="sponsor-package-card silver-tier">
 <h3>SILVER SPONSOR</h3>
 <p>The Silver package provides professional brand visibility and participation in the conference exhibition environment.</p>
 <h3>Benefits</h3>
 <p>✓ Silver Sponsor recognition<br>✓ Logo on conference website<br>✓ Logo in conference programme<br>✓ Logo on selected venue signage<br>✓ Standard exhibition space — 2 m × 2 m<br>✓ 2 complimentary full conference registrations<br>✓ Company profile on conference website<br>✓ Promotional material inclusion in delegate kits<br>✓ Recognition during Opening Ceremony<br>✓ Sponsor acknowledgement on selected conference slides<br>✓ Social media recognition<br>✓ Networking access</p>
 <h3>Suitable For</h3>
 <p>Research groups, specialist technology providers, scientific service companies, start-ups, laboratories, publishers, and emerging businesses.</p>
+</article>
+<article class="sponsor-package-card bronze-tier">
 <h3>BRONZE / SUPPORTING SPONSOR</h3>
 <p>A cost-effective option for organizations seeking visibility and association with the scientific programme.</p>
 <h3>Benefits</h3>
 <p>✓ Supporting Sponsor recognition<br>✓ Logo on conference website<br>✓ Logo in conference programme<br>✓ Logo on selected sponsor signage<br>✓ 1 complimentary conference registration<br>✓ Company name and profile on sponsor page<br>✓ Sponsor acknowledgement during the conference<br>✓ Social media recognition<br>✓ Networking access</p>
+</article>
+</div>
 <h3>EXHIBITION OPPORTUNITIES</h3>
 <h3>Showcase Your Technology, Products &amp; Research</h3>
 <p>The MatAi 2027 exhibition area provides organizations with a dedicated environment to demonstrate technologies, products, services, and equipment, software, and research capabilities.</p>
+<div class="exhibition-package-grid">
+<article class="exhibition-package-card standard-booth-card">
 <h3>STANDARD EXHIBITION BOOTH</h3>
 <p>Booth Size: 3 m × 2 m</p>
 <h3>Includes</h3>
 <p>✓ Dedicated exhibition space<br>✓ Company name and logo display<br>✓ Listing on conference website<br>✓ Listing in conference programme<br>✓ 2 exhibition staff passes<br>✓ Table and chairs<br>✓ Standard booth identification<br>✓ Access to exhibition and networking areas<br>✓ Opportunity to distribute company materials</p>
+</article>
+<article class="exhibition-package-card premium-booth-card">
 <h3>PREMIUM EXHIBITION BOOTH</h3>
 <p>Booth Size: 3 m × 3 m</p>
 <h3>Includes</h3>
 <p>✓ Premium booth location<br>✓ Larger exhibition space<br>✓ Company logo on exhibition area signage<br>✓ Company profile on conference website<br>✓ 3 exhibition staff passes<br>✓ Table and chairs<br>✓ Standard booth furniture<br>✓ Priority placement<br>✓ Promotional material display<br>✓ Networking access<br>✓ Recognition as Premium Exhibitor</p>
+</article>
+</div>
 <h3>EXHIBITOR BENEFITS</h3>
 <p>Exhibitors can use their space to:</p>
 <ul><li>Demonstrate products and technologies</li></ul>
@@ -329,7 +281,6 @@
 <h3>Cancellation</h3>
 <p>Sponsorship and exhibition cancellation terms will be governed by the applicable sponsorship agreement.</p>
 <h3>BECOME A SPONSOR</h3>
-<h3>Partner with MatAi 2027</h3>
 <p>Connect your organization with an international community working at the intersection of:</p>
 <h2>Materials Science + Engineering + Artificial Intelligence</h2>
 <p>Whether you are seeking brand visibility, technology demonstration, scientific engagement, industry networking, advertising exposure, or research collaboration, MatAi 2027 offers flexible participation options.</p>
@@ -341,6 +292,6 @@
 <p><a class="btn btn-primary" href="sponsors-brochure.html">Request the Sponsorship &amp; Exhibition Brochure</a></p>
 </div></section>
 <div id="site-footer"></div>
-<script src="js/site.js?v=20261024-contact-us"></script>
+<script src="js/site.js?v=20261025-registration-details-nav"></script>
 <script src="js/forms.js?v=20261020-public-refresh"></script>
 </body></html>

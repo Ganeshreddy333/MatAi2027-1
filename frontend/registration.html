@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261024-responsive">
+  <link rel="stylesheet" href="css/styles.css?v=20261025-registration-details-nav">
 </head>
 <body>
   <div id="site-header"></div>
@@ -42,11 +42,11 @@
     </div>
   </section>
 
-  <section class="section alt" id="register-form">
+  <section class="section alt" id="registration-details">
     <div class="container">
       <div class="center reveal"><span class="eyebrow">Register Now</span><h2>Registration Form</h2><p class="lead">Complete the participant details, select a registration period and any options, then review your summary. All fees are in EUR (€); a 5% tax is added to every order.</p></div>
 
-      <form class="form-card reveal mt-2" data-form="register">
+      <form id="register-form" class="form-card reveal mt-2" data-form="register">
         <div class="form-status"></div>
 
         <!-- Participant details -->
@@ -152,12 +152,6 @@
                 <td class="qty"><input type="number" min="0" value="0" name="qty_ex_premium" data-qty aria-label="Quantity — Premium Exhibition Booth"></td>
                 <td class="rtot" data-line>€0</td>
               </tr>
-              <tr data-item="Start-Up Pavilion" data-fixed data-price-key="exhibition_startup" data-price="1500">
-                <td class="it">Start-Up Pavilion</td>
-                <td class="fp fx" data-base="1500" colspan="3">€1,500</td>
-                <td class="qty"><input type="number" min="0" value="0" name="qty_ex_startup" data-qty aria-label="Quantity — Start-Up Pavilion"></td>
-                <td class="rtot" data-line>€0</td>
-              </tr>
               <tr class="grp"><td colspan="6">Sponsorship <span class="grp-note">— fixed fee</span></td></tr>
               <tr data-item="Diamond Sponsor" data-fixed data-price-key="sponsor_diamond" data-price="10000">
                 <td class="it">Diamond Sponsor</td>
@@ -190,36 +184,6 @@
                 <td class="rtot" data-line>€0</td>
               </tr>
               <tr class="grp"><td colspan="6">Special Sponsorship <span class="grp-note">— fixed fee</span></td></tr>
-              <tr data-item="Keynote Session Sponsor" data-fixed data-price-key="sponsor_keynote" data-price="1500">
-                <td class="it">Keynote Session Sponsor</td>
-                <td class="fp fx" data-base="1500" colspan="3">€1,500</td>
-                <td class="qty"><input type="number" min="0" value="0" name="qty_ss_keynote" data-qty aria-label="Quantity — Keynote Session Sponsor"></td>
-                <td class="rtot" data-line>€0</td>
-              </tr>
-              <tr data-item="Plenary Session Sponsor" data-fixed data-price-key="sponsor_plenary" data-price="1500">
-                <td class="it">Plenary Session Sponsor</td>
-                <td class="fp fx" data-base="1500" colspan="3">€1,500</td>
-                <td class="qty"><input type="number" min="0" value="0" name="qty_ss_plenary" data-qty aria-label="Quantity — Plenary Session Sponsor"></td>
-                <td class="rtot" data-line>€0</td>
-              </tr>
-              <tr data-item="Advertising Sponsor" data-fixed data-price-key="sponsor_advertising" data-price="1500">
-                <td class="it">Advertising Sponsor</td>
-                <td class="fp fx" data-base="1500" colspan="3">€1,500</td>
-                <td class="qty"><input type="number" min="0" value="0" name="qty_ss_advertising" data-qty aria-label="Quantity — Advertising Sponsor"></td>
-                <td class="rtot" data-line>€0</td>
-              </tr>
-              <tr data-item="Coffee Break Sponsor" data-fixed data-price-key="sponsor_coffee" data-price="1500">
-                <td class="it">Coffee Break Sponsor</td>
-                <td class="fp fx" data-base="1500" colspan="3">€1,500</td>
-                <td class="qty"><input type="number" min="0" value="0" name="qty_ss_coffee" data-qty aria-label="Quantity — Coffee Break Sponsor"></td>
-                <td class="rtot" data-line>€0</td>
-              </tr>
-              <tr data-item="Lunch Sponsor (per day)" data-fixed data-price-key="sponsor_lunch" data-price="2500">
-                <td class="it">Lunch Sponsor <span class="text-muted">(per day)</span></td>
-                <td class="fp fx" data-base="2500" colspan="3">€2,500</td>
-                <td class="qty"><input type="number" min="0" value="0" name="qty_ss_lunch" data-qty aria-label="Quantity — Lunch Sponsor"></td>
-                <td class="rtot" data-line>€0</td>
-              </tr>
               <tr data-item="Conference Reception Sponsor" data-fixed data-price-key="sponsor_reception" data-price="3500">
                 <td class="it">Conference Reception Sponsor</td>
                 <td class="fp fx" data-base="3500" colspan="3">€3,500</td>
@@ -248,12 +212,6 @@
                 <td class="it">Delegate Kit Insert</td>
                 <td class="fp fx" data-base="500" colspan="3">€500</td>
                 <td class="qty"><input type="number" min="0" value="0" name="qty_ss_insert" data-qty aria-label="Quantity — Delegate Kit Insert"></td>
-                <td class="rtot" data-line>€0</td>
-              </tr>
-              <tr data-item="Industry Presentation" data-fixed data-price-key="sponsor_industry" data-price="1500">
-                <td class="it">Industry Presentation</td>
-                <td class="fp fx" data-base="1500" colspan="3">€1,500</td>
-                <td class="qty"><input type="number" min="0" value="0" name="qty_ss_industry" data-qty aria-label="Quantity — Industry Presentation"></td>
                 <td class="rtot" data-line>€0</td>
               </tr>
               <tr class="grp"><td colspan="6">Add-Ons <span class="grp-note">— fixed fee</span></td></tr>
@@ -392,6 +350,7 @@
   </section>
   <section class="section" id="reg-terms">
     <div class="container narrow">
+      <span id="registration-policies" aria-hidden="true"></span>
       <div class="center reveal"><span class="eyebrow">Before You Register</span><h2>What's Included &amp; Registration Policies</h2><p class="lead">Please review what your registration includes and the applicable policies.</p></div>
       <div class="policy-wrap reveal mt-2">
         <details class="policy-accordion" open>
@@ -495,7 +454,7 @@
             <p>MatAi 2027 welcomes organizations, research institutions, technology companies, publishers, and industry partners interested in supporting scientific exchange and increasing their visibility among conference participants.</p>
             <p>The following USD amounts are indicative conversions of the euro-denominated fees in the supplied sponsorship schedule. Sponsorship fees are fixed and do not have Mid-Term or On-Spot rates. Benefits, branding placements, and deliverables should be confirmed in the applicable sponsorship agreement.</p>
             <div class="table-wrap"><table class="tbl"><thead><tr><th>Sponsorship Package</th><th>Fee (USD)</th></tr></thead><tbody>
-              <tr><td>Diamond Sponsor</td><td>$8500</td></tr><tr><td>Platinum Sponsor</td><td>$7500</td></tr><tr><td>Gold Sponsor</td><td>$5500</td></tr><tr><td>Silver Sponsor</td><td>$4599</td></tr><tr><td>Bronze / Supporting Sponsor</td><td>$3999</td></tr><tr><td>Advertising Sponsor</td><td>$2,000</td></tr><tr><td>Conference Kit Sponsor</td><td>$1,500</td></tr><tr><td>Awards &amp; Young Researcher Sponsor</td><td>$1000</td></tr>
+              <tr><td>Diamond Sponsor</td><td>$8500</td></tr><tr><td>Platinum Sponsor</td><td>$7500</td></tr><tr><td>Gold Sponsor</td><td>$5500</td></tr><tr><td>Silver Sponsor</td><td>$4599</td></tr><tr><td>Bronze / Supporting Sponsor</td><td>$3999</td></tr><tr><td>Conference Kit Sponsor</td><td>$1,500</td></tr><tr><td>Awards &amp; Young Researcher Sponsor</td><td>$1000</td></tr>
             </tbody></table></div>
             <p><strong>Confirmation required:</strong> Registration8.docx describes the Diamond package source amount as “85,000” without a currency symbol and says the $7,500 figure assumes the original amount was USD 85,000. Confirm the source amount and currency before publishing.</p>
           </div>
@@ -596,7 +555,7 @@
   </div>
 
   <div id="site-footer"></div>
-  <script src="js/site.js?v=20261024-contact-us"></script>
+  <script src="js/site.js?v=20261025-registration-details-nav"></script>
   <script src="js/forms.js?v=20261020-public-refresh"></script>
   <script src="js/human-verification.js?v=20261016-color-audit"></script>
   <script src="js/register.js?v=20261024-quantity-select"></script>

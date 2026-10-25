@@ -401,7 +401,9 @@
     el("c-theme").value = s.theme || "";
     el("c-dates").value = s.dateText || "";
     el("c-city").value = s.city || "";
+    el("c-map-url").value = s.mapUrl || "";
     renderDates(c.dates || []);
+    renderHomeGallery(c.homeGallery || {});
     renderFees(c.fees || {});
     renderPeriods(c.registrationPeriods || {});
     renderFixedPrices(c.registrationPricing || {});
@@ -433,6 +435,39 @@
     el("dates-list").appendChild(box);
   });
 
+  function renderHomeGallery(gallery) {
+    gallery = gallery || {};
+    el("c-home-gallery-heading").value = gallery.heading || "";
+    var photos = Array.isArray(gallery.photos) ? gallery.photos : [];
+    el("home-gallery-photos").innerHTML = photos.map(function (photo, i) {
+      return "<div class='a-row home-gallery-admin-row' data-gallery-photo='" + i + "'>" +
+        imageUploadField("gf", photo) +
+        "<button class='a-btn ghost sm' type='button' data-remove-gallery-photo>Remove photo</button></div>";
+    }).join("");
+  }
+
+  el("add-home-gallery-photo").addEventListener("click", function () {
+    var box = document.createElement("div");
+    box.className = "a-row home-gallery-admin-row";
+    box.setAttribute("data-gallery-photo", "new");
+    box.innerHTML = imageUploadField("gf", "") +
+      "<button class='a-btn ghost sm' type='button' data-remove-gallery-photo>Remove photo</button>";
+    el("home-gallery-photos").appendChild(box);
+  });
+  el("clear-home-gallery-heading").addEventListener("click", function () {
+    el("c-home-gallery-heading").value = "";
+  });
+  el("clear-home-gallery-photos").addEventListener("click", function () {
+    el("home-gallery-photos").innerHTML = "";
+  });
+  el("home-gallery-photos").addEventListener("click", function (e) {
+    var remove = e.target.closest("[data-remove-gallery-photo]");
+    if (remove) remove.closest("[data-gallery-photo]").remove();
+    handleImageUploadEvent(e, el("home-gallery-photos"), "gf");
+  });
+  el("home-gallery-photos").addEventListener("change", function (e) {
+    handleImageUploadEvent(e, el("home-gallery-photos"), "gf");
+  });
   function renderFees(fees) {
     var head = "<tr><th>Period</th>" + FEE_CATS.map(function (c) { return "<th>" + c + "</th>"; }).join("") + "</tr>";
     var rows = FEE_PERIODS.map(function (p) {
@@ -808,12 +843,32 @@
     el("speakers-list").appendChild(speakerRow({ group: SPEAKER_GROUPS[0] }));
   });
 
+  function isGoogleMapsLocationUrl(value) {
+    try {
+      var parsed = new URL(value);
+      var host = parsed.hostname.toLowerCase();
+      return /^maps\.google\.[a-z.]+$/.test(host) ||
+        host === "maps.app.goo.gl" || (host === "goo.gl" && /^\/maps\//.test(parsed.pathname)) ||
+        ((host === "google.com" || host === "www.google.com" || /^(?:www\.)?google\.[a-z.]+$/.test(host)) &&
+          /^\/maps(?:\/|$)/.test(parsed.pathname));
+    } catch (_) { return false; }
+  }
   function saveContent() {
+    var mapUrl = el("c-map-url").value.trim();
+    if (mapUrl && !isGoogleMapsLocationUrl(mapUrl)) {
+      toast("Enter a valid Google Maps location link.", true);
+      return;
+    }
     var dates = [];
     document.querySelectorAll("#dates-list [data-date]").forEach(function (row) {
       var l = $("[data-df='label']", row).value.trim();
       var v = $("[data-df='value']", row).value.trim();
       if (l || v) dates.push({ label: l, value: v });
+    });
+    var homeGalleryPhotos = [];
+    document.querySelectorAll("#home-gallery-photos [data-gallery-photo]").forEach(function (row) {
+      var photo = $("[data-gf='photo']", row);
+      if (photo && photo.value.trim()) homeGalleryPhotos.push(photo.value.trim());
     });
     var fees = {};
     FEE_PERIODS.forEach(function (p) { fees[p] = {}; });
@@ -874,8 +929,8 @@
     });
     var payload = {
       banner: { enabled: el("c-banner-on").checked, text: el("c-banner-text").value.trim() },
-      site: { theme: el("c-theme").value.trim(), dateText: el("c-dates").value.trim(), city: el("c-city").value.trim() },
-      dates: dates, fees: fees, registrationPeriods: registrationPeriods,
+      site: { theme: el("c-theme").value.trim(), dateText: el("c-dates").value.trim(), city: el("c-city").value.trim(), mapUrl: mapUrl },
+      dates: dates, homeGallery: { heading: el("c-home-gallery-heading").value.trim(), photos: homeGalleryPhotos }, fees: fees, registrationPeriods: registrationPeriods,
       registrationPricing: {
         fixedItems: fixedItems
       },

@@ -76,6 +76,10 @@
             <label class="a-field">Location
               <input class="a-input" id="c-city" type="text">
             </label>
+            <label class="a-field">Google Maps location link
+              <input class="a-input" id="c-map-url" type="url" placeholder="https://www.google.com/maps/place/...">
+              <span class="a-muted">Paste the full Google Maps place or search link. The venue map and directions will use this location.</span>
+            </label>
           </div>
         </div>
 
@@ -87,6 +91,22 @@
           <div id="dates-list"></div>
         </div>
 
+        <div class="a-card" id="home-gallery-settings">
+          <div class="a-section-heading">
+            <div><h2>Home Page Photo Gallery</h2><p class="a-muted">Add a heading and upload photos to show a scrollable gallery immediately after Important Dates. The gallery stays hidden when no photos are added.</p></div>
+            <div class="a-action-buttons">
+              <button class="a-btn ghost sm" id="add-home-gallery-photo" type="button">Add photo</button>
+              <button class="a-btn ghost sm" id="clear-home-gallery-photos" type="button">Remove all photos</button>
+            </div>
+          </div>
+          <div class="a-row home-gallery-heading-row">
+            <label class="a-field">Gallery heading
+              <input class="a-input" id="c-home-gallery-heading" type="text" placeholder="e.g. Conference Highlights">
+            </label>
+            <button class="a-btn ghost sm" id="clear-home-gallery-heading" type="button">Remove heading</button>
+          </div>
+          <div id="home-gallery-photos"></div>
+        </div>
         <div class="a-card" id="registration-settings">
           <h2>Registration Periods &amp; Fees</h2>
           <p class="a-muted">Choose which tier is currently charged, update its public deadline, and edit category fees in EUR.</p>
@@ -181,6 +201,6 @@
     <div class="db" id="d-body"></div>
   </aside>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="js/admin.js?v=20261024-undo-hero-gallery"></script>
+  <script src="js/admin.js?v=20261025-home-gallery-controls"></script>
 </body>
 </html>

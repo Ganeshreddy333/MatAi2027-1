@@ -15,11 +15,6 @@
       { id: "brochure-glance", label: "MatAi 2027 at a Glance" },
       { id: "brochure-details", label: "Conference Brochure" }
     ],
-    "registration.html": [
-      { id: "registration-steps", label: "Registration Steps" },
-      { id: "registration-details", label: "Registration" },
-      { id: "registration-policies", label: "What's Included & Registration Policies" }
-    ],
     "speakers.html": [
       { id: "speaker-overview", label: "Conference Speaker Overview" },
       { id: "keynote-speakers", label: "Keynote Speakers" },
@@ -52,9 +47,9 @@
       { id: "invited-speaker", label: "Invited Speaker" }
     ],
     "abstracts.html": [
+      { id: "abstract-sessions", label: "Sessions" },
       { id: "abstract-guidelines", label: "Abstract Guidelines" },
-      { id: "abstract-submission", label: "Abstract Submission" },
-      { id: "abstract-sessions", label: "Sessions" }
+      { id: "abstract-submission", label: "Abstract Submission" }
     ],
     "general-information.html": [
       { id: "abstract-submission-guidelines", label: "ABSTRACT SUBMISSION GUIDELINES" },
@@ -107,7 +102,6 @@
     },
     { href: "venue.html", label: "Venue" },
     { href: "general-information.html", label: "General Information", drop: pageDrop("general-information.html") },
-    { href: "registration.html", label: "Registration", drop: pageDrop("registration.html") },
     { href: "contact-us.html", label: "Contact Us" }
   ];
 
@@ -148,7 +142,7 @@
         '</a>' +
         '<nav aria-label="Primary"><ul class="nav-links" id="navLinks">' + links + '</ul></nav>' +
         '<div class="nav-cta">' +
-          '<a class="btn btn-primary btn-sm" href="registration.html">Register Now</a>' +
+          '<a class="btn btn-primary btn-sm" href="registration.html#registration-details">Register Now</a>' +
           '<button class="nav-toggle" id="navToggle" type="button" aria-label="Open navigation menu" aria-controls="navLinks" aria-expanded="false"><span></span><span></span><span></span></button>' +
         '</div>' +
       '</div>' +
@@ -549,7 +543,7 @@
   /* ---------- Load public content loader once ---------- */
   function ensureContentScript() {
     if (window.MATAI_CONTENT || document.querySelector('script[data-matai-content]')) return;
-    var src = SITE_SRC.replace(/site\.js.*$/, "content.js?v=20261024-remove-saved-hero-gallery");
+    var src = SITE_SRC.replace(/site\.js.*$/, "content.js?v=20261025-home-gallery-controls");
     var s = document.createElement("script");
     s.async = false;
     s.src = src; s.setAttribute("data-matai-content", "1");

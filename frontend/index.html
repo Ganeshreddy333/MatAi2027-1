@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261024-undo-hero-gallery">
+  <link rel="stylesheet" href="css/styles.css?v=20261025-registration-details-nav">
 </head>
 <body>
   <div id="site-header"></div>
@@ -28,7 +28,7 @@
         <div class="btn-row hero-cta center">
           <a class="btn btn-gold" href="abstracts.html#abstract-submission"><span class="ic">✈️</span> Submit Your Abstract Now</a>
           <a class="btn btn-ghost" href="brochure.html"><span class="ic">⬇️</span> Brochure</a>
-          <a class="btn btn-primary" href="registration.html"><span class="ic">🎫</span> Register Now</a>
+          <a class="btn btn-primary" href="registration.html#register-form"><span class="ic">🎫</span> Register Now</a>
         </div>
       </div>
       <div class="hero-badges">
@@ -181,6 +181,16 @@
       </div>
   </section>
 
+  <section class="section home-photo-gallery" id="home-photo-gallery" aria-labelledby="home-photo-gallery-heading" hidden>
+    <div class="container">
+      <div class="center reveal"><span class="eyebrow">MatAi 2027</span><h2 id="home-photo-gallery-heading"></h2></div>
+      <div class="home-gallery-shell mt-2">
+        <button class="home-gallery-arrow prev" type="button" data-home-gallery-prev aria-label="Scroll photos left">‹</button>
+        <div class="home-gallery-track" data-home-gallery-track aria-label="Conference photos" tabindex="0"></div>
+        <button class="home-gallery-arrow next" type="button" data-home-gallery-next aria-label="Scroll photos right">›</button>
+      </div>
+    </div>
+  </section>
   <section class="section" id="agenda">
     <div class="container">
       <div class="center reveal agenda-title"><span class="eyebrow">Conference Agenda</span><h2>Conference Schedule</h2></div>
@@ -278,6 +288,6 @@
   </section>
 
   <div id="site-footer"></div>
-  <script src="js/site.js?v=20261024-agenda-tab-fix-2"></script>
+  <script src="js/site.js?v=20261025-registration-details-nav"></script>
 </body>
 </html>
