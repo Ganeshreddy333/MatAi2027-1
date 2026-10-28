@@ -69,6 +69,32 @@
     return data;
   }
 
+  function checkoutMatchesQuote(order, data, minorUnits) {
+    if (!order || order.currency !== data.currency) return false;
+    var quotedAmount = Number(data.totalPrice);
+    var orderAmount = Number(order.amount);
+    if (!Number.isFinite(quotedAmount) || !Number.isFinite(orderAmount)) return false;
+    var returnedCents = minorUnits ? Math.round(orderAmount) : Math.round(orderAmount * 100);
+    return returnedCents === Math.round(quotedAmount * 100);
+  }
+
+  function paymentMessage(result, prefix) {
+    var amount = Number(result.amount);
+    var displayAmount = "";
+    if (Number.isFinite(amount) && result.currency) {
+      try {
+        displayAmount = new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: result.currency
+        }).format(amount);
+      } catch (_) {
+        displayAmount = result.currency + " " + amount.toFixed(2);
+      }
+    }
+    return prefix + (displayAmount ? " Transaction: " + displayAmount + "." : "") +
+      " Registration reference: " + result.reference + ".";
+  }
+
   function setProviderAvailability(provider, enabled) {
     var label = {
       stripe: "Stripe / Card Payment",
@@ -117,6 +143,9 @@
 
   function startRazorpay(data, button, oldText) {
     request("/api/checkout/razorpay/order", data).then(function (order) {
+      if (!checkoutMatchesQuote(order, data, true)) {
+        throw new Error("Razorpay checkout amount or currency did not match your confirmed registration summary.");
+      }
       return loadRazorpayScript().then(function () {
         var checkout = new window.Razorpay({
           key: order.keyId,
@@ -132,10 +161,10 @@
             request("/api/checkout/razorpay/verify", payment).then(function (result) {
               if (result.paid) {
                 form.reset();
-                showStatus("ok", "Payment received. Your registration reference is " + result.reference + ".");
+                showStatus("ok", paymentMessage(result, "Payment received."));
               } else {
-                showStatus("info", "Razorpay authorized the payment; confirmation is pending. Registration reference: " +
-                  result.reference + ". The organizers will confirm once capture completes.");
+                showStatus("info", paymentMessage(result, "Razorpay authorized the payment; confirmation is pending.") +
+                  " The organizers will confirm once capture completes.");
               }
             }).catch(function (error) {
               showStatus("err", error.message || "Payment verification is pending. Contact the organizers if you were charged.");
@@ -182,6 +211,9 @@
     var data = formData();
     if (gateway === "PayPal") {
       request("/api/checkout/paypal/order", data).then(function (order) {
+        if (!checkoutMatchesQuote(order, data, false)) {
+          throw new Error("PayPal checkout amount or currency did not match your confirmed registration summary.");
+        }
         var approvalUrl = new URL(order.approvalUrl);
         if (approvalUrl.protocol !== "https:" || !/(^|\.)paypal\.com$/i.test(approvalUrl.hostname)) {
           throw new Error("PayPal returned an invalid approval URL.");
@@ -252,8 +284,8 @@
         return result;
       });
     }).then(function (result) {
-      if (result.paid) showStatus("ok", "Payment received. Your registration reference is " + result.reference + ".");
-      else showStatus("info", "Your payment is being confirmed. Registration reference: " + result.reference + ".");
+      if (result.paid) showStatus("ok", paymentMessage(result, "Payment received."));
+      else showStatus("info", paymentMessage(result, "Your payment is being confirmed."));
     }).catch(function (error) {
       showStatus("err", error.message || "We could not verify payment status. Please contact the organizers.");
     });
@@ -266,9 +298,9 @@
     showStatus("info", "Confirming your PayPal payment…");
     request("/api/checkout/paypal/capture", { orderId: paypalOrderId }).then(function (result) {
       if (result.paid) {
-        showStatus("ok", "Payment received. Your registration reference is " + result.reference + ".");
+        showStatus("ok", paymentMessage(result, "Payment received."));
       } else {
-        showStatus("info", result.error || "PayPal payment is still pending. Registration reference: " + result.reference + ".");
+        showStatus("info", paymentMessage(result, result.error || "PayPal payment is still pending."));
       }
     }).catch(function (error) {
       showStatus("err", error.message || "We could not confirm PayPal payment. Contact the organizers if you were charged.");

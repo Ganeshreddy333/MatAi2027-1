@@ -18,12 +18,15 @@
   var TAX_RATE = 0.05;
   var DISCOUNT_CODES = {};
 
-  // Indicative display currencies. Registration is billed in EUR (base = 1).
-  var CUR = {
-    EUR: { sym: "€", rate: 1 },
-    USD: { sym: "$", rate: 1.08 },
-    GBP: { sym: "£", rate: 0.85 }
-  };
+  // EUR is the only transaction currency currently configured for checkout.
+  var CUR = { EUR: { sym: "€", rate: 1 } };
+  var currencySelect = form.querySelector('select[name="currency"]');
+  var originalCurrencyInput = id("original-selected-currency");
+  var currencyFallbackInput = id("currency-fallback-confirmed");
+  var currencyFallbackDialog = id("currency-fallback-dialog");
+  var currencyFallbackMessage = id("currency-fallback-message");
+  var currencySelectionNote = id("currency-selection-note");
+  var pendingFallbackCurrency = "";
 
   function id(x) { return document.getElementById(x); }
   function num(el) { var v = parseInt(el && el.value, 10); return (isNaN(v) || v < 0) ? 0 : v; }
@@ -40,6 +43,19 @@
       minimumFractionDigits: fractionDigits,
       maximumFractionDigits: 2
     });
+  }
+
+  function displayCurrencyAmount(amount, currency) {
+    try {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(amount);
+    } catch (_) {
+      return currency + " " + Number(amount).toFixed(2);
+    }
   }
 
   var rows = Array.prototype.slice.call(form.querySelectorAll("tr[data-item]"));
@@ -77,6 +93,88 @@
     "On-Spot": { label: "Late Registration", deadline: "To Be Announced" }
   };
   var lastRegistrationDate = new Date().toISOString().slice(0, 10);
+
+  function resetCurrencyFallback() {
+    if (originalCurrencyInput) originalCurrencyInput.value = "EUR";
+    if (currencyFallbackInput) currencyFallbackInput.value = "false";
+  }
+
+  function handleCurrencySelection() {
+    if (!currencySelect || currencySelect.value === "EUR") {
+      resetCurrencyFallback();
+      if (currencySelectionNote) {
+        currencySelectionNote.textContent = "EUR is the only configured transaction currency. Other currencies are unavailable for checkout; selecting one will ask you to confirm a switch to EUR. No exchange-rate estimate is applied.";
+      }
+      return;
+    }
+
+    pendingFallbackCurrency = currencySelect.value;
+    var requestedCurrency = pendingFallbackCurrency;
+    currencySelect.value = "EUR";
+    var amount = totalEur ? Number(totalEur.value) : 0;
+    if (currencyFallbackMessage) {
+      currencyFallbackMessage.textContent = requestedCurrency +
+        " cannot be used for checkout. The default transaction currency is EUR. " +
+        "Continue with the recalculated total of " + displayCurrencyAmount(amount, "EUR") +
+        " EUR? No exchange-rate conversion will be applied.";
+    }
+    if (currencyFallbackDialog && typeof currencyFallbackDialog.showModal === "function") {
+      currencyFallbackDialog.showModal();
+    } else if (window.confirm(currencyFallbackMessage ? currencyFallbackMessage.textContent : "Continue in EUR?")) {
+      confirmCurrencyFallback();
+    } else {
+      cancelCurrencyFallback();
+    }
+  }
+
+  function confirmCurrencyFallback() {
+    if (!pendingFallbackCurrency) return;
+    if (originalCurrencyInput) originalCurrencyInput.value = pendingFallbackCurrency;
+    if (currencyFallbackInput) currencyFallbackInput.value = "true";
+    if (currencySelectionNote) {
+      var amount = totalEur ? Number(totalEur.value) : 0;
+      currencySelectionNote.textContent = "You confirmed payment in EUR instead of " + pendingFallbackCurrency +
+        ". The payable amount is " + displayCurrencyAmount(amount, "EUR") +
+        " EUR. This amount and currency will be checked again before checkout.";
+    }
+    pendingFallbackCurrency = "";
+    recalc();
+  }
+
+  function cancelCurrencyFallback() {
+    pendingFallbackCurrency = "";
+    resetCurrencyFallback();
+    if (currencySelectionNote) {
+      currencySelectionNote.textContent = "The selected currency is not available for checkout. EUR remains selected; choose another payment method or continue in EUR.";
+    }
+  }
+
+  if (currencySelect) {
+    currencySelect.addEventListener("change", handleCurrencySelection);
+  }
+  if (currencyFallbackDialog) {
+    currencyFallbackDialog.addEventListener("cancel", function (event) {
+      event.preventDefault();
+      currencyFallbackDialog.close("cancel");
+      cancelCurrencyFallback();
+    });
+  }
+  var fallbackConfirmButton = currencyFallbackDialog &&
+    currencyFallbackDialog.querySelector("[data-currency-fallback-confirm]");
+  var fallbackCancelButton = currencyFallbackDialog &&
+    currencyFallbackDialog.querySelector("[data-currency-fallback-cancel]");
+  if (fallbackConfirmButton) {
+    fallbackConfirmButton.addEventListener("click", function () {
+      if (currencyFallbackDialog.open) currencyFallbackDialog.close("confirm");
+      confirmCurrencyFallback();
+    });
+  }
+  if (fallbackCancelButton) {
+    fallbackCancelButton.addEventListener("click", function () {
+      if (currencyFallbackDialog.open) currencyFallbackDialog.close("cancel");
+      cancelCurrencyFallback();
+    });
+  }
 
   function escapeHtml(value) {
     return String(value == null ? "" : value).replace(/[&<>\"]/g, function (c) {
@@ -527,6 +625,10 @@
           return result;
         });
       }).then(function (result) {
+        if (result.currency !== payload.currency ||
+            Math.round(Number(result.amount) * 100) !== Math.round(Number(payload.totalPrice) * 100)) {
+          throw new Error("The confirmed checkout amount or currency did not match your registration summary.");
+        }
         var checkoutUrl = new URL(result.url, location.href);
         if (checkoutUrl.origin !== "https://checkout.stripe.com") throw new Error("Stripe returned an invalid checkout URL.");
         location.assign(checkoutUrl.href);
@@ -544,6 +646,11 @@
       if (billingGrid) billingGrid.classList.remove("locked");
       activeDiscount = 0;
       activeCoupon = "";
+      pendingFallbackCurrency = "";
+      resetCurrencyFallback();
+      if (currencySelectionNote) {
+        currencySelectionNote.textContent = "EUR is the only configured transaction currency. Other currencies are unavailable for checkout; selecting one will ask you to confirm a switch to EUR. No exchange-rate estimate is applied.";
+      }
       syncPaymentChoice();
       if (couponMsg) couponMsg.textContent = "Enter a conference coupon code if one has been provided.";
       recalc();

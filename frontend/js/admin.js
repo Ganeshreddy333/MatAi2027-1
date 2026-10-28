@@ -57,6 +57,17 @@
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function d(r, k) { return (r.data && r.data[k] != null) ? r.data[k] : ""; }
   function fmt(iso) { if (!iso) return ""; var dt = new Date(iso); return isNaN(dt) ? "" : dt.toLocaleString(); }
+  function money(amount, currency) {
+    currency = /^[A-Z]{3}$/.test(currency || "") ? currency : "EUR";
+    try {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency", currency: currency,
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+      }).format(Number(amount) || 0) + " " + currency;
+    } catch (_) {
+      return currency + " " + (Number(amount) || 0).toFixed(2);
+    }
+  }
 
   function api(url, opts) {
     opts = opts || {};
@@ -103,7 +114,7 @@
     var c = s.counts || {};
     var cards = [
       { b: c.register || 0, l: "Registrations", a: false },
-      { b: "€" + (s.revenue || 0).toLocaleString("en-US"), l: "Revenue (Paid)", a: true },
+      { b: money(s.revenue || 0, s.revenueCurrency || "EUR"), l: "Revenue (Paid)", a: true },
       { b: s.pending || 0, l: "Payments Pending", a: false },
       { b: c.abstract || 0, l: "Abstracts", a: false },
       { b: (c.contact || 0) + " / " + (c.brochure || 0), l: "Contact / Brochure", a: false }
@@ -176,7 +187,7 @@
       { h: "Name", f: function (r) { return esc(d(r, "fullName")); } },
       { h: "Email", f: function (r) { return esc(d(r, "email")); } },
       { h: "Category", f: function (r) { return esc(d(r, "category")) + '<div class="a-sub">' + esc(d(r, "period")) + "</div>"; } },
-      { h: "Amount", f: function (r) { return "€" + (r.amount || 0); } },
+      { h: "Amount", f: function (r) { return money(r.amount, r.amountCurrency || r.transactionCurrency || "EUR"); } },
       { h: "Payment", f: function (r) { return paySelect(r); } },
       { h: "Received", f: function (r) { return '<span class="a-sub">' + fmt(r.receivedAt) + "</span>"; } }
     ],
@@ -238,7 +249,7 @@
       { h: "Name / Title", f: function (r) { return esc(d(r, "fullName") || d(r, "authorName") || d(r, "title")); } },
       { h: "Email", f: function (r) { return esc(d(r, "email")); } },
       { h: "Status", f: function (r) { return r.kind === "register" ? paySelect(r) : statusPill(r); } },
-      { h: "Amount", f: function (r) { return r.kind === "register" ? "€" + Number(r.amount || 0).toFixed(2) : "—"; } },
+      { h: "Amount", f: function (r) { return r.kind === "register" ? money(r.amount, r.amountCurrency || r.transactionCurrency || "EUR") : "—"; } },
       { h: "Received", f: function (r) { return '<span class="a-sub">' + fmt(r.receivedAt) + "</span>"; } }
     ] : COLS[kind];
     if (!cols) return;
@@ -312,7 +323,8 @@
         ctrls += field("Manual payment verification", "<div class='a-readonly'>" +
           esc(rec.paymentVerification.outcome) + " · " + esc(rec.paymentVerification.evidence) + "</div>");
       }
-      ctrls += field("Payment amount (€)", "<div class='a-readonly'>" + Number(rec.amount || 0).toFixed(2) + "</div>");
+      ctrls += field("Payment amount (" + esc(rec.amountCurrency || rec.transactionCurrency || "EUR") + ")",
+        "<div class='a-readonly'>" + esc(money(rec.amount, rec.amountCurrency || rec.transactionCurrency || "EUR")) + "</div>");
     }
     ctrls += field("Review status", selectHtml("d-status", STATUS, rec.status || "New"));
     ctrls += field("Admin notes", "<textarea class='a-input' id='d-notes'>" + esc(rec.adminNotes || "") + "</textarea>");

@@ -90,23 +90,39 @@ final class Application
             Security::json(['ok' => true, 'content' => $this->store->content()]);
         }
         if ($method === 'GET' && $path === '/api/checkout/config') {
+            $stripeEnabled = PaymentConfiguration::stripeEnabled(
+                $this->config->get('STRIPE_SECRET_KEY'),
+                $this->config->get('STRIPE_EUR_CHECKOUT_VERIFIED')
+            );
+            $paypalEnabled = PaymentConfiguration::paypalEnabled(
+                $this->config->get('PAYPAL_CLIENT_ID'),
+                $this->config->get('PAYPAL_CLIENT_SECRET'),
+                $this->config->get('PAYPAL_EUR_CHECKOUT_VERIFIED')
+            );
+            $razorpayEnabled = PaymentConfiguration::razorpayEnabled(
+                $this->config->get('RAZORPAY_KEY_ID'),
+                $this->config->get('RAZORPAY_KEY_SECRET'),
+                $this->config->get('RAZORPAY_CURRENCY', 'EUR'),
+                $this->config->get('RAZORPAY_EUR_CHECKOUT_VERIFIED')
+            );
             Security::json([
                 'ok' => true,
-                'stripe' => ['enabled' => $this->config->get('STRIPE_SECRET_KEY') !== '', 'currency' => 'EUR'],
+                'stripe' => [
+                    'enabled' => $stripeEnabled,
+                    'currency' => $stripeEnabled ? 'EUR' : null,
+                    'supportedCurrencies' => $stripeEnabled ? ['EUR'] : [],
+                ],
                 'paypal' => [
-                    'enabled' => $this->config->get('PAYPAL_CLIENT_ID') !== ''
-                        && $this->config->get('PAYPAL_CLIENT_SECRET') !== '',
+                    'enabled' => $paypalEnabled,
                     'mode' => $this->config->get('PAYPAL_MODE', 'sandbox'),
-                    'currency' => 'EUR',
+                    'currency' => $paypalEnabled ? 'EUR' : null,
+                    'supportedCurrencies' => $paypalEnabled ? ['EUR'] : [],
                 ],
                 'razorpay' => [
-                    'enabled' => PaymentConfiguration::razorpayEnabled(
-                        $this->config->get('RAZORPAY_KEY_ID'),
-                        $this->config->get('RAZORPAY_KEY_SECRET'),
-                        $this->config->get('RAZORPAY_CURRENCY', 'EUR')
-                    ),
-                    'keyId' => $this->config->get('RAZORPAY_KEY_ID'),
-                    'currency' => $this->config->get('RAZORPAY_CURRENCY', 'EUR'),
+                    'enabled' => $razorpayEnabled,
+                    'keyId' => $razorpayEnabled ? $this->config->get('RAZORPAY_KEY_ID') : '',
+                    'currency' => $razorpayEnabled ? 'EUR' : null,
+                    'supportedCurrencies' => $razorpayEnabled ? ['EUR'] : [],
                 ],
             ]);
         }
@@ -134,7 +150,15 @@ final class Application
             $this->stripeStatus($match[1]);
         }
         if ($method === 'GET' && $path === '/api/checkout/stripe/config') {
-            Security::json(['ok' => true, 'enabled' => $this->config->get('STRIPE_SECRET_KEY') !== '', 'currency' => 'EUR']);
+            $enabled = PaymentConfiguration::stripeEnabled(
+                $this->config->get('STRIPE_SECRET_KEY'),
+                $this->config->get('STRIPE_EUR_CHECKOUT_VERIFIED')
+            );
+            Security::json([
+                'ok' => true, 'enabled' => $enabled,
+                'currency' => $enabled ? 'EUR' : null,
+                'supportedCurrencies' => $enabled ? ['EUR'] : [],
+            ]);
         }
         if ($method === 'POST' && $path === '/api/checkout/stripe') {
             $this->createStripeCheckout($this->body());
@@ -210,6 +234,9 @@ final class Application
         if ($registration !== null) {
             $record['paymentStatus'] = 'Pending';
             $record['amount'] = $registration['amount'];
+            $record['amountCurrency'] = $registration['transactionCurrency'];
+            $record['preferredCurrency'] = $registration['preferredCurrency'];
+            $record['transactionCurrency'] = $registration['transactionCurrency'];
         }
         $this->store->mutate($kind, static function (array &$records) use ($record): void {
             $records[] = $record;
@@ -292,7 +319,7 @@ final class Application
             }
             usort($recent, static fn (array $a, array $b): int => strcmp((string) $b['receivedAt'], (string) $a['receivedAt']));
             Security::json(['ok' => true, 'stats' => [
-                'counts' => $counts, 'revenue' => $revenue, 'pending' => $pending, 'paid' => $paid,
+                'counts' => $counts, 'revenue' => $revenue, 'revenueCurrency' => 'EUR', 'pending' => $pending, 'paid' => $paid,
                 'recent' => array_slice($recent, 0, 10),
             ]]);
         }
@@ -397,7 +424,8 @@ final class Application
                         $financialFields = [
                             'period', 'participantCount', 'category', 'selectedItems', 'totalPrice',
                             'totalPriceEUR', 'taxRate', 'taxAmount', 'paymentGateway', 'paymentMethod',
-                            'couponCode',
+                            'couponCode', 'currency', 'preferredCurrency', 'transactionCurrency',
+                            'currencyFallbackConfirmed', 'originalSelectedCurrency',
                         ];
                         foreach ($body['data'] as $field => $value) {
                             if (!in_array($field, $financialFields, true) && !str_starts_with((string) $field, 'qty_')) {
@@ -495,6 +523,9 @@ final class Application
                 'status' => $record['status'] ?? '',
                 'paymentStatus' => $record['paymentStatus'] ?? '',
                 'amount' => $record['amount'] ?? '',
+                'amountCurrency' => $record['amountCurrency'] ?? $record['transactionCurrency'] ?? '',
+                'preferredCurrency' => $record['preferredCurrency'] ?? '',
+                'transactionCurrency' => $record['transactionCurrency'] ?? '',
                 'adminNotes' => $record['adminNotes'] ?? '',
             ], is_array($record['data'] ?? null) ? $record['data'] : []);
         }
@@ -590,8 +621,13 @@ final class Application
             Security::json(['ok' => false, 'error' => 'Registration not found.'], 404);
         }
         $paid = ($session['payment_status'] ?? '') === 'paid';
-        if ($paid && (strtolower((string) ($session['currency'] ?? '')) !== 'eur'
-            || (int) ($session['amount_total'] ?? -1) !== (int) round((float) $record['amount'] * 100))) {
+        $expectedCurrency = $record['transactionCurrency'] ?? $record['amountCurrency'] ?? CurrencyPolicy::BASE_CURRENCY;
+        if ($paid && !CurrencyPolicy::paymentMatches(
+            $record['amount'] ?? null,
+            $expectedCurrency,
+            (int) ($session['amount_total'] ?? -1) / 100,
+            (string) ($session['currency'] ?? '')
+        )) {
             OperationalLogger::event('error', 'stripe_payment_amount_or_currency_mismatch');
             Security::json(['ok' => false, 'error' => 'Payment details did not match this registration.'], 409);
         }
@@ -605,14 +641,16 @@ final class Application
             'paid' => $paid,
             'paymentStatus' => $paid ? 'Paid'
                 : (($session['status'] ?? '') === 'expired' ? 'Cancelled' : 'Pending'),
+            'amount' => $record['amount'],
+            'currency' => $expectedCurrency,
         ]);
     }
 
     private function createStripeCheckout(array $body): never
     {
         $secret = $this->config->get('STRIPE_SECRET_KEY');
-        if ($secret === '') {
-            Security::json(['ok' => false, 'error' => 'Stripe checkout is not configured.'], 503);
+        if (!PaymentConfiguration::stripeEnabled($secret, $this->config->get('STRIPE_EUR_CHECKOUT_VERIFIED'))) {
+            Security::json(['ok' => false, 'error' => 'Stripe checkout is not enabled. The merchant must verify EUR checkout before it can be used.'], 503);
         }
         $registration = $this->registrations->prepare($body);
         if (($registration['data']['paymentGateway'] ?? '') !== 'Stripe / Card Payment') {
@@ -635,7 +673,7 @@ final class Application
             'customer_email' => $registration['data']['email'],
             'client_reference_id' => $reference,
             'metadata[reference]' => $reference,
-            'line_items[0][price_data][currency]' => 'eur',
+            'line_items[0][price_data][currency]' => strtolower($registration['transactionCurrency']),
             'line_items[0][price_data][product_data][name]' => 'MatAi 2027 Registration',
             'line_items[0][price_data][product_data][description]' => mb_substr($description, 0, 450),
             'line_items[0][price_data][unit_amount]' => (string) $registration['totalCents'],
@@ -645,15 +683,31 @@ final class Application
             'Authorization: Bearer ' . $secret,
             'Content-Type: application/x-www-form-urlencoded',
         ], http_build_query($params));
-        if (empty($session['id']) || empty($session['url'])) {
-            throw new RuntimeException('Stripe did not return a checkout URL.');
+        if (empty($session['id']) || empty($session['url'])
+            || !CurrencyPolicy::paymentMatches(
+                $registration['amount'],
+                $registration['transactionCurrency'],
+                (int) ($session['amount_total'] ?? -1) / 100,
+                (string) ($session['currency'] ?? '')
+            )) {
+            throw new RuntimeException('Stripe checkout amount or currency did not match the confirmed registration.');
         }
         $this->saveRegistration($reference, $registration, ['stripeCheckoutSessionId' => $session['id']]);
-        Security::json(['ok' => true, 'reference' => $reference, 'url' => $session['url'], 'amount' => $registration['amount']], 201);
+        Security::json([
+            'ok' => true, 'reference' => $reference, 'url' => $session['url'],
+            'amount' => $registration['amount'], 'currency' => $registration['transactionCurrency'],
+        ], 201);
     }
 
     private function createPayPalOrder(array $body): never
     {
+        if (!PaymentConfiguration::paypalEnabled(
+            $this->config->get('PAYPAL_CLIENT_ID'),
+            $this->config->get('PAYPAL_CLIENT_SECRET'),
+            $this->config->get('PAYPAL_EUR_CHECKOUT_VERIFIED')
+        )) {
+            Security::json(['ok' => false, 'error' => 'PayPal checkout is not enabled. The merchant must verify EUR checkout before it can be used.'], 503);
+        }
         $registration = $this->registrations->prepare($body);
         if (($registration['data']['paymentGateway'] ?? '') !== 'PayPal') {
             Security::json(['ok' => false, 'error' => 'Select PayPal to continue.'], 400);
@@ -665,7 +719,10 @@ final class Application
                 'reference_id' => $reference,
                 'custom_id' => $reference,
                 'description' => mb_substr($registration['data']['selectedItems'], 0, 120),
-                'amount' => ['currency_code' => 'EUR', 'value' => number_format($registration['amount'], 2, '.', '')],
+                'amount' => [
+                    'currency_code' => $registration['transactionCurrency'],
+                    'value' => number_format($registration['amount'], 2, '.', ''),
+                ],
             ]],
             'payment_source' => ['paypal' => ['experience_context' => [
                 'brand_name' => 'MatAi 2027',
@@ -681,13 +738,21 @@ final class Application
                 break;
             }
         }
-        if (empty($order['id']) || !$this->isPaypalUrl($approval)) {
-            throw new RuntimeException('PayPal did not return a valid approval link.');
+        $purchase = $this->paypalPurchase($order, $reference);
+        if (empty($order['id']) || !$this->isPaypalUrl($approval) || $purchase === null
+            || !CurrencyPolicy::paymentMatches(
+                $registration['amount'],
+                $registration['transactionCurrency'],
+                $purchase['amount']['value'] ?? null,
+                $purchase['amount']['currency_code'] ?? ''
+            )) {
+            throw new RuntimeException('PayPal order amount or currency did not match the confirmed registration.');
         }
         $this->saveRegistration($reference, $registration, ['paypalOrderId' => $order['id']]);
         Security::json([
             'ok' => true, 'reference' => $reference, 'orderId' => $order['id'],
             'approvalUrl' => $approval, 'amount' => $registration['amount'],
+            'currency' => $registration['transactionCurrency'],
         ], 201);
     }
 
@@ -702,12 +767,20 @@ final class Application
             Security::json(['ok' => false, 'error' => 'Registration not found for this PayPal order.'], 404);
         }
         if (($record['paymentStatus'] ?? '') === 'Paid') {
-            Security::json(['ok' => true, 'paid' => true, 'reference' => $record['reference']]);
+            Security::json([
+                'ok' => true, 'paid' => true, 'reference' => $record['reference'],
+                'amount' => $record['amount'], 'currency' => $record['transactionCurrency'] ?? $record['amountCurrency'] ?? CurrencyPolicy::BASE_CURRENCY,
+            ]);
         }
         $order = $this->paypalRequest('/v2/checkout/orders/' . rawurlencode($orderId));
         $purchase = $this->paypalPurchase($order, $record['reference']);
-        if ($purchase === null || ($purchase['amount']['currency_code'] ?? '') !== 'EUR'
-            || round((float) ($purchase['amount']['value'] ?? 0) * 100) !== round((float) $record['amount'] * 100)) {
+        $expectedCurrency = $record['transactionCurrency'] ?? $record['amountCurrency'] ?? CurrencyPolicy::BASE_CURRENCY;
+        if ($purchase === null || !CurrencyPolicy::paymentMatches(
+            $record['amount'] ?? null,
+            $expectedCurrency,
+            $purchase['amount']['value'] ?? null,
+            $purchase['amount']['currency_code'] ?? ''
+        )) {
             OperationalLogger::event('error', 'paypal_payment_mismatch');
             Security::json(['ok' => false, 'error' => 'PayPal order amount or registration reference did not match.'], 400);
         }
@@ -719,14 +792,25 @@ final class Application
         $captures = $purchase['payments']['captures'] ?? [];
         foreach ($captures as $capture) {
             if (($capture['status'] ?? '') === 'COMPLETED'
-                && ($capture['amount']['currency_code'] ?? '') === 'EUR'
-                && round((float) ($capture['amount']['value'] ?? 0) * 100) === round((float) $record['amount'] * 100)) {
+                && CurrencyPolicy::paymentMatches(
+                    $record['amount'] ?? null,
+                    $expectedCurrency,
+                    $capture['amount']['value'] ?? null,
+                    $capture['amount']['currency_code'] ?? ''
+                )) {
                 $this->setPayment($record['reference'], 'Paid', ['paypalCaptureId' => $capture['id'] ?? '']);
-                Security::json(['ok' => true, 'paid' => true, 'reference' => $record['reference']]);
+                Security::json([
+                    'ok' => true, 'paid' => true, 'reference' => $record['reference'],
+                    'amount' => $record['amount'], 'currency' => $expectedCurrency,
+                ]);
             }
         }
         OperationalLogger::event('warning', 'paypal_capture_not_completed');
-        Security::json(['ok' => true, 'paid' => false, 'reference' => $record['reference'], 'error' => 'PayPal has not confirmed the payment yet.'], 409);
+        Security::json([
+            'ok' => true, 'paid' => false, 'reference' => $record['reference'],
+            'amount' => $record['amount'], 'currency' => $expectedCurrency,
+            'error' => 'PayPal has not confirmed the payment yet.',
+        ], 409);
     }
 
     private function createRazorpayOrder(array $body): never
@@ -734,8 +818,10 @@ final class Application
         $key = $this->config->get('RAZORPAY_KEY_ID');
         $secret = $this->config->get('RAZORPAY_KEY_SECRET');
         $currency = $this->config->get('RAZORPAY_CURRENCY', 'EUR');
-        if (!PaymentConfiguration::razorpayEnabled($key, $secret, $currency)) {
-            Security::json(['ok' => false, 'error' => 'Razorpay checkout requires credentials and EUR currency configuration.'], 503);
+        if (!PaymentConfiguration::razorpayEnabled(
+            $key, $secret, $currency, $this->config->get('RAZORPAY_EUR_CHECKOUT_VERIFIED')
+        )) {
+            Security::json(['ok' => false, 'error' => 'Razorpay checkout is not enabled. The merchant must verify EUR checkout before it can be used.'], 503);
         }
         $registration = $this->registrations->prepare($body);
         if (($registration['data']['paymentGateway'] ?? '') !== 'Razorpay') {
@@ -750,13 +836,19 @@ final class Application
             'amount' => $amount, 'currency' => $currency, 'receipt' => $reference,
             'notes' => ['reference' => $reference, 'registration' => 'MatAi 2027'],
         ], 'POST');
-        if (empty($order['id']) || ($order['currency'] ?? '') !== $currency || (int) ($order['amount'] ?? 0) !== $amount) {
+        if (empty($order['id']) || !CurrencyPolicy::paymentMatches(
+            $registration['amount'],
+            $registration['transactionCurrency'],
+            (int) ($order['amount'] ?? -1) / 100,
+            (string) ($order['currency'] ?? '')
+        )) {
             throw new RuntimeException('Razorpay order details did not match the requested amount.');
         }
         $this->saveRegistration($reference, $registration, ['razorpayOrderId' => $order['id'], 'razorpayCurrency' => $currency]);
         Security::json([
             'ok' => true, 'reference' => $reference, 'orderId' => $order['id'], 'keyId' => $key,
-            'amount' => $amount, 'currency' => $currency, 'displayAmount' => $registration['amount'],
+            'amount' => $amount, 'currency' => $registration['transactionCurrency'],
+            'displayAmount' => $registration['amount'],
         ], 201);
     }
 
@@ -779,22 +871,37 @@ final class Application
             Security::json(['ok' => false, 'error' => 'Registration not found for this Razorpay order.'], 404);
         }
         if (($record['paymentStatus'] ?? '') === 'Paid') {
-            Security::json(['ok' => true, 'paid' => true, 'reference' => $record['reference']]);
+            Security::json([
+                'ok' => true, 'paid' => true, 'reference' => $record['reference'],
+                'amount' => $record['amount'],
+                'currency' => $record['transactionCurrency'] ?? $record['razorpayCurrency'] ?? $record['amountCurrency'] ?? CurrencyPolicy::BASE_CURRENCY,
+            ]);
         }
         $payment = $this->razorpayRequest('payments/' . rawurlencode($paymentId));
+        $expectedCurrency = $record['transactionCurrency'] ?? $record['razorpayCurrency'] ?? $record['amountCurrency'] ?? CurrencyPolicy::BASE_CURRENCY;
         if (($payment['order_id'] ?? '') !== $orderId
-            || ($payment['currency'] ?? '') !== ($record['razorpayCurrency'] ?? 'EUR')
-            || (int) ($payment['amount'] ?? 0) !== (int) round((float) $record['amount'] * 100)
+            || !CurrencyPolicy::paymentMatches(
+                $record['amount'] ?? null,
+                $expectedCurrency,
+                (int) ($payment['amount'] ?? -1) / 100,
+                (string) ($payment['currency'] ?? '')
+            )
             || !in_array($payment['status'] ?? '', ['authorized', 'captured'], true)) {
             OperationalLogger::event('error', 'razorpay_payment_mismatch');
             Security::json(['ok' => false, 'error' => 'Razorpay payment details did not match this registration.'], 400);
         }
         if ($payment['status'] === 'captured') {
             $this->setPayment($record['reference'], 'Paid', ['razorpayPaymentId' => $paymentId]);
-            Security::json(['ok' => true, 'paid' => true, 'reference' => $record['reference']]);
+            Security::json([
+                'ok' => true, 'paid' => true, 'reference' => $record['reference'],
+                'amount' => $record['amount'], 'currency' => $expectedCurrency,
+            ]);
         }
         OperationalLogger::event('warning', 'razorpay_payment_not_captured');
-        Security::json(['ok' => true, 'paid' => false, 'reference' => $record['reference']]);
+        Security::json([
+            'ok' => true, 'paid' => false, 'reference' => $record['reference'],
+            'amount' => $record['amount'], 'currency' => $expectedCurrency,
+        ]);
     }
 
     private function cancelRazorpayOrder(array $body): never
@@ -866,13 +973,20 @@ final class Application
             && ($session['payment_status'] ?? '') === 'paid') {
             $reference = $session['metadata']['reference'] ?? $session['client_reference_id'] ?? '';
             $record = $this->findBy($reference, 'stripeCheckoutSessionId', (string) ($session['id'] ?? ''));
-            if ($record !== null && strtolower((string) ($session['currency'] ?? '')) === 'eur'
-                && (int) ($session['amount_total'] ?? -1) === (int) round((float) $record['amount'] * 100)) {
-                $this->setPayment($reference, 'Paid', ['stripePaymentIntent' => $session['payment_intent'] ?? '']);
-            } elseif ($record !== null) {
-                OperationalLogger::event('error', 'stripe_payment_amount_or_currency_mismatch');
-            } else {
+            if ($record === null) {
                 OperationalLogger::event('error', 'stripe_webhook_registration_unmatched');
+            } else {
+                $expectedCurrency = $record['transactionCurrency'] ?? $record['amountCurrency'] ?? CurrencyPolicy::BASE_CURRENCY;
+                if (CurrencyPolicy::paymentMatches(
+                $record['amount'] ?? null,
+                $expectedCurrency,
+                (int) ($session['amount_total'] ?? -1) / 100,
+                (string) ($session['currency'] ?? '')
+                )) {
+                    $this->setPayment($reference, 'Paid', ['stripePaymentIntent' => $session['payment_intent'] ?? '']);
+                } else {
+                    OperationalLogger::event('error', 'stripe_payment_amount_or_currency_mismatch');
+                }
             }
         } elseif (in_array($eventType, ['checkout.session.expired', 'checkout.session.async_payment_failed'], true)) {
             if ($eventType === 'checkout.session.async_payment_failed') {
@@ -907,8 +1021,12 @@ final class Application
             $record = $this->findBy('', 'razorpayOrderId', $orderId);
             if ($record === null) {
                 OperationalLogger::event('error', 'razorpay_webhook_registration_unmatched');
-            } elseif (($payment['currency'] ?? '') === ($record['razorpayCurrency'] ?? 'EUR')
-                && (int) ($payment['amount'] ?? 0) === (int) round((float) $record['amount'] * 100)) {
+            } elseif (CurrencyPolicy::paymentMatches(
+                $record['amount'] ?? null,
+                $record['transactionCurrency'] ?? $record['razorpayCurrency'] ?? $record['amountCurrency'] ?? CurrencyPolicy::BASE_CURRENCY,
+                (int) ($payment['amount'] ?? -1) / 100,
+                (string) ($payment['currency'] ?? '')
+            )) {
                 $this->setPayment($record['reference'], 'Paid', ['razorpayPaymentId' => $payment['id'] ?? '']);
             } else {
                 OperationalLogger::event('error', 'razorpay_webhook_payment_mismatch');
@@ -933,6 +1051,9 @@ final class Application
             'status' => 'New',
             'paymentStatus' => 'Pending',
             'amount' => $registration['amount'],
+            'amountCurrency' => $registration['transactionCurrency'],
+            'preferredCurrency' => $registration['preferredCurrency'],
+            'transactionCurrency' => $registration['transactionCurrency'],
             'data' => $registration['data'],
         ] + $providerFields;
         $this->store->mutate('register', static function (array &$records) use ($record): void {

@@ -56,6 +56,9 @@ final class RegistrationService
         if (!in_array($gateway, ['Stripe / Card Payment', 'PayPal', 'Razorpay', 'Bank Transfer'], true)) {
             throw new DomainException('Select a valid payment method.');
         }
+        $currency = CurrencyPolicy::selection($data);
+        $transactionCurrency = $currency['transactionCurrency'];
+        $preferredCurrency = $currency['preferredCurrency'];
 
         $content = $this->withDefaults($this->store->content());
         $period = $this->effectivePeriod($content['registrationPeriods'] ?? []);
@@ -126,8 +129,15 @@ final class RegistrationService
         $data['taxRate'] = 0.05;
         $data['taxAmount'] = number_format($taxCents / 100, 2, '.', '');
         $data['paymentMethod'] = $gateway;
+        $data['currency'] = $transactionCurrency;
+        $data['preferredCurrency'] = $preferredCurrency;
+        $data['transactionCurrency'] = $transactionCurrency;
+        $data['currencyFallbackConfirmed'] = $currency['currencyFallbackConfirmed'];
 
-        return compact('data', 'items', 'amount', 'totalCents', 'grossCents', 'discountCents', 'taxCents', 'period');
+        return compact(
+            'data', 'items', 'amount', 'totalCents', 'grossCents', 'discountCents', 'taxCents', 'period',
+            'preferredCurrency', 'transactionCurrency'
+        );
     }
 
     public function effectivePeriod(array $periods): string

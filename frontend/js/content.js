@@ -201,6 +201,7 @@
       });
     }
 
+    applyLegacyHomeHeroLayout();
     renderHomeGallery(content.homeGallery || {});
 
     // The old Home hero gallery may remain in a saved page override.
@@ -228,6 +229,66 @@
 
     updateVenueMap(content);
     try { document.dispatchEvent(new CustomEvent("matai:content", { detail: content })); } catch (_) {}
+  }
+
+  function applyLegacyHomeHeroLayout() {
+    if ((location.pathname.split("/").pop() || "index.html").toLowerCase() !== "index.html") return;
+    var hero = document.querySelector(".home-page .home-hero");
+    var legacyContent = hero && hero.querySelector(".hero-inner.center");
+    if (!legacyContent) return;
+
+    var theme = legacyContent.querySelector(".theme");
+    if (theme && !legacyContent.querySelector(".home-topic-strip")) {
+      var strip = document.createElement("div");
+      strip.className = "home-topic-strip";
+      strip.setAttribute("aria-label", "Conference research topics");
+
+      var icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      icon.setAttribute("class", "topic-icon");
+      icon.setAttribute("viewBox", "0 0 24 24");
+      icon.setAttribute("aria-hidden", "true");
+      [
+        ["circle", { cx: "12", cy: "12", r: "2" }],
+        ["ellipse", { cx: "12", cy: "12", rx: "9", ry: "4.5" }],
+        ["ellipse", { cx: "12", cy: "12", rx: "9", ry: "4.5", transform: "rotate(60 12 12)" }],
+        ["ellipse", { cx: "12", cy: "12", rx: "9", ry: "4.5", transform: "rotate(120 12 12)" }]
+      ].forEach(function (shape) {
+        var element = document.createElementNS("http://www.w3.org/2000/svg", shape[0]);
+        Object.keys(shape[1]).forEach(function (attribute) {
+          element.setAttribute(attribute, shape[1][attribute]);
+        });
+        icon.appendChild(element);
+      });
+      strip.appendChild(icon);
+
+      var lines = document.createElement("div");
+      lines.className = "home-topic-lines";
+      [
+        ["Advanced Materials", "Smart Manufacturing", "AI & Machine Learning"],
+        ["Sustainable Materials", "Nanotechnology", "Energy & Environment"]
+      ].forEach(function (topics) {
+        var line = document.createElement("div");
+        line.className = "home-topic-line";
+        topics.forEach(function (topic, index) {
+          if (index) {
+            var separator = document.createElement("i");
+            separator.setAttribute("aria-hidden", "true");
+            separator.textContent = "|";
+            line.appendChild(separator);
+          }
+          var label = document.createElement("span");
+          label.textContent = topic;
+          line.appendChild(label);
+        });
+        lines.appendChild(line);
+      });
+      strip.appendChild(lines);
+      theme.insertAdjacentElement("afterend", strip);
+    }
+
+    legacyContent.querySelectorAll(".hero-cta a[href='sessions.html']").forEach(function (button) {
+      button.remove();
+    });
   }
 
   function renderHomeGallery(gallery) {

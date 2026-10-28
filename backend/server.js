@@ -21,6 +21,12 @@ const multer = require("multer");
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 const storage = require("./storage");
 const { applyVerifiedPaymentStatus } = require("./payment-status");
+const {
+  BASE_CURRENCY,
+  isExplicitlyVerified,
+  paymentMatches,
+  selectTransactionCurrency
+} = require("./currency-policy");
 
 const app = express();
 app.disable("x-powered-by");
@@ -33,13 +39,21 @@ const IMAGE_UPLOAD_DIR = path.join(DATA_DIR, "images");
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "";
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
+const STRIPE_EUR_CHECKOUT_VERIFIED = isExplicitlyVerified(process.env.STRIPE_EUR_CHECKOUT_VERIFIED);
 const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || "";
 const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || "";
 const PAYPAL_MODE = process.env.PAYPAL_MODE === "live" ? "live" : "sandbox";
+const PAYPAL_EUR_CHECKOUT_VERIFIED = isExplicitlyVerified(process.env.PAYPAL_EUR_CHECKOUT_VERIFIED);
 const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || "";
 const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "";
 const RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || "";
-const RAZORPAY_CURRENCY = "EUR";
+const RAZORPAY_CURRENCY = BASE_CURRENCY;
+const RAZORPAY_EUR_CHECKOUT_VERIFIED = isExplicitlyVerified(process.env.RAZORPAY_EUR_CHECKOUT_VERIFIED);
+const STRIPE_CHECKOUT_ENABLED = Boolean(STRIPE_SECRET_KEY && STRIPE_EUR_CHECKOUT_VERIFIED);
+const PAYPAL_CHECKOUT_ENABLED = Boolean(PAYPAL_CLIENT_ID && PAYPAL_CLIENT_SECRET && PAYPAL_EUR_CHECKOUT_VERIFIED);
+const RAZORPAY_CHECKOUT_ENABLED = Boolean(
+  RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET && RAZORPAY_CURRENCY === BASE_CURRENCY && RAZORPAY_EUR_CHECKOUT_VERIFIED
+);
 const PUBLIC_BASE_URL = (process.env.PUBLIC_BASE_URL || "http://localhost:" + PORT).replace(/\/+$/, "");
 const APP_ENV = process.env.APP_ENV || process.env.NODE_ENV || "local";
 const SECURE_COOKIES = APP_ENV === "production" || PUBLIC_BASE_URL.startsWith("https://");
@@ -469,6 +483,7 @@ async function prepareRegistration(input) {
     error.statusCode = 400;
     throw error;
   }
+  const currencySelection = selectTransactionCurrency(data);
 
   const content = mergeDefaults(DEFAULT_CONTENT, await storage.loadContent());
   const period = effectiveRegistrationPeriod(content.registrationPeriods);
@@ -540,7 +555,14 @@ async function prepareRegistration(input) {
   data.taxRate = validTaxRate;
   data.taxAmount = (taxCents / 100).toFixed(2);
   data.paymentMethod = gateway;
-  return { data, items, amount, totalCents, grossCents, discountCents, taxCents, period };
+  data.preferredCurrency = currencySelection.preferredCurrency;
+  data.transactionCurrency = currencySelection.transactionCurrency;
+  data.currencyFallbackConfirmed = currencySelection.currencyFallbackConfirmed;
+  return {
+    data, items, amount, totalCents, grossCents, discountCents, taxCents, period,
+    preferredCurrency: currencySelection.preferredCurrency,
+    transactionCurrency: currencySelection.transactionCurrency
+  };
 }
 
 async function stripeRequest(endpoint, params, method) {
@@ -638,6 +660,16 @@ async function applyStripeSession(session, outcome) {
       entry.stripeCheckoutSessionId === session.id);
     if (!record) return;
     if (outcome === "paid" && session.payment_status === "paid") {
+      const expectedCurrency = record.transactionCurrency || record.amountCurrency || "EUR";
+      if (!paymentMatches(
+        record.amount,
+        expectedCurrency,
+        Number(session.amount_total) / 100,
+        String(session.currency || "").toUpperCase()
+      )) {
+        console.error("Stripe payment amount or currency did not match the stored registration:", reference);
+        return;
+      }
       applyVerifiedPaymentStatus(record, "Paid", {
         stripePaymentIntent: typeof session.payment_intent === "string" ? session.payment_intent : ""
       });
@@ -684,11 +716,18 @@ async function processRazorpayWebhook(rawBody, signatureHeader) {
   if (event.event === "payment.captured" && payment && payment.order_id && payment.id) {
     const records = await readArr("register");
     const record = records.find((entry) => entry.razorpayOrderId === payment.order_id);
-    if (record && payment.currency === RAZORPAY_CURRENCY &&
-        Number(payment.amount) === Math.round(Number(record.amount) * 100)) {
+    const expectedCurrency = record && (record.transactionCurrency || record.razorpayCurrency || record.amountCurrency || "EUR");
+    if (record && paymentMatches(
+      record.amount,
+      expectedCurrency,
+      Number(payment.amount) / 100,
+      payment.currency
+    )) {
       await markRegistrationPaid(record.reference, payment.order_id, "razorpay", {
         razorpayPaymentId: payment.id
       });
+    } else if (record) {
+      console.error("Razorpay webhook amount or currency did not match the stored registration:", record.reference);
     }
   } else if (event.event === "payment.failed" && payment && payment.order_id) {
     await updateArr("register", async (arr) => {
@@ -735,24 +774,39 @@ function csvCell(v) {
 
 /* ---------- Public form submissions ---------- */
 app.get("/api/checkout/stripe/config", (_req, res) => {
-  res.json({ ok: true, enabled: Boolean(STRIPE_SECRET_KEY), currency: "EUR" });
+  res.json({
+    ok: true,
+    enabled: STRIPE_CHECKOUT_ENABLED,
+    currency: STRIPE_CHECKOUT_ENABLED ? BASE_CURRENCY : null,
+    supportedCurrencies: STRIPE_CHECKOUT_ENABLED ? [BASE_CURRENCY] : []
+  });
 });
 app.get("/api/checkout/config", (_req, res) => {
   res.json({
     ok: true,
-    stripe: { enabled: Boolean(STRIPE_SECRET_KEY), currency: "EUR" },
-    paypal: { enabled: Boolean(PAYPAL_CLIENT_ID && PAYPAL_CLIENT_SECRET), mode: PAYPAL_MODE, currency: "EUR" },
+    stripe: {
+      enabled: STRIPE_CHECKOUT_ENABLED,
+      currency: STRIPE_CHECKOUT_ENABLED ? BASE_CURRENCY : null,
+      supportedCurrencies: STRIPE_CHECKOUT_ENABLED ? [BASE_CURRENCY] : []
+    },
+    paypal: {
+      enabled: PAYPAL_CHECKOUT_ENABLED,
+      mode: PAYPAL_MODE,
+      currency: PAYPAL_CHECKOUT_ENABLED ? BASE_CURRENCY : null,
+      supportedCurrencies: PAYPAL_CHECKOUT_ENABLED ? [BASE_CURRENCY] : []
+    },
     razorpay: {
-      enabled: Boolean(RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET && /^[A-Z]{3}$/.test(RAZORPAY_CURRENCY)),
-      keyId: RAZORPAY_KEY_ID || "",
-      currency: RAZORPAY_CURRENCY
+      enabled: RAZORPAY_CHECKOUT_ENABLED,
+      keyId: RAZORPAY_CHECKOUT_ENABLED ? RAZORPAY_KEY_ID : "",
+      currency: RAZORPAY_CHECKOUT_ENABLED ? RAZORPAY_CURRENCY : null,
+      supportedCurrencies: RAZORPAY_CHECKOUT_ENABLED ? [RAZORPAY_CURRENCY] : []
     }
   });
 });
 
 app.post("/api/checkout/stripe", async (req, res) => {
-  if (!STRIPE_SECRET_KEY) {
-    return res.status(503).json({ ok: false, error: "Stripe checkout is not configured. Please choose bank transfer or contact the organizers." });
+  if (!STRIPE_CHECKOUT_ENABLED) {
+    return res.status(503).json({ ok: false, error: "Stripe checkout is not enabled. The merchant must verify EUR checkout before it can be used." });
   }
   const input = sanitize(req.body);
   let registration;
@@ -779,7 +833,7 @@ app.post("/api/checkout/stripe", async (req, res) => {
     customer_email: registration.data.email,
     client_reference_id: reference,
     "metadata[reference]": reference,
-    "line_items[0][price_data][currency]": "eur",
+    "line_items[0][price_data][currency]": registration.transactionCurrency.toLowerCase(),
     "line_items[0][price_data][product_data][name]": "MatAi 2027 Registration",
     "line_items[0][price_data][product_data][description]": registration.items.map((item) =>
       item.name + " x" + item.quantity).join(", ").slice(0, 450),
@@ -789,14 +843,26 @@ app.post("/api/checkout/stripe", async (req, res) => {
   let session;
   try {
     session = await stripeRequest("checkout/sessions", params);
-    if (!session.id || !session.url) throw new Error("Stripe did not return a checkout URL.");
+    if (!session.id || !session.url || !paymentMatches(
+      registration.amount,
+      registration.transactionCurrency,
+      Number(session.amount_total) / 100,
+      String(session.currency || "").toUpperCase()
+    )) {
+      throw new Error("Stripe checkout amount or currency did not match the confirmed registration.");
+    }
     const record = {
       reference, kind: "register", receivedAt: new Date().toISOString(), ip: req.ip, status: "New",
-      paymentStatus: "Pending", amount: registration.amount, stripeCheckoutSessionId: session.id,
+      paymentStatus: "Pending", amount: registration.amount, amountCurrency: registration.transactionCurrency,
+      preferredCurrency: registration.preferredCurrency, transactionCurrency: registration.transactionCurrency,
+      stripeCheckoutSessionId: session.id,
       data: registration.data
     };
     await updateArr("register", async (arr) => { arr.push(record); });
-    return res.status(201).json({ ok: true, reference, url: session.url, amount: registration.amount });
+    return res.status(201).json({
+      ok: true, reference, url: session.url,
+      amount: registration.amount, currency: registration.transactionCurrency
+    });
   } catch (err) {
     console.error("Stripe checkout session creation failed:", err);
     if (session && session.id) {
@@ -817,12 +883,24 @@ app.get("/api/checkout/stripe/status/:sessionId", async (req, res) => {
     const record = records.find((entry) => entry.reference === reference &&
       entry.stripeCheckoutSessionId === session.id);
     if (!record) return res.status(404).json({ ok: false, error: "Registration not found." });
+    const paid = session.payment_status === "paid";
+    const expectedCurrency = record.transactionCurrency || record.amountCurrency || "EUR";
+    if (paid && !paymentMatches(
+      record.amount,
+      expectedCurrency,
+      Number(session.amount_total) / 100,
+      String(session.currency || "").toUpperCase()
+    )) {
+      console.error("Stripe status amount or currency did not match the stored registration:", record.reference);
+      return res.status(409).json({ ok: false, error: "Payment details did not match this registration." });
+    }
     if (session.payment_status === "paid") await applyStripeSession(session, "paid");
     else if (session.status === "expired") await applyStripeSession(session, "cancelled");
     return res.json({
       ok: true, reference: record.reference,
-      paid: session.payment_status === "paid",
-      paymentStatus: session.payment_status === "paid" ? "Paid" : session.status === "expired" ? "Cancelled" : "Pending"
+      paid,
+      paymentStatus: paid ? "Paid" : session.status === "expired" ? "Cancelled" : "Pending",
+      amount: record.amount, currency: expectedCurrency
     });
   } catch (err) {
     console.error("Stripe checkout status lookup failed:", err);
@@ -831,8 +909,8 @@ app.get("/api/checkout/stripe/status/:sessionId", async (req, res) => {
 });
 
 app.post("/api/checkout/paypal/order", async (req, res) => {
-  if (!PAYPAL_CLIENT_ID || !PAYPAL_CLIENT_SECRET) {
-    return res.status(503).json({ ok: false, error: "PayPal checkout is not configured. Please choose bank transfer or contact the organizers." });
+  if (!PAYPAL_CHECKOUT_ENABLED) {
+    return res.status(503).json({ ok: false, error: "PayPal checkout is not enabled. The merchant must verify EUR checkout before it can be used." });
   }
   let registration;
   try {
@@ -849,7 +927,7 @@ app.post("/api/checkout/paypal/order", async (req, res) => {
         reference_id: reference,
         custom_id: reference,
         description: registration.items.map((item) => item.name + " x" + item.quantity).join(", ").slice(0, 120),
-        amount: { currency_code: "EUR", value: registration.amount.toFixed(2) }
+        amount: { currency_code: registration.transactionCurrency, value: registration.amount.toFixed(2) }
       }],
       payment_source: { paypal: { experience_context: {
         brand_name: "MatAi 2027",
@@ -859,17 +937,29 @@ app.post("/api/checkout/paypal/order", async (req, res) => {
       } } }
     });
     const approval = (order.links || []).find((link) => link.rel === "payer-action" || link.rel === "approve");
-    if (!order.id || !approval || !/^https:\/\/([a-z0-9-]+\.)*paypal\.com$/i.test(new URL(approval.href).origin)) {
+    const purchase = order.purchase_units && order.purchase_units.find((unit) => unit.custom_id === reference);
+    if (!order.id || !approval || !/^https:\/\/([a-z0-9-]+\.)*paypal\.com$/i.test(new URL(approval.href).origin) ||
+        !purchase || !paymentMatches(
+          registration.amount,
+          registration.transactionCurrency,
+          purchase.amount && purchase.amount.value,
+          purchase.amount && purchase.amount.currency_code
+        )) {
       throw new Error("PayPal did not return a valid approval link.");
     }
     await updateArr("register", async (arr) => {
       arr.push({
         reference, kind: "register", receivedAt: new Date().toISOString(), ip: req.ip, status: "New",
-        paymentStatus: "Pending", amount: registration.amount, paypalOrderId: order.id,
+        paymentStatus: "Pending", amount: registration.amount, amountCurrency: registration.transactionCurrency,
+        preferredCurrency: registration.preferredCurrency, transactionCurrency: registration.transactionCurrency,
+        paypalOrderId: order.id,
         data: registration.data
       });
     });
-    res.status(201).json({ ok: true, reference, orderId: order.id, approvalUrl: approval.href, amount: registration.amount });
+    res.status(201).json({
+      ok: true, reference, orderId: order.id, approvalUrl: approval.href,
+      amount: registration.amount, currency: registration.transactionCurrency
+    });
   } catch (err) {
     console.error("PayPal order creation failed:", err);
     res.status(err.statusCode || 502).json({ ok: false, error: "Could not start PayPal checkout. Please try again or contact the organizers." });
@@ -884,12 +974,22 @@ app.post("/api/checkout/paypal/capture", async (req, res) => {
     const records = await readArr("register");
     const record = records.find((entry) => entry.paypalOrderId === orderId);
     if (!record) return res.status(404).json({ ok: false, error: "Registration not found for this PayPal order." });
-    if (record.paymentStatus === "Paid") return res.json({ ok: true, paid: true, reference: record.reference });
+    const expectedCurrency = record.transactionCurrency || record.amountCurrency || "EUR";
+    if (record.paymentStatus === "Paid") {
+      return res.json({
+        ok: true, paid: true, reference: record.reference,
+        amount: record.amount, currency: expectedCurrency
+      });
+    }
     const token = await paypalAccessToken();
     const order = await paypalRequest("/v2/checkout/orders/" + encodeURIComponent(orderId), token, null);
     const purchase = order.purchase_units && order.purchase_units.find((unit) => unit.custom_id === record.reference);
-    if (!purchase || purchase.amount.currency_code !== "EUR" ||
-        Math.round(Number(purchase.amount.value) * 100) !== Math.round(Number(record.amount) * 100)) {
+    if (!purchase || !paymentMatches(
+      record.amount,
+      expectedCurrency,
+      purchase.amount && purchase.amount.value,
+      purchase.amount && purchase.amount.currency_code
+    )) {
       return res.status(400).json({ ok: false, error: "PayPal order amount or registration reference did not match." });
     }
     let captureResult = order;
@@ -899,15 +999,22 @@ app.post("/api/checkout/paypal/capture", async (req, res) => {
     const capturedPurchase = captureResult.purchase_units && captureResult.purchase_units.find((unit) => unit.custom_id === record.reference);
     const captures = capturedPurchase && capturedPurchase.payments && capturedPurchase.payments.captures || [];
     const completedCapture = captures.find((capture) => capture.status === "COMPLETED" &&
-      capture.amount && capture.amount.currency_code === "EUR" &&
-      Math.round(Number(capture.amount.value) * 100) === Math.round(Number(record.amount) * 100));
+      capture.amount && paymentMatches(
+        record.amount, expectedCurrency, capture.amount.value, capture.amount.currency_code
+      ));
     if (captureResult.status !== "COMPLETED" || !completedCapture) {
-      return res.status(409).json({ ok: true, paid: false, reference: record.reference, error: "PayPal has not confirmed the payment yet." });
+      return res.status(409).json({
+        ok: true, paid: false, reference: record.reference, amount: record.amount,
+        currency: expectedCurrency, error: "PayPal has not confirmed the payment yet."
+      });
     }
     await markRegistrationPaid(record.reference, orderId, "paypal", {
       paypalCaptureId: completedCapture.id || ""
     });
-    res.json({ ok: true, paid: true, reference: record.reference });
+    res.json({
+      ok: true, paid: true, reference: record.reference,
+      amount: record.amount, currency: expectedCurrency
+    });
   } catch (err) {
     console.error("PayPal capture verification failed:", err);
     res.status(502).json({ ok: false, error: "Could not verify PayPal payment yet. Contact the organizers if you were charged." });
@@ -915,8 +1022,8 @@ app.post("/api/checkout/paypal/capture", async (req, res) => {
 });
 
 app.post("/api/checkout/razorpay/order", async (req, res) => {
-  if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET || !/^[A-Z]{3}$/.test(RAZORPAY_CURRENCY)) {
-    return res.status(503).json({ ok: false, error: "Razorpay checkout is not configured. Please choose bank transfer or contact the organizers." });
+  if (!RAZORPAY_CHECKOUT_ENABLED) {
+    return res.status(503).json({ ok: false, error: "Razorpay checkout is not enabled. The merchant must verify EUR checkout before it can be used." });
   }
   let registration;
   try {
@@ -942,13 +1049,14 @@ app.post("/api/checkout/razorpay/order", async (req, res) => {
     await updateArr("register", async (arr) => {
       arr.push({
         reference, kind: "register", receivedAt: new Date().toISOString(), ip: req.ip, status: "New",
-        paymentStatus: "Pending", amount: registration.amount, razorpayOrderId: order.id,
-        razorpayCurrency: RAZORPAY_CURRENCY, data: registration.data
+        paymentStatus: "Pending", amount: registration.amount, amountCurrency: registration.transactionCurrency,
+        preferredCurrency: registration.preferredCurrency, transactionCurrency: registration.transactionCurrency,
+        razorpayOrderId: order.id, razorpayCurrency: registration.transactionCurrency, data: registration.data
       });
     });
     res.status(201).json({
       ok: true, reference, orderId: order.id, keyId: RAZORPAY_KEY_ID,
-      amount, currency: RAZORPAY_CURRENCY, displayAmount: registration.amount
+      amount, currency: registration.transactionCurrency, displayAmount: registration.amount
     });
   } catch (err) {
     console.error("Razorpay order creation failed:", err);
@@ -974,18 +1082,30 @@ app.post("/api/checkout/razorpay/verify", async (req, res) => {
     const records = await readArr("register");
     const record = records.find((entry) => entry.razorpayOrderId === orderId);
     if (!record) return res.status(404).json({ ok: false, error: "Registration not found for this Razorpay order." });
-    if (record.paymentStatus === "Paid") return res.json({ ok: true, paid: true, reference: record.reference });
+    const expectedCurrency = record.transactionCurrency || record.razorpayCurrency || record.amountCurrency || "EUR";
+    if (record.paymentStatus === "Paid") {
+      return res.json({
+        ok: true, paid: true, reference: record.reference,
+        amount: record.amount, currency: expectedCurrency
+      });
+    }
     const payment = await razorpayRequest("payments/" + encodeURIComponent(paymentId), null, "GET");
-    const expectedAmount = Math.round(Number(record.amount) * 100);
-    if (payment.order_id !== orderId || payment.currency !== (record.razorpayCurrency || RAZORPAY_CURRENCY) ||
-        Number(payment.amount) !== expectedAmount || !["authorized", "captured"].includes(payment.status)) {
+    if (payment.order_id !== orderId ||
+        !paymentMatches(record.amount, expectedCurrency, Number(payment.amount) / 100, payment.currency) ||
+        !["authorized", "captured"].includes(payment.status)) {
       return res.status(400).json({ ok: false, error: "Razorpay payment details did not match this registration." });
     }
     if (payment.status === "captured") {
       await markRegistrationPaid(record.reference, orderId, "razorpay", { razorpayPaymentId: paymentId });
-      return res.json({ ok: true, paid: true, reference: record.reference });
+      return res.json({
+        ok: true, paid: true, reference: record.reference,
+        amount: record.amount, currency: expectedCurrency
+      });
     }
-    return res.json({ ok: true, paid: false, reference: record.reference });
+    return res.json({
+      ok: true, paid: false, reference: record.reference,
+      amount: record.amount, currency: expectedCurrency
+    });
   } catch (err) {
     console.error("Razorpay payment verification failed:", err);
     res.status(502).json({ ok: false, error: "Could not verify Razorpay payment yet. Contact the organizers if you were charged." });
@@ -1072,6 +1192,9 @@ app.post("/api/:kind", parseAbstractUpload, async (req, res) => {
   if (kind === "register") {
     record.paymentStatus = "Pending";
     record.amount = registration.amount;
+    record.amountCurrency = registration.transactionCurrency;
+    record.preferredCurrency = registration.preferredCurrency;
+    record.transactionCurrency = registration.transactionCurrency;
   }
 
   try {
@@ -1089,7 +1212,7 @@ app.post("/api/:kind", parseAbstractUpload, async (req, res) => {
 /* ---------- Admin API (all protected) ---------- */
 app.get("/admin/api/stats", requireAuth, async (req, res) => {
   try {
-  const out = { counts: {}, revenue: 0, pending: 0, paid: 0, recent: [] };
+  const out = { counts: {}, revenue: 0, revenueCurrency: BASE_CURRENCY, pending: 0, paid: 0, recent: [] };
   for (const k of KINDS) {
     const a = await readArr(k);
     out.counts[k] = a.length;
@@ -1254,6 +1377,9 @@ app.get("/admin/api/export/:kind", requireAuth, async (req, res) => {
   const rows = arr.map((r) => Object.assign({
     kind: r.kind || k, reference: r.reference, receivedAt: r.receivedAt, status: r.status || "",
     paymentStatus: r.paymentStatus || "", amount: r.amount != null ? r.amount : "",
+    amountCurrency: r.amountCurrency || r.transactionCurrency || "",
+    preferredCurrency: r.preferredCurrency || "",
+    transactionCurrency: r.transactionCurrency || r.amountCurrency || "",
     adminNotes: r.adminNotes || ""
   }, r.data || {}));
   const cols = [];

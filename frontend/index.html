@@ -3,39 +3,85 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MatAi 2027 — International Conference on Materials Science, Engineering & AI | Berlin</title>
+  <title>MatAi 2027 — International Conference on Materials Science, Engineering & Artificial Intelligence | Berlin</title>
   <meta name="description" content="MatAi 2027 — International Conference on Materials Science, Engineering & Artificial Intelligence. October 13–14, 2027, Berlin, Germany.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261025-registration-details-nav">
+  <link rel="stylesheet" href="css/styles.css?v=20261028-home-alignment-8">
 </head>
-<body>
+<body class="home-page">
   <div id="site-header"></div>
 
   <!-- HERO -->
-  <section class="hero" id="home-overview">
-    <div class="container">
-      <div class="hero-inner center">
-        <span class="hero-badge">🌱 MatAI 2027</span>
-        <h1 class="hero-title">International Conference on Materials Science, Engineering <span class="accent">&amp; Artificial Intelligence</span></h1>
-        <div class="hero-datepill"><span class="ic">📅</span> October 13–14, 2027 &nbsp;·&nbsp; Berlin, Germany</div>
-        <p class="theme">Theme: Advancing Materials Innovation through Science, Engineering &amp; Artificial Intelligence</p>
-        <div class="countdown-wrap">
-          <div class="cd-title">Conference Starts In</div>
-          <div class="countdown" id="countdown"></div>
-        </div>
-        <div class="btn-row hero-cta center">
-          <a class="btn btn-gold" href="abstracts.html#abstract-submission"><span class="ic">✈️</span> Submit Your Abstract Now</a>
-          <a class="btn btn-ghost" href="brochure.html"><span class="ic">⬇️</span> Brochure</a>
-          <a class="btn btn-primary" href="registration.html#register-form"><span class="ic">🎫</span> Register Now</a>
+  <section class="hero home-hero" id="home-overview" aria-labelledby="home-title">
+    <div class="container home-hero-container">
+      <div class="hero-inner home-hero-copy">
+        <span class="hero-badge">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"></rect><path d="M7.5 3.5v3M16.5 3.5v3M4 9h16"></path></svg>
+          MatAi 2027
+        </span>
+        <h1 class="hero-title" id="home-title">International Conference on<br><strong>Materials Science, Engineering</strong><br><span class="accent">&amp; Artificial Intelligence</span></h1>
+        <p class="home-hero-description">Advancing materials innovation through science, engineering and artificial intelligence for a sustainable future.</p>
+        <div class="home-topic-strip" aria-label="Conference research topics">
+          <svg class="topic-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"></circle><ellipse cx="12" cy="12" rx="9" ry="4.5"></ellipse><ellipse cx="12" cy="12" rx="9" ry="4.5" transform="rotate(60 12 12)"></ellipse><ellipse cx="12" cy="12" rx="9" ry="4.5" transform="rotate(120 12 12)"></ellipse></svg>
+          <div class="home-topic-lines">
+            <div class="home-topic-line"><span>Advanced Materials</span><i aria-hidden="true">|</i><span>Smart Manufacturing</span><i aria-hidden="true">|</i><span>AI &amp; Machine Learning</span></div>
+            <div class="home-topic-line"><span>Sustainable Materials</span><i aria-hidden="true">|</i><span>Nanotechnology</span><i aria-hidden="true">|</i><span>Energy &amp; Environment</span></div>
+          </div>
         </div>
       </div>
-      <div class="hero-badges">
-        <div class="hb"><span class="hb-ic">🔬</span><span class="hb-t">Materials<br>Discovery</span></div>
-        <div class="hb"><span class="hb-ic">🌍</span><span class="hb-t">Global<br>Collaboration</span></div>
-        <div class="hb"><span class="hb-ic">🤖</span><span class="hb-t">AI-Driven<br>Innovation</span></div>
+    </div>
+  </section>
+
+  <section class="home-followup" aria-label="Conference countdown and highlights">
+    <div class="home-action-panel">
+      <div class="home-countdown-side">
+        <h2 class="cd-title" id="countdown-title">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+          Conference Starts In
+        </h2>
+        <div class="countdown" id="countdown" aria-labelledby="countdown-title" aria-live="off"></div>
       </div>
+      <div class="home-panel-divider" aria-hidden="true"></div>
+      <div class="home-cta-buttons" aria-label="Conference actions">
+        <a class="btn btn-gold home-action-button" href="abstracts.html#abstract-submission">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.75h8l4 4v12.5H6z"></path><path d="M14 3.75v4h4M9 12h6M9 15.5h6"></path></svg>
+          <span>Submit Your<br>Abstract Now</span>
+          <b aria-hidden="true">›</b>
+        </a>
+        <a class="btn btn-ghost home-action-button" href="brochure.html">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5c3-.9 5.8-.5 8.5 1.2v13c-2.7-1.7-5.5-2.1-8.5-1.2zM20.5 5.5c-3-.9-5.8-.5-8.5 1.2v13c2.7-1.7 5.5-2.1 8.5-1.2z"></path><path d="M7 9h2.5M7 12h2.5M14.5 9H17M14.5 12H17"></path></svg>
+          <span>Brochure</span>
+          <b aria-hidden="true">›</b>
+        </a>
+        <a class="btn btn-primary home-action-button" href="registration.html#register-form">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"></circle><path d="M3.5 19v-1.3a5.5 5.5 0 0 1 11 0V19zM18 8v6M15 11h6"></path></svg>
+          <span>Register Now</span>
+          <b aria-hidden="true">›</b>
+        </a>
+      </div>
+    </div>
+
+    <div class="home-features" aria-label="Conference benefits">
+      <article class="home-feature">
+        <span class="home-feature-icon feature-materials">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 4.5-8 4.5-8-4.5zM4 12l8 4.5 8-4.5M4 16.5l8 4.5 8-4.5"></path></svg>
+        </span>
+        <span class="home-feature-copy"><strong>Materials Discovery</strong><small>New materials. Greater possibilities.</small></span>
+      </article>
+      <article class="home-feature">
+        <span class="home-feature-icon feature-global">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3.5 12h17M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg>
+        </span>
+        <span class="home-feature-copy"><strong>Global Collaboration</strong><small>Connect. Share. Build.</small></span>
+      </article>
+      <article class="home-feature">
+        <span class="home-feature-icon feature-ai">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4.5a3 3 0 0 0-5.5 1.7A3.5 3.5 0 0 0 4 13a3 3 0 0 0 3 5.5A3 3 0 0 0 12 17V6a3 3 0 0 0-3-1.5ZM15 4.5a3 3 0 0 1 5.5 1.7A3.5 3.5 0 0 1 20 13a3 3 0 0 1-3 5.5A3 3 0 0 1 12 17V6a3 3 0 0 1 3-1.5Z"></path><path d="M8 9h1M15 9h1M8 14h1M15 14h1"></path></svg>
+        </span>
+        <span class="home-feature-copy"><strong>AI-Driven Innovation</strong><small>Smarter solutions for a sustainable future.</small></span>
+      </article>
     </div>
   </section>
 
@@ -288,6 +334,6 @@
   </section>
 
   <div id="site-footer"></div>
-  <script src="js/site.js?v=20261025-registration-details-nav"></script>
+  <script src="js/site.js?v=20261028-home-topic-strip"></script>
 </body>
 </html>

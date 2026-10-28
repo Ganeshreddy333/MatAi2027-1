@@ -32,9 +32,13 @@ Set secrets in a private environment/secrets manager; `.env.example` contains pl
 | `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD` | Leave all connection values blank only for local JSON mode. If configured, provide a least-privilege account and all required values. |
 | `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH` | Unique admin identity and a PHP `password_hash()` value. The app has no password reset; rotate through a controlled operator procedure. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM_ADDRESS`, `SMTP_FROM_NAME`, `ADMIN_NOTIFICATION_EMAIL` | Optional outbound mail. Use `tls` or `ssl`, verified sender/domain, and a test mailbox in staging. |
-| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | Stripe API and signed webhook secrets. Use test keys until checkout and webhook cases pass. |
-| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MODE` | PayPal credentials and `sandbox`/live mode. Keep sandbox until capture/retry cases are validated. |
-| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_CURRENCY` | Razorpay key/webhook secrets; this registration flow supports EUR only. Checkout is disabled if another currency is configured. |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_EUR_CHECKOUT_VERIFIED` | Stripe API and signed webhook secrets. EUR checkout stays disabled until the exact merchant account/environment has passed EUR sandbox checkout and webhook verification; set the verification flag to `true` only after that evidence exists. |
+| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MODE`, `PAYPAL_EUR_CHECKOUT_VERIFIED` | PayPal credentials and `sandbox`/live mode. EUR checkout stays disabled until the configured merchant account/environment has passed EUR order, capture, and currency/amount verification. |
+| `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RAZORPAY_CURRENCY`, `RAZORPAY_EUR_CHECKOUT_VERIFIED` | Razorpay keys and webhook secret. This pricing model creates EUR orders only; checkout is disabled unless `RAZORPAY_CURRENCY=EUR` and EUR checkout has been verified for that merchant account. |
+
+The registration form prices in canonical EUR. USD and GBP selections are not charge currencies: the attendee must explicitly confirm a switch to EUR, and the form recalculates/displays the EUR payable amount before checkout. No exchange rate or conversion fee is applied. Backend order creation rejects any non-EUR transaction currency, and provider verification compares the received currency and amount to the stored registration. Missing verification flags fail closed and keep online checkout disabled. No provider account is treated as verified merely because credentials are present.
+
+Currency enforcement verification for this branch: the Node test suite passes (14 tests), and PHP syntax checks plus direct PHP checks of fallback confirmation, calculated totals, provider readiness, and amount/currency matching pass. PHPUnit could not be run because Composer and `vendor/` are not installed in this environment. No provider sandbox transaction has been performed; leave all EUR verification flags false until the configured merchant account is actually tested.
 
 The PHP configuration currently reads these variables. Validate required PHP extensions, Apache rewrite/header support, upload/post size limits, `APP_URL`, HTTPS proxy behavior, and writable private directories separately on each host. A configuration check must report presence/validity only, never print secret contents.
 
@@ -48,9 +52,17 @@ No live payment, SMTP delivery, new form persistence, file-upload integration, m
 
 ## Database schema and migration guide
 
-The additive base schema is in `backend/migrations/001_initial.sql`. The manual CLI entrypoint creates application tables idempotently and imports legacy JSON once using migration marker `legacy-json-v1`. It takes a database advisory lock to serialize migration invocations. MySQL DDL is not transactionally reversible; a failed DDL run may leave some additive tables in place, so retry only after reviewing logs and confirming the target.
+The additive schema is in `backend/migrations/001_initial.sql` and `backend/migrations/002_currency_audit.sql`. Both the PHP migration runner and Node setup apply them idempotently under a database advisory lock and import legacy JSON once using migration marker `legacy-json-v1`. The currency migration adds normalized amount, preferred, and transaction currency columns and backfills only values evidenced by existing JSON fields; unknown historical transaction currencies remain null. New writes synchronize the normalized fields with `record_json`. MySQL DDL is not transactionally reversible; a failed DDL run may leave additive columns in place, so retry only after reviewing logs and confirming the target.
 
 Review SQL and backups before a production migration. Use an isolated database for automated migration tests; CI applies the migration twice to ephemeral MySQL. This checks basic repeatability but does not prove compatibility with a live legacy schema/data set. There is no automatic migration at web request startup and no destructive rollback migration. Schema changes must be additive/forward-only unless a separately reviewed data migration and recovery plan says otherwise.
+
+## Local currency migration verification — 2026-10-28
+
+The approved local non-production database `matai_2027` was verified before migration. Migration markers `001_initial`, `legacy-json-v1`, and `002_currency_audit` are present; the three currency audit columns exist. Submission counts remain 5 registrations, 2 abstracts, 3 contacts, and 2 brochure requests, with one site-content row. Temporary test registrations written through both Node and PHP storage round-tripped amount and currency metadata through the normalized columns and JSON, then were removed; a final check found no test rows.
+
+The existing five registrations have no `Paid` status. Their historical transaction-currency evidence is incomplete, so the migration leaves unknown amount/transaction currencies null rather than treating a preference or canonical price as proof of the actual currency. No provider sandbox credentials or explicit EUR verification flags are configured, and no sandbox order/capture was attempted. The local Express server was restarted at `http://localhost:3000`; no production schema change, production deployment, or real charge was performed.
+
+Validation on this date: Node tests passed (14/14); changed JavaScript and PHP files passed syntax checks; direct PHP integration verified migration idempotency and PHP storage; browser verification confirmed the unsupported-currency dialog shows the recalculated EUR amount and stores the original preference plus explicit confirmation. PHPUnit/PHPStan could not run because Composer and `vendor/` are not installed.
 
 ## Backup, restore, and disaster recovery
 

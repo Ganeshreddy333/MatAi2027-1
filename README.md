@@ -23,7 +23,7 @@ Bootstrap 5.3.3 CSS is loaded from jsDelivr before the existing custom design sy
 
 ## Local development
 
-Requirements: PHP 8.2+, Composer, and the PHP extensions `pdo_mysql`, `curl`, `fileinfo`, `json`, `mbstring`, and `openssl`.
+Requirements: PHP 8.2+, Composer, and the PHP extensions `pdo_mysql`, `curl`, `fileinfo`, `json`, `mbstring`, and `openssl`. Confirm the active CLI configuration with `php --ini`; on Windows, enable these extensions in that `php.ini` and set `extension_dir` to the PHP installation's `ext` directory. The PDO check `php -r "echo implode(',', PDO::getAvailableDrivers());"` must include `mysql` before starting the PHP API.
 
 ```sh
 composer install
@@ -48,9 +48,9 @@ Without MySQL settings, the PHP backend uses the existing private JSON files und
    php backend/bin/migrate.php
    ```
 
-The initial migration uses `CREATE TABLE IF NOT EXISTS` and the existing `matai_submissions`, `matai_submission_locks`, `matai_site_content`, and `matai_migrations` table names and columns. Legacy JSON submissions/content are imported once using the existing `legacy-json-v1` migration marker. Original JSON files are not deleted or rewritten. Existing schema, content, identifiers, and records are never dropped or reset.
+The migrations are forward-only: `001_initial.sql` creates the application tables, and `002_currency_audit.sql` adds the amount, preferred, and transaction currency columns and backfills only currency values already present in submission JSON. New records keep these normalized columns and the JSON record in sync. Legacy JSON submissions/content are imported once using the existing `legacy-json-v1` migration marker. Original JSON files are not deleted or rewritten. Existing schema, content, identifiers, and records are never dropped or reset.
 
-Do not run migrations against production before taking a backup and confirming the target database. No database was contacted while preparing this migration.
+Do not run migrations against production before taking a backup and confirming the target database. The approved local non-production database was migrated and currency persistence was verified on 2026-10-28; historical records with no transaction-currency evidence remain null rather than being assigned a guessed currency.
 
 ## Admin, uploads, and security
 
@@ -106,7 +106,7 @@ See [docs/production-readiness.md](docs/production-readiness.md) for operational
 7. Enforce HTTPS, configure SMTP, then configure provider webhooks to the HTTPS endpoints above. Use test credentials until verified.
 8. Review PHP/web-server logs and run a harmless public-page/API and test-mode submission check after each deployment.
 
-Hostinger plan details vary; confirm document-root, CLI Composer/PHP version, scheduled-job, webhook, and rewrite support in the account before deployment. No deployment was performed.
+Hostinger plan details vary; confirm document-root, CLI Composer/PHP version, scheduled-job, webhook, and rewrite support in the account before deployment. No Hostinger or production deployment was performed.
 
 ## Rollback
 

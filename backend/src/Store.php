@@ -20,11 +20,12 @@ final class Store
         $this->assertKind($kind);
         if ($this->pdo !== null) {
             $query = $this->pdo->prepare(
-                'SELECT record_json FROM matai_submissions WHERE kind = ? ORDER BY received_at, reference'
+                'SELECT record_json, amount_currency, preferred_currency, transaction_currency ' .
+                'FROM matai_submissions WHERE kind = ? ORDER BY received_at, reference'
             );
             $query->execute([$kind]);
             return array_map(
-                static fn (array $row): array => json_decode((string) $row['record_json'], true, 512, JSON_THROW_ON_ERROR),
+                fn (array $row): array => $this->recordFromRow($row),
                 $query->fetchAll()
             );
         }
@@ -135,12 +136,13 @@ final class Store
             $lock = $this->pdo->prepare('SELECT kind FROM matai_submission_locks WHERE kind = ? FOR UPDATE');
             $lock->execute([$kind]);
             $query = $this->pdo->prepare(
-                'SELECT reference, record_json FROM matai_submissions WHERE kind = ? FOR UPDATE'
+                'SELECT reference, record_json, amount_currency, preferred_currency, transaction_currency ' .
+                'FROM matai_submissions WHERE kind = ? FOR UPDATE'
             );
             $query->execute([$kind]);
             $rows = $query->fetchAll();
             $records = array_map(
-                static fn (array $row): array => json_decode((string) $row['record_json'], true, 512, JSON_THROW_ON_ERROR),
+                fn (array $row): array => $this->recordFromRow($row),
                 $rows
             );
             $result = $callback($records);
@@ -199,15 +201,19 @@ final class Store
         }
         $insert = $this->pdo->prepare(
             'INSERT INTO matai_submissions ' .
-            '(kind, reference, received_at, status, payment_status, amount, record_json) ' .
-            'VALUES (?, ?, ?, ?, ?, ?, ?) ' .
+            '(kind, reference, received_at, status, payment_status, amount, amount_currency, ' .
+            'preferred_currency, transaction_currency, record_json) ' .
+            'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ' .
             'ON DUPLICATE KEY UPDATE received_at = VALUES(received_at), status = VALUES(status), ' .
-            'payment_status = VALUES(payment_status), amount = VALUES(amount), record_json = VALUES(record_json)'
+            'payment_status = VALUES(payment_status), amount = VALUES(amount), ' .
+            'amount_currency = VALUES(amount_currency), preferred_currency = VALUES(preferred_currency), ' .
+            'transaction_currency = VALUES(transaction_currency), record_json = VALUES(record_json)'
         );
         foreach ($records as $record) {
             if (!is_array($record) || empty($record['reference'])) {
                 throw new RuntimeException('Submission record is missing its reference.');
             }
+            $data = is_array($record['data'] ?? null) ? $record['data'] : [];
             $insert->execute([
                 $kind,
                 substr((string) $record['reference'], 0, 80),
@@ -215,8 +221,26 @@ final class Store
                 $record['status'] ?? null,
                 $record['paymentStatus'] ?? null,
                 isset($record['amount']) ? (float) $record['amount'] : null,
+                $record['amountCurrency'] ?? $record['transactionCurrency'] ?? $record['razorpayCurrency'] ?? null,
+                $record['preferredCurrency'] ?? $data['originalSelectedCurrency'] ?? $data['currency'] ?? null,
+                $record['transactionCurrency'] ?? $record['amountCurrency'] ?? $record['razorpayCurrency'] ?? null,
                 json_encode($record, JSON_THROW_ON_ERROR),
             ]);
         }
+    }
+
+    private function recordFromRow(array $row): array
+    {
+        $record = json_decode((string) $row['record_json'], true, 512, JSON_THROW_ON_ERROR);
+        foreach ([
+            'amount_currency' => 'amountCurrency',
+            'preferred_currency' => 'preferredCurrency',
+            'transaction_currency' => 'transactionCurrency',
+        ] as $column => $field) {
+            if (($row[$column] ?? null) !== null) {
+                $record[$field] = trim((string) $row[$column]);
+            }
+        }
+        return $record;
     }
 }

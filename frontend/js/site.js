@@ -137,12 +137,12 @@
       '<header class="site-header">' +
       '<div class="container nav">' +
         '<a class="brand" href="index.html">' +
-          '<span class="logo">Ai</span>' +
-          '<span class="brand-title"><span class="brand-mat">Mat</span><span class="brand-ai">Ai</span> <span class="brand-year">2027</span><small>Materials · Engineering · AI</small></span>' +
+          '<span class="logo" aria-hidden="true">' + (current === "index.html" ? "M" : "Ai") + "</span>" +
+          '<span class="brand-title"><span class="brand-mat">Mat</span><span class="brand-ai">Ai</span> <span class="brand-year">2027</span><small>' + (current === "index.html" ? "Materials · AI · Engineering" : "Materials · Engineering · AI") + "</small></span>" +
         '</a>' +
         '<nav aria-label="Primary"><ul class="nav-links" id="navLinks">' + links + '</ul></nav>' +
         '<div class="nav-cta">' +
-          '<a class="btn btn-primary btn-sm" href="registration.html#registration-details">Register Now</a>' +
+          '<a class="btn btn-primary btn-sm" href="registration.html#registration-details"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="8" r="3"></circle><path d="M3.5 19v-1.3a5.5 5.5 0 0 1 11 0V19zM18 8v6M15 11h6"></path></svg>Register Now</a>' +
           '<button class="nav-toggle" id="navToggle" type="button" aria-label="Open navigation menu" aria-controls="navLinks" aria-expanded="false"><span></span><span></span><span></span></button>' +
         '</div>' +
       '</div>' +
@@ -543,7 +543,7 @@
   /* ---------- Load public content loader once ---------- */
   function ensureContentScript() {
     if (window.MATAI_CONTENT || document.querySelector('script[data-matai-content]')) return;
-    var src = SITE_SRC.replace(/site\.js.*$/, "content.js?v=20261025-home-gallery-controls");
+    var src = SITE_SRC.replace(/site\.js.*$/, "content.js?v=20261028-home-topic-strip");
     var s = document.createElement("script");
     s.async = false;
     s.src = src; s.setAttribute("data-matai-content", "1");

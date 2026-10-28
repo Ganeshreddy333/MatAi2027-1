@@ -65,6 +65,40 @@ final class RegistrationServiceTest extends TestCase
         $this->service->prepare($input);
     }
 
+    public function testUnsupportedTransactionCurrencyIsRejected(): void
+    {
+        $input = $this->validInput();
+        $input['currency'] = 'USD';
+        $input['originalSelectedCurrency'] = 'USD';
+
+        $this->expectException(DomainException::class);
+        $this->service->prepare($input);
+    }
+
+    public function testCurrencyFallbackRequiresExplicitConfirmation(): void
+    {
+        $input = $this->validInput();
+        $input['originalSelectedCurrency'] = 'USD';
+
+        $this->expectException(DomainException::class);
+        $this->service->prepare($input);
+    }
+
+    public function testConfirmedFallbackKeepsPreferredCurrencyForAudit(): void
+    {
+        $input = $this->validInput();
+        $input['originalSelectedCurrency'] = 'USD';
+        $input['currencyFallbackConfirmed'] = 'true';
+
+        $registration = $this->service->prepare($input);
+
+        self::assertSame(10500, $registration['totalCents']);
+        self::assertSame('USD', $registration['preferredCurrency']);
+        self::assertSame('EUR', $registration['transactionCurrency']);
+        self::assertSame('EUR', $registration['data']['currency']);
+        self::assertTrue($registration['data']['currencyFallbackConfirmed']);
+    }
+
     private function validInput(): array
     {
         return [
@@ -75,6 +109,9 @@ final class RegistrationServiceTest extends TestCase
             'country' => 'Germany',
             'terms' => true,
             'paymentGateway' => 'Bank Transfer',
+            'currency' => 'EUR',
+            'originalSelectedCurrency' => 'EUR',
+            'currencyFallbackConfirmed' => 'false',
             'qty_speaker' => '1',
         ];
     }

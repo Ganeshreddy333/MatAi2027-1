@@ -117,4 +117,19 @@
 
 **Acceptance: Failed / Not production-ready.** Local unit and access-control smoke checks passed, but all payment providers were disabled and most provider, email, production, and resilience scenarios could not be exercised. The absent payment ledger, checkout idempotency, event deduplication, reconciliation, refund/dispute handling, and email outbox are release blockers. Legacy Express password-hash, CSRF, session-rotation, and Secure-cookie controls have been implemented and unit-tested, but route-level authentication, configured credentials, and production HTTPS behavior remain unverified; do not expose that runtime publicly until staging checks pass.
 
-No database records or migrations were changed during this test pass.
+No database records or migrations were changed during the 2026-10-20 test pass described above.
+
+## Currency migration follow-up — 2026-10-28
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Local non-production schema migration | Passed | `npm run db:setup` applied `002_currency_audit`; migration markers `001_initial`, `legacy-json-v1`, and `002_currency_audit` are present. |
+| Currency persistence through Node storage | Passed | Temporary EUR amount, original USD preference, and confirmed EUR currency round-tripped through normalized SQL columns and `record_json`; the temporary row was removed. |
+| Currency persistence through PHP storage and migration runner | Passed | Direct PHP/PDO integration test applied migrations idempotently and round-tripped amount/currency columns; the temporary row was removed. |
+| Existing local data preservation | Passed | Counts remain 5 registrations, 2 abstracts, 3 contacts, 2 brochure requests, and 1 site-content row; no temporary verification rows remain. |
+| Existing registration currency audit | Partial | No existing registration has `Paid` status. Historical transaction-currency data is missing from existing records; migration leaves unknown values null and does not infer a charge currency. |
+| Explicit currency fallback UX | Passed | Browser check selected GBP with a registration item; dialog disclosed EUR 681.45, and confirmation retained the GBP preference while setting EUR as transaction currency. No checkout was submitted. |
+| Node tests and syntax checks | Passed | `npm test`: 14/14; changed JavaScript/PHP files passed syntax checks and `git diff --check`. |
+| PHPUnit/PHPStan | Not Run | Composer and `vendor/` are not installed in this environment. |
+| Provider sandbox transaction | Not Run | Provider credentials and EUR verification flags are absent; all online providers remain disabled. |
+| Real charge / production deployment | Not Run | User selected sandbox and local-only scope; no real charge or production deployment was attempted. |

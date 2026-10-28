@@ -35,6 +35,18 @@ function parseJsonColumn(value, field) {
   return value;
 }
 
+function recordFromRow(row) {
+  const record = parseJsonColumn(row.record_json, "record_json");
+  for (const [column, field] of [
+    ["amount_currency", "amountCurrency"],
+    ["preferred_currency", "preferredCurrency"],
+    ["transaction_currency", "transactionCurrency"]
+  ]) {
+    if (row[column] != null) record[field] = String(row[column]).trim();
+  }
+  return record;
+}
+
 function recordValues(record, kind) {
   if (!record || typeof record !== "object" || Array.isArray(record) ||
       typeof record.reference !== "string" || !record.reference || record.reference.length > 80) {
@@ -45,14 +57,30 @@ function recordValues(record, kind) {
   const paymentStatus = typeof record.paymentStatus === "string" ? record.paymentStatus : null;
   const amount = record.amount == null ? null : Number(record.amount);
   if (amount != null && !Number.isFinite(amount)) throw new Error("Submission has an invalid payment amount.");
-  return [kind, record.reference, receivedAt, status, paymentStatus, amount, JSON.stringify(record)];
+  const data = record.data && typeof record.data === "object" && !Array.isArray(record.data)
+    ? record.data
+    : {};
+  const currency = (value) => {
+    if (value == null || value === "") return null;
+    const normalized = String(value).trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(normalized)) throw new Error("Submission has an invalid currency code.");
+    return normalized;
+  };
+  const amountCurrency = currency(record.amountCurrency || record.transactionCurrency || record.razorpayCurrency);
+  const preferredCurrency = currency(record.preferredCurrency || data.originalSelectedCurrency || data.currency);
+  const transactionCurrency = currency(record.transactionCurrency || record.amountCurrency || record.razorpayCurrency);
+  return [
+    kind, record.reference, receivedAt, status, paymentStatus, amount,
+    amountCurrency, preferredCurrency, transactionCurrency, JSON.stringify(record)
+  ];
 }
 
 async function insertRecord(connection, record, kind) {
   await connection.execute(
     "INSERT IGNORE INTO matai_submissions " +
-      "(kind, reference, received_at, status, payment_status, amount, record_json) " +
-      "VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "(kind, reference, received_at, status, payment_status, amount, amount_currency, " +
+      "preferred_currency, transaction_currency, record_json) " +
+      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     recordValues(record, kind)
   );
 }
@@ -70,10 +98,13 @@ async function persistRecords(connection, kind, existingRows, records) {
   for (const record of records) {
     await connection.execute(
       "INSERT INTO matai_submissions " +
-        "(kind, reference, received_at, status, payment_status, amount, record_json) " +
-        "VALUES (?, ?, ?, ?, ?, ?, ?) " +
+        "(kind, reference, received_at, status, payment_status, amount, amount_currency, " +
+        "preferred_currency, transaction_currency, record_json) " +
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
         "ON DUPLICATE KEY UPDATE received_at = VALUES(received_at), status = VALUES(status), " +
-        "payment_status = VALUES(payment_status), amount = VALUES(amount), record_json = VALUES(record_json)",
+        "payment_status = VALUES(payment_status), amount = VALUES(amount), " +
+        "amount_currency = VALUES(amount_currency), preferred_currency = VALUES(preferred_currency), " +
+        "transaction_currency = VALUES(transaction_currency), record_json = VALUES(record_json)",
       recordValues(record, kind)
     );
   }
@@ -134,8 +165,58 @@ async function initializeMySql(defaultContent) {
       "applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP" +
       ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
   );
+  await applyMigrations();
   for (const kind of KINDS) {
     await pool.execute("INSERT IGNORE INTO matai_submission_locks (kind) VALUES (?)", [kind]);
+  }
+
+  async function applyMigrations() {
+    const connection = await pool.getConnection();
+    try {
+      const [lockRows] = await connection.query("SELECT GET_LOCK('matai_schema_migration', 30) AS acquired");
+      if (Number(lockRows[0] && lockRows[0].acquired) !== 1) {
+        throw new Error("Could not acquire the database migration lock.");
+      }
+      try {
+        for (const migrationKey of ["001_initial", "002_currency_audit"]) {
+          const [applied] = await connection.execute(
+            "SELECT migration_key FROM matai_migrations WHERE migration_key = ?",
+            [migrationKey]
+          );
+          if (applied.length) continue;
+
+          const migrationPath = path.join(__dirname, "migrations", migrationKey + ".sql");
+          const sql = await fsp.readFile(migrationPath, "utf8");
+          const statements = sql.split(";").map((statement) => statement.trim()).filter(Boolean);
+          if (migrationKey === "002_currency_audit") {
+            const [columns] = await connection.query(
+              "SELECT COLUMN_NAME FROM information_schema.COLUMNS " +
+                "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'matai_submissions'"
+            );
+            const existingColumns = new Set(columns.map((column) => column.COLUMN_NAME));
+            const currencyColumns = ["amount_currency", "preferred_currency", "transaction_currency"];
+            const presentCount = currencyColumns.filter((column) => existingColumns.has(column)).length;
+            if (presentCount !== 0 && presentCount !== currencyColumns.length) {
+              throw new Error("Currency audit migration is partially applied; inspect matai_submissions before retrying.");
+            }
+            for (const statement of statements) {
+              if (presentCount === currencyColumns.length && /^\s*ALTER\s+TABLE\b/i.test(statement)) continue;
+              await connection.query(statement);
+            }
+          } else {
+            for (const statement of statements) await connection.query(statement);
+          }
+          await connection.execute(
+            "INSERT INTO matai_migrations (migration_key) VALUES (?)",
+            [migrationKey]
+          );
+        }
+      } finally {
+        await connection.query("SELECT RELEASE_LOCK('matai_schema_migration')");
+      }
+    } finally {
+      connection.release();
+    }
   }
 
   const connection = await pool.getConnection();
@@ -233,10 +314,11 @@ async function saveContent(content) {
 async function readArr(kind) {
   if (pool) {
     const [rows] = await pool.execute(
-      "SELECT record_json FROM matai_submissions WHERE kind = ? ORDER BY received_at, reference",
+      "SELECT record_json, amount_currency, preferred_currency, transaction_currency " +
+        "FROM matai_submissions WHERE kind = ? ORDER BY received_at, reference",
       [kind]
     );
-    return rows.map((row) => parseJsonColumn(row.record_json, "record_json"));
+    return rows.map(recordFromRow);
   }
   try {
     const records = JSON.parse(await fsp.readFile(path.join(DATA_DIR, kind + ".json"), "utf8"));
@@ -287,10 +369,11 @@ async function updateArr(kind, update) {
         await connection.execute("INSERT IGNORE INTO matai_submission_locks (kind) VALUES (?)", [kind]);
         await connection.execute("SELECT kind FROM matai_submission_locks WHERE kind = ? FOR UPDATE", [kind]);
         const [rows] = await connection.execute(
-          "SELECT reference, record_json FROM matai_submissions WHERE kind = ? FOR UPDATE",
+          "SELECT reference, record_json, amount_currency, preferred_currency, transaction_currency " +
+            "FROM matai_submissions WHERE kind = ? FOR UPDATE",
           [kind]
         );
-        const records = rows.map((row) => parseJsonColumn(row.record_json, "record_json"));
+        const records = rows.map(recordFromRow);
         const result = await update(records);
         await persistRecords(connection, kind, rows, records);
         await connection.commit();

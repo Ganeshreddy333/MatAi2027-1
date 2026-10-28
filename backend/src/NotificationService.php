@@ -34,6 +34,17 @@ final class NotificationService
         if (is_string($userEmail) && filter_var($userEmail, FILTER_VALIDATE_EMAIL)) {
             $recipients[] = $userEmail;
         }
+        $registrationDetails = '';
+        $currency = $record['transactionCurrency'] ?? $record['amountCurrency'] ?? '';
+        if ($kind === 'register' && is_numeric($record['amount'] ?? null)
+            && is_string($currency) && preg_match('/^[A-Z]{3}$/', $currency)) {
+            $registrationDetails = sprintf(
+                "\nRegistration total: %s %s. Payment status: %s.",
+                $currency,
+                number_format((float) $record['amount'], 2, '.', ''),
+                (string) ($record['paymentStatus'] ?? 'Pending')
+            );
+        }
         foreach (array_unique($recipients) as $to) {
             try {
                 $mail = new PHPMailer(true);
@@ -53,8 +64,8 @@ final class NotificationService
                     ? 'New MatAi 2027 ' . $kind . ' submission ' . $record['reference']
                     : 'MatAi 2027 submission received';
                 $mail->Body = $to === $recipient
-                    ? 'A new ' . $kind . ' submission was received. Reference: ' . $record['reference']
-                    : 'Thank you. Your MatAi 2027 ' . $kind . ' submission was received. Reference: ' . $record['reference'];
+                    ? 'A new ' . $kind . ' submission was received. Reference: ' . $record['reference'] . $registrationDetails
+                    : 'Thank you. Your MatAi 2027 ' . $kind . ' submission was received. Reference: ' . $record['reference'] . $registrationDetails;
                 $mail->send();
                 OperationalLogger::event('info', 'submission_notification_sent', ['kind' => $kind]);
             } catch (MailException | RuntimeException $error) {

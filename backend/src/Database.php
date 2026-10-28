@@ -55,27 +55,51 @@ final class Database
             'applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP' .
             ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
         );
-        $migration = $root . '/backend/migrations/001_initial.sql';
-        if (!is_file($migration)) {
-            throw new RuntimeException('Required database migration is missing: 001_initial.sql');
-        }
         $lock = $pdo->query("SELECT GET_LOCK('matai_schema_migration', 30)");
         if ($lock === false || (int) $lock->fetchColumn() !== 1) {
             throw new RuntimeException('Could not acquire the database migration lock.');
         }
         try {
-            $stmt = $pdo->prepare('SELECT migration_key FROM matai_migrations WHERE migration_key = ?');
-            $stmt->execute(['001_initial']);
-            if (!$stmt->fetch()) {
-                $sql = file_get_contents($migration);
-                if ($sql === false) {
-                    throw new RuntimeException('Could not read database migration 001_initial.sql.');
+            foreach (['001_initial', '002_currency_audit'] as $migrationKey) {
+                $migration = $root . '/backend/migrations/' . $migrationKey . '.sql';
+                if (!is_file($migration)) {
+                    throw new RuntimeException('Required database migration is missing: ' . $migrationKey . '.sql');
                 }
-                foreach (array_filter(array_map('trim', explode(';', $sql))) as $statement) {
-                    $pdo->exec($statement);
+                $stmt = $pdo->prepare('SELECT migration_key FROM matai_migrations WHERE migration_key = ?');
+                $stmt->execute([$migrationKey]);
+                if (!$stmt->fetch()) {
+                    if ($migrationKey === '002_currency_audit') {
+                        $columns = $pdo->query(
+                            "SELECT COLUMN_NAME FROM information_schema.COLUMNS " .
+                            "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'matai_submissions'"
+                        );
+                        $existingColumns = $columns === false ? [] : $columns->fetchAll(PDO::FETCH_COLUMN);
+                        $currencyColumns = ['amount_currency', 'preferred_currency', 'transaction_currency'];
+                        $presentColumns = array_intersect($currencyColumns, $existingColumns);
+                        if ($presentColumns !== [] && count($presentColumns) !== count($currencyColumns)) {
+                            throw new RuntimeException('Currency audit migration is partially applied; inspect matai_submissions before retrying.');
+                        }
+                        if ($presentColumns === []) {
+                            $sql = file_get_contents($migration);
+                            if ($sql === false) {
+                                throw new RuntimeException('Could not read database migration ' . $migrationKey . '.sql.');
+                            }
+                            foreach (array_filter(array_map('trim', explode(';', $sql))) as $statement) {
+                                $pdo->exec($statement);
+                            }
+                        }
+                    } else {
+                        $sql = file_get_contents($migration);
+                        if ($sql === false) {
+                            throw new RuntimeException('Could not read database migration ' . $migrationKey . '.sql.');
+                        }
+                        foreach (array_filter(array_map('trim', explode(';', $sql))) as $statement) {
+                            $pdo->exec($statement);
+                        }
+                    }
+                    $insert = $pdo->prepare('INSERT INTO matai_migrations (migration_key) VALUES (?)');
+                    $insert->execute([$migrationKey]);
                 }
-                $insert = $pdo->prepare('INSERT INTO matai_migrations (migration_key) VALUES (?)');
-                $insert->execute(['001_initial']);
             }
             $this->importLegacyData($root);
         } finally {
@@ -105,13 +129,15 @@ final class Database
                     }
                     $insert = $pdo->prepare(
                         'INSERT IGNORE INTO matai_submissions ' .
-                        '(kind, reference, received_at, status, payment_status, amount, record_json) ' .
-                        'VALUES (?, ?, ?, ?, ?, ?, ?)'
+                        '(kind, reference, received_at, status, payment_status, amount, amount_currency, ' .
+                        'preferred_currency, transaction_currency, record_json) ' .
+                        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
                     );
                     foreach ($records as $record) {
                         if (!is_array($record) || !isset($record['reference'])) {
                             throw new RuntimeException('Legacy record is missing its reference: ' . $kind);
                         }
+                        $data = is_array($record['data'] ?? null) ? $record['data'] : [];
                         $insert->execute([
                             $kind,
                             (string) $record['reference'],
@@ -119,6 +145,9 @@ final class Database
                             $record['status'] ?? null,
                             $record['paymentStatus'] ?? null,
                             isset($record['amount']) ? (float) $record['amount'] : null,
+                            $record['amountCurrency'] ?? $record['transactionCurrency'] ?? $record['razorpayCurrency'] ?? null,
+                            $record['preferredCurrency'] ?? $data['originalSelectedCurrency'] ?? $data['currency'] ?? null,
+                            $record['transactionCurrency'] ?? $record['amountCurrency'] ?? $record['razorpayCurrency'] ?? null,
                             json_encode($record, JSON_THROW_ON_ERROR),
                         ]);
                     }
