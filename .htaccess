@@ -8,3 +8,11 @@ RewriteRule ^(?:backend|vendor|node_modules|tests|\.github)(?:/|$) - [F,L,NC]
 <FilesMatch "(^\.|^composer\.(?:json|lock)$|^package(?:-lock)?\.json$|^README\.md$|\.log$)">
     Require all denied
 </FilesMatch>
+
+# Hostinger deploys the complete Git repository to public_html. Keep the
+# repository layout intact, but make its frontend directory behave as the
+# public document root. Requests already targeting frontend/ are left alone
+# to prevent an internal rewrite loop.
+RewriteRule ^$ frontend/index.html [L]
+RewriteCond %{REQUEST_URI} !^/frontend(?:/|$) [NC]
+RewriteRule ^(.+)$ frontend/$1 [L]
