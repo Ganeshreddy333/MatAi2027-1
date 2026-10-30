@@ -1267,21 +1267,58 @@ app.post("/api/:kind", parseAbstractUpload, async (req, res) => {
 /* ---------- Admin API (all protected) ---------- */
 app.get("/admin/api/stats", requireAuth, async (req, res) => {
   try {
-  const out = { counts: {}, revenue: 0, revenueCurrency: BASE_CURRENCY, pending: 0, paid: 0, recent: [] };
-  for (const k of KINDS) {
-    const a = await readArr(k);
-    out.counts[k] = a.length;
-    if (k === "register") {
-      a.forEach((r) => {
-        if (r.paymentStatus === "Paid") { out.revenue += Number(r.amount) || 0; out.paid++; }
-        else if (!r.paymentStatus || r.paymentStatus === "Pending") { out.pending++; }
-      });
+    const out = {
+      counts: {}, revenue: 0, revenueCurrency: BASE_CURRENCY, revenueByCurrency: {},
+      pending: 0, paid: 0, pendingEnquiries: 0, recent: [], recentRegistrations: [], recentPayments: []
+    };
+    const recordsByKind = {};
+    for (const kind of KINDS) {
+      const records = await readArr(kind);
+      recordsByKind[kind] = records;
+      out.counts[kind] = records.length;
+      if (kind === "contact" || kind === "brochure") {
+        out.pendingEnquiries += records.filter((record) => (record.status || "New") === "New").length;
+      }
+      if (kind === "register") {
+        records.forEach((record) => {
+          if (record.paymentStatus === "Paid") {
+            out.paid++;
+            const currency = /^[A-Z]{3}$/.test(record.transactionCurrency || record.amountCurrency || "")
+              ? (record.transactionCurrency || record.amountCurrency)
+              : BASE_CURRENCY;
+            const amount = Number(record.amount);
+            if (Number.isFinite(amount)) {
+              out.revenueByCurrency[currency] = (out.revenueByCurrency[currency] || 0) + amount;
+              if (currency === BASE_CURRENCY) out.revenue += amount;
+            }
+          } else if (!record.paymentStatus || record.paymentStatus === "Pending") {
+            out.pending++;
+          }
+        });
+      }
     }
-    a.forEach((r) => out.recent.push({ reference: r.reference, kind: k, receivedAt: r.receivedAt, paymentStatus: r.paymentStatus || "" }));
-  }
-  out.recent.sort((a, b) => String(b.receivedAt || "").localeCompare(String(a.receivedAt || "")));
-  out.recent = out.recent.slice(0, 10);
-  res.json({ ok: true, stats: out });
+    const newestFirst = (a, b) => String(b.receivedAt || "").localeCompare(String(a.receivedAt || ""));
+    out.recent = KINDS.reduce((recent, kind) => recent.concat(recordsByKind[kind].map((record) => ({
+      reference: record.reference,
+      kind,
+      receivedAt: record.receivedAt,
+      paymentStatus: record.paymentStatus || ""
+    }))), []).sort(newestFirst).slice(0, 10);
+    out.recentRegistrations = recordsByKind.register.slice().sort(newestFirst).slice(0, 8).map((record) => ({
+      reference: record.reference,
+      fullName: record.data && record.data.fullName || "",
+      receivedAt: record.receivedAt,
+      paymentStatus: record.paymentStatus || "Pending"
+    }));
+    out.recentPayments = recordsByKind.register.filter((record) => record.paymentStatus).slice().sort(newestFirst).slice(0, 8).map((record) => ({
+      reference: record.reference,
+      fullName: record.data && record.data.fullName || "",
+      receivedAt: record.receivedAt,
+      paymentStatus: record.paymentStatus,
+      amount: record.amount,
+      currency: record.transactionCurrency || record.amountCurrency || BASE_CURRENCY
+    }));
+    res.json({ ok: true, stats: out });
   } catch (err) {
     console.error("Failed to read submission statistics:", err);
     res.status(500).json({ ok: false, error: "Could not load dashboard statistics." });
@@ -1411,7 +1448,9 @@ app.delete("/admin/api/submissions/:kind/:ref", requireAuth, async (req, res) =>
 
 app.get("/admin/api/export/:kind", requireAuth, async (req, res) => {
   const k = req.params.kind;
-  if (k !== "all" && KINDS.indexOf(k) < 0) return res.status(404).send("Unknown kind");
+  if (k !== "all" && k !== "enquiries" && k !== "accommodation" && KINDS.indexOf(k) < 0) {
+    return res.status(404).send("Unknown kind");
+  }
   let arr;
   try {
     if (k === "all") {
@@ -1422,6 +1461,19 @@ app.get("/admin/api/export/:kind", requireAuth, async (req, res) => {
       arr = groups.reduce((all, group) => {
         return all.concat(group.items.map((record) => Object.assign({ kind: group.kind }, record)));
       }, []);
+    } else if (k === "enquiries") {
+      const groups = await Promise.all(["contact", "brochure"].map(async (kind) => ({
+        kind,
+        items: await readArr(kind)
+      })));
+      arr = groups.reduce((all, group) => {
+        return all.concat(group.items.map((record) => Object.assign({ kind: group.kind }, record)));
+      }, []);
+    } else if (k === "accommodation") {
+      arr = (await readArr("register")).filter((record) =>
+        Number(record.data && record.data.qty_accom_single) > 0 ||
+        Number(record.data && record.data.qty_accom_double) > 0
+      );
     } else {
       arr = await readArr(k);
     }

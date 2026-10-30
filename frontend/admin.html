@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex,nofollow">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/admin.css?v=20261016-color-audit">
+  <link rel="stylesheet" href="css/admin.css?v=20261030-sidebar-layout">
 </head>
 <body>
   <div class="login-wrap" id="login-view">
@@ -26,35 +26,47 @@
 
   <div class="a-shell" id="shell">
     <div class="a-topbar">
-      <div class="a-brand"><span class="logo">MS</span><span>Admin Panel <b>2027</b></span></div>
+      <div class="a-brand"><span class="logo">MS</span><span>MatAi <b>2027</b><small>Administration</small></span></div>
       <div class="a-top-actions">
+        <span class="a-profile-mark" aria-hidden="true">A</span>
         <span class="a-admin-user" id="admin-user">Administrator</span>
-        <button class="a-btn ghost sm" id="logout-btn" type="button">Log out</button>
+        <button class="a-btn ghost sm" id="logout-btn" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>Log out</button>
       </div>
     </div>
 
     <div class="a-workspace">
       <aside class="a-sidebar" aria-label="Administration navigation">
-        <button class="a-nav-toggle" type="button" aria-expanded="true">Navigation</button>
-        <nav class="a-nav-tabs" aria-label="Admin sections">
-          <button class="a-tab active" data-view="dashboard" type="button"><span>▦</span>Dashboard</button>
-          <div class="a-nav-group"><button class="a-group-toggle" type="button">Website Content <span>⌄</span></button><div class="a-group-items">
-            <button class="a-tab" data-view="content" type="button">Homepage &amp; Conference</button><button class="a-tab" data-view="information" type="button">Important Dates &amp; Venue</button>
-          </div></div>
-          <div class="a-nav-group"><button class="a-group-toggle" type="button">Image &amp; Media <span>⌄</span></button><div class="a-group-items">
-            <button class="a-tab" data-view="media" type="button">Media Library</button>
-          </div></div>
-          <div class="a-nav-group"><button class="a-group-toggle" type="button">People <span>⌄</span></button><div class="a-group-items">
-            <button class="a-tab" data-view="speakers" type="button">Speakers</button><button class="a-tab" data-view="committee" type="button">Organizing Committee</button>
-          </div></div>
-          <div class="a-nav-group"><button class="a-group-toggle" type="button">Operations <span>⌄</span></button><div class="a-group-items">
-            <button class="a-tab" data-view="registrations" type="button">Registrations</button><button class="a-tab" data-view="abstracts" type="button">Abstracts</button><button class="a-tab" data-view="payments" type="button">Payments</button><button class="a-tab" data-view="enquiries" type="button">Enquiries &amp; Requests</button>
-          </div></div>
-          <div class="a-nav-group"><button class="a-group-toggle" type="button">Financial Configuration <span>⌄</span></button><div class="a-group-items">
-            <button class="a-tab" data-view="settings" type="button">Registration Pricing</button><button class="a-tab" data-view="coupons" type="button">Coupons</button><button class="a-tab" data-view="accommodation" type="button">Accommodation</button>
-          </div></div>
-          <!-- Pages section deliberately retained, including its editor and restore controls below. -->
-          <button class="a-tab" data-view="pages" type="button"><span>▤</span>Pages</button>
+        <button class="a-nav-toggle" type="button" aria-expanded="true" aria-controls="admin-navigation">☰ Navigation</button>
+        <nav class="a-nav-tabs" id="admin-navigation" aria-label="Admin sections">
+          <div class="a-nav-group"><p class="a-nav-label">Overview</p>
+            <button class="a-tab active" data-view="dashboard" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>Dashboard</button>
+          </div>
+          <div class="a-nav-group"><p class="a-nav-label">Website Management</p>
+            <button class="a-tab" data-view="content" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7"/><path d="M5 9v12h14V9"/><path d="M9 21v-8h6v8"/></svg>Homepage &amp; Conference</button>
+            <button class="a-tab" data-view="information" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Important Dates &amp; Venue</button>
+          </div>
+          <div class="a-nav-group"><p class="a-nav-label">Image &amp; Media</p>
+            <button class="a-tab" data-view="media" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>Media Library</button>
+          </div>
+          <div class="a-nav-group"><p class="a-nav-label">People Management</p>
+            <button class="a-tab" data-view="speakers" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>Speakers</button>
+            <button class="a-tab" data-view="committee" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Organizing Committee</button>
+          </div>
+          <div class="a-nav-group"><p class="a-nav-label">Conference Operations</p>
+            <button class="a-tab" data-view="registrations" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3 6h.01M3 12h.01M3 18h.01"/></svg>Registrations</button>
+            <button class="a-tab" data-view="abstracts" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg>Abstracts</button>
+            <button class="a-tab" data-view="payments" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>Payments</button>
+            <button class="a-tab" data-view="accommodation" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6M3 11h18"/></svg>Accommodation</button>
+            <button class="a-tab" data-view="enquiries" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>Enquiries &amp; Requests</button>
+          </div>
+          <div class="a-nav-group"><p class="a-nav-label">Financial Configuration</p>
+            <button class="a-tab" data-view="settings" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M15 9.5c0-1.1-1.3-2-3-2s-3 .9-3 2 1.3 2 3 2 3 .9 3 2-1.3 2-3 2-3-.9-3-2"/></svg>Registration Pricing</button>
+            <button class="a-tab" data-view="coupons" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 13 11 22l-9-9V2h11z"/><path d="M7 7h.01"/></svg>Coupons</button>
+          </div>
+          <div class="a-nav-group"><p class="a-nav-label">Existing Module</p>
+            <!-- Pages remains connected to its existing editor and API. -->
+            <button class="a-tab" data-view="pages" type="button"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg>Pages</button>
+          </div>
         </nav>
       </aside>
       <main class="a-main">
@@ -62,26 +74,38 @@
 
       <div class="a-header-actions">
         <div>
-          <h1 id="main-title">Website &amp; Registration Settings</h1>
-          <p class="a-muted">Saved changes are published to the public website.</p>
+          <div class="a-breadcrumb" id="breadcrumb">Overview / Dashboard</div>
+          <h1 id="main-title">Dashboard</h1>
+          <p class="a-muted" id="page-description">A live view of conference registrations, payments, and enquiries.</p>
         </div>
         <div class="a-action-buttons">
           <button class="a-btn ghost sm" id="refresh-btn" type="button">Refresh</button>
-          <button class="a-btn" id="save-content" type="button">Save Website Changes</button>
+          <button class="a-btn" id="save-content" type="button" style="display:none">Save changes</button>
         </div>
       </div>
 
-      <section id="dashboard-view">
-        <div class="a-dashboard-intro"><h2>Conference overview</h2><p class="a-muted">Live operational totals from stored submissions and verified payment records.</p></div>
-        <div class="a-stats dashboard-stats" id="dashboard-stats"></div>
-        <div class="a-card"><h2>Recent activity</h2><div class="a-tablewrap"><table class="a-table"><thead><tr><th>Reference</th><th>Module</th><th>When</th><th>Status</th></tr></thead><tbody id="recent-activity"></tbody></table></div><p class="a-empty" id="recent-empty" style="display:none">No activity yet.</p></div>
+      <section class="admin-view" id="dashboard-view">
+        <p class="a-load-state" id="dashboard-state" role="status" aria-live="polite" hidden></p>
+        <div class="a-stats dashboard-stats" id="dashboard-stats" aria-live="polite"><div class="a-stat"><b>—</b><span>Loading dashboard data</span></div></div>
+        <div class="a-dashboard-grid">
+          <div class="a-card"><div class="a-section-heading"><div><h2>Recent registrations</h2><p class="a-muted">Latest registration records</p></div><button class="a-btn ghost sm" type="button" data-view="registrations">View registrations</button></div><div class="a-tablewrap"><table class="a-table"><thead><tr><th>Reference</th><th>Registrant</th><th>Received</th><th>Payment</th></tr></thead><tbody id="recent-registrations"></tbody></table></div><p class="a-empty" id="recent-registrations-empty" style="display:none">No registration activity yet.</p></div>
+          <div class="a-card"><div class="a-section-heading"><div><h2>Recent payments</h2><p class="a-muted">Latest payment activity from registrations</p></div><button class="a-btn ghost sm" type="button" data-view="payments">View payments</button></div><div class="a-tablewrap"><table class="a-table"><thead><tr><th>Reference</th><th>Registrant</th><th>Amount</th><th>Status</th></tr></thead><tbody id="recent-payments"></tbody></table></div><p class="a-empty" id="recent-payments-empty" style="display:none">No payment activity yet.</p></div>
+        </div>
+        <div class="a-card"><h2>Quick actions</h2><div class="a-quick-actions">
+          <button class="a-quick-action" type="button" data-view="registrations"><span>Review registrations</span><b>→</b></button>
+          <button class="a-quick-action" type="button" data-view="abstracts"><span>Review abstracts</span><b>→</b></button>
+          <button class="a-quick-action" type="button" data-view="enquiries"><span>Open enquiries</span><b>→</b></button>
+          <button class="a-quick-action" type="button" data-view="content"><span>Update conference content</span><b>→</b></button>
+        </div></div>
       </section>
 
-      <section id="media-view" style="display:none">
-        <div class="a-card"><div class="a-section-heading"><div><h2>Image &amp; Media Library</h2><p class="a-muted">Images are grouped by public-page location. Replacements are stored persistently; removing an override restores the original asset and prevents a broken reference.</p></div></div><div id="media-list" class="a-media-list"></div><div class="a-save-bottom"><button class="a-btn" id="save-media" type="button">Save Media Changes</button></div></div>
+      <p class="a-load-state" id="management-state" role="status" aria-live="polite" hidden></p>
+
+      <section class="admin-view" id="media-view" style="display:none">
+        <div class="a-card"><div class="a-section-heading"><div><h2>Image &amp; Media Library</h2><p class="a-muted">Images are grouped by public-page location. Replacements are stored persistently; removing an override restores the original asset and prevents a broken reference.</p></div><label class="a-inline-search">Search media<input class="a-input" id="media-search" type="search" placeholder="Image or page name"></label></div><div id="media-list" class="a-media-list"></div><p class="a-empty a-empty-inline" id="media-no-results" hidden>No media items match this search.</p><div class="a-save-bottom"><button class="a-btn" id="save-media" type="button">Save Media Changes</button></div></div>
       </section>
 
-      <section id="content-view" style="display:none">
+      <section class="admin-view" id="content-view" style="display:none">
         <div class="a-card" id="conference-information">
           <h2>Conference Details &amp; Announcement</h2>
           <div class="a-form-grid">
@@ -92,6 +116,14 @@
             <label class="a-field">Conference theme
               <input class="a-input" id="c-theme" type="text">
             </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-view" id="information-view" style="display:none">
+        <div class="a-card">
+          <h2>Conference dates &amp; venue</h2>
+          <div class="a-form-grid">
             <label class="a-field">Conference dates
               <input class="a-input" id="c-dates" type="text">
             </label>
@@ -104,7 +136,6 @@
             </label>
           </div>
         </div>
-
         <div class="a-card" id="important-dates">
           <div class="a-section-heading">
             <div><h2>Important Dates</h2><p class="a-muted">These dates update wherever the site displays the shared dates list.</p></div>
@@ -115,7 +146,7 @@
 
         <div class="a-card" id="home-gallery-settings">
           <div class="a-section-heading">
-            <div><h2>Important Dates — Right Side</h2><p class="a-muted">Add an optional main heading and photos for the right half of the Important Dates section. Only the heading and photos appear on the home page.</p></div>
+            <div><h2>Homepage Highlights</h2><p class="a-muted">Add an optional heading and photos for the homepage highlights section.</p></div>
             <div class="a-action-buttons">
               <button class="a-btn ghost sm" id="add-home-gallery-photo" type="button">Add photo</button>
               <button class="a-btn ghost sm" id="clear-home-gallery-photos" type="button">Remove all photos</button>
@@ -129,6 +160,9 @@
           </div>
           <div id="home-gallery-photos"></div>
         </div>
+      </section>
+
+      <section class="admin-view" id="settings-view" style="display:none">
         <div class="a-card" id="registration-settings">
           <h2>Registration Periods &amp; Fees</h2>
           <p class="a-muted">Choose which tier is currently charged, update its public deadline, and edit category fees in USD.</p>
@@ -145,7 +179,9 @@
           <div class="fees-grid"><table id="item-prices"></table></div>
           <p class="a-muted">A fixed 5% tax is added to every registration order and its add-ons.</p>
         </div>
+      </section>
 
+      <section class="admin-view" id="coupons-view" style="display:none">
         <div class="a-card" id="coupon-settings">
           <div class="a-section-heading">
             <div><h2>Registration Coupons</h2><p class="a-muted">Coupons apply a percentage discount before tax is calculated.</p></div>
@@ -153,26 +189,33 @@
           </div>
           <div id="coupons-list"></div>
         </div>
-
-        <details class="a-card" id="committee-editor">
-          <summary><h2>Scientific Committee</h2></summary>
-          <p class="a-muted">Manage committee profiles shown on the committee page.</p>
-          <div id="members-list"></div>
-          <button class="a-btn ghost sm" id="add-member" type="button">Add committee member</button>
-        </details>
-
       </section>
 
-      <section id="speakers-view" style="display:none">
-        <div class="a-card" id="speaker-editor">
-          <h2>Speakers</h2>
-          <p class="a-muted">Manage speaker profiles shown on the speakers page.</p>
-          <div id="speakers-list"></div>
-          <button class="a-btn ghost sm" id="add-speaker" type="button">Add speaker</button>
+      <section class="admin-view" id="committee-view" style="display:none">
+        <div class="a-card" id="committee-editor">
+          <div class="a-section-heading">
+            <div><h2>Organizing Committee</h2><p class="a-muted">Manage the committee profiles shown on the public conference pages.</p></div>
+            <div class="a-action-buttons"><label class="a-inline-search">Search members<input class="a-input" id="committee-search" type="search" placeholder="Name, role, or institution"></label>
+              <button class="a-btn ghost sm" id="add-member" type="button">Add committee member</button></div>
+          </div>
+          <div id="members-list"></div>
+          <p class="a-empty a-empty-inline" id="committee-no-results" hidden>No committee members match this search.</p>
         </div>
       </section>
 
-      <section id="pages-view" style="display:none">
+      <section class="admin-view" id="speakers-view" style="display:none">
+        <div class="a-card" id="speaker-editor">
+          <div class="a-section-heading">
+            <div><h2>Speakers</h2><p class="a-muted">Manage speaker profiles shown on the speakers page.</p></div>
+            <div class="a-action-buttons"><label class="a-inline-search">Search speakers<input class="a-input" id="speaker-search" type="search" placeholder="Name, role, or institution"></label>
+              <button class="a-btn ghost sm" id="add-speaker" type="button">Add speaker</button></div>
+          </div>
+          <div id="speakers-list"></div>
+          <p class="a-empty a-empty-inline" id="speakers-no-results" hidden>No speakers match this search.</p>
+        </div>
+      </section>
+
+      <section class="admin-view" id="pages-view" style="display:none">
         <div id="pages-index" class="a-card">
           <h2>Choose a Website Page</h2>
           <p class="a-muted">Open one page at a time to update its information.</p>
@@ -188,27 +231,27 @@
         </div>
       </section>
 
-      <section id="sub-view" style="display:none">
+      <section class="admin-view" id="sub-view" style="display:none">
         <div class="a-panelhead">
-          <h2 id="sub-title">All Submissions</h2>
+          <div><h2 id="sub-title">Registrations</h2><p class="a-muted" id="sub-description"></p></div>
           <div class="a-action-buttons">
-            <label class="submission-filter">Form
-              <select class="a-select" id="submission-kind">
-                <option value="all">All forms</option>
-                <option value="register">Registrations</option>
-                <option value="abstract">Abstracts</option>
-                <option value="contact">Contacts</option>
-                <option value="brochure">Brochure requests</option>
-              </select>
+            <label class="submission-filter">Search
+              <input class="a-input" id="submission-search" type="search" placeholder="Search records" autocomplete="off">
+            </label>
+            <label class="submission-filter">Status
+              <select class="a-select" id="submission-status"><option value="">All statuses</option></select>
+            </label>
+            <label class="submission-filter">Sort
+              <select class="a-select" id="submission-sort"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="name">Name A–Z</option></select>
             </label>
             <button class="a-btn ghost sm" id="export-btn" type="button">Export CSV</button>
-            <button class="a-btn ghost sm" data-refresh-submissions type="button">Refresh</button>
           </div>
         </div>
+        <p class="a-load-state" id="submission-state" role="status" aria-live="polite" hidden></p>
         <div class="a-tablewrap">
           <table class="a-table"><thead id="thead"></thead><tbody id="tbody"></tbody></table>
         </div>
-        <div class="a-empty" id="empty" style="display:none">No records yet.</div>
+        <div class="a-empty" id="empty" hidden>No records yet.</div>
       </section>
       </main>
     </div>
@@ -220,6 +263,6 @@
     <div class="db" id="d-body"></div>
   </aside>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="js/admin.js?v=20261029-usd-base-pricing"></script>
+  <script src="js/admin.js?v=20261030-sidebar-layout"></script>
 </body>
 </html>

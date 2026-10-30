@@ -124,97 +124,121 @@
 
   /* ---------- Load dashboard ---------- */
   function loadAll() {
-    api("/admin/api/stats").then(function (j) { if (j && j.ok) renderStats(j.stats); })
-      .catch(function (err) { if (err.message !== "unauth") toast("Could not load dashboard statistics", true); });
+    if (current === "dashboard") {
+      el("dashboard-state").hidden = false;
+      el("dashboard-state").textContent = "Loading dashboard data...";
+    }
+    api("/admin/api/stats").then(function (j) {
+      if (j && j.ok) {
+        renderStats(j.stats);
+        el("dashboard-state").hidden = true;
+      }
+    }).catch(function (err) {
+      if (err.message !== "unauth") {
+        el("dashboard-state").hidden = false;
+        el("dashboard-state").textContent = "Dashboard data could not be loaded. Refresh to try again.";
+        toast("Could not load dashboard statistics", true);
+      }
+    });
     if (current === "dashboard") return;
-    if (["content", "pages", "speakers", "media", "committee"].indexOf(current) > -1) loadContent();
+    if (["content", "information", "pages", "speakers", "media", "committee", "settings", "coupons"].indexOf(current) > -1) loadContent();
     else loadKind(current);
   }
 
   function renderStats(s) {
     var c = s.counts || {};
+    var revenues = s.revenueByCurrency || {};
+    var revenueText = Object.keys(revenues).sort().map(function (currency) {
+      return money(revenues[currency], currency);
+    }).join(" · ") || money(0, s.revenueCurrency || "EUR");
     var cards = [
-      { b: c.register || 0, l: "Registrations", a: false },
-      { b: money(s.revenue || 0, s.revenueCurrency || "EUR"), l: "Revenue (Paid)", a: true },
-      { b: s.pending || 0, l: "Payments Pending", a: false },
-      { b: c.abstract || 0, l: "Abstracts", a: false },
-      { b: (c.contact || 0) + " / " + (c.brochure || 0), l: "Contact / Brochure", a: false }
+      { b: c.register || 0, l: "Total registrations" },
+      { b: s.paid || 0, l: "Confirmed registrations" },
+      { b: s.pending || 0, l: "Pending payments" },
+      { b: revenueText, l: "Total revenue · paid", wide: true },
+      { b: c.abstract || 0, l: "Abstract submissions" },
+      { b: s.pendingEnquiries || 0, l: "Pending enquiries" }
     ];
     var markup = cards.map(function (x) {
-      return '<div class="a-stat' + (x.a ? " accent" : "") + '"><b>' + x.b + "</b><span>" + x.l + "</span></div>";
+      return '<div class="a-stat' + (x.wide ? " a-stat-wide" : "") + '"><b>' + esc(x.b) + "</b><span>" + esc(x.l) + "</span></div>";
     }).join("");
     el("stats").innerHTML = markup;
     el("dashboard-stats").innerHTML = markup;
-    var recent = s.recent || [];
-    el("recent-activity").innerHTML = recent.map(function (r) {
-      return "<tr><td class='a-ref'>" + esc(r.reference) + "</td><td>" + esc(KIND_LABEL[r.kind] || r.kind) + "</td><td>" + esc(fmt(r.receivedAt)) + "</td><td>" + esc(r.paymentStatus || "Received") + "</td></tr>";
+    var registrations = s.recentRegistrations || [];
+    var payments = s.recentPayments || [];
+    el("recent-registrations").innerHTML = registrations.map(function (r) {
+      return "<tr><td class='a-ref'>" + esc(r.reference) + "</td><td>" + esc(r.fullName || "—") + "</td><td>" +
+        esc(fmt(r.receivedAt)) + "</td><td>" + esc(r.paymentStatus || "Pending") + "</td></tr>";
     }).join("");
-    el("recent-empty").style.display = recent.length ? "none" : "block";
+    el("recent-payments").innerHTML = payments.map(function (r) {
+      return "<tr><td class='a-ref'>" + esc(r.reference) + "</td><td>" + esc(r.fullName || "—") + "</td><td>" +
+        esc(money(r.amount, r.currency || "EUR")) + "</td><td>" + esc(r.paymentStatus || "Pending") + "</td></tr>";
+    }).join("");
+    el("recent-registrations-empty").hidden = registrations.length > 0;
+    el("recent-payments-empty").hidden = payments.length > 0;
   }
 
-  /* ---------- Tabs ---------- */
-  document.querySelector(".a-nav-tabs").addEventListener("click", function (e) {
-    var t = e.target.closest(".a-tab"); if (!t) return;
-    var view = t.getAttribute("data-view");
-    document.querySelectorAll(".a-tab").forEach(function (b) { b.classList.toggle("active", b === t); });
-    var submissionKinds = { registrations: "register", abstracts: "abstract", payments: "register", enquiries: "all" };
-    var isSubmissions = view === "submissions" || Object.prototype.hasOwnProperty.call(submissionKinds, view);
-    var isPages = view === "pages";
-    var isSpeakers = view === "speakers";
-    var isDashboard = view === "dashboard";
-    var isMedia = view === "media";
-    var isCommittee = view === "committee";
-    document.getElementById("content-view").style.display = isSubmissions || isPages || isSpeakers || isDashboard || isMedia ? "none" : "block";
-    el("speakers-view").style.display = isSpeakers ? "block" : "none";
-    el("pages-view").style.display = isPages ? "block" : "none";
-    document.getElementById("sub-view").style.display = isSubmissions ? "block" : "none";
-    el("dashboard-view").style.display = isDashboard ? "block" : "none";
-    el("media-view").style.display = isMedia ? "block" : "none";
-    document.querySelector(".a-header-actions").style.display = (isSubmissions || isDashboard || isMedia) ? "none" : "flex";
-    el("save-content").style.display = (isPages || isMedia) ? "none" : "inline-flex";
-    el("stats").style.display = "none";
-    if (isDashboard) { current = "dashboard"; el("main-title").textContent = "Dashboard"; loadAll(); return; }
-    if (isMedia) { current = "media"; el("main-title").textContent = "Image & Media Management"; loadContent(); return; }
-    if (isSubmissions) {
-      current = submissionKinds[view] || el("submission-kind").value || "all";
-      el("submission-kind").value = current;
-      el("sub-title").textContent = view === "payments" ? "Payment Transactions" : view === "enquiries" ? "Enquiries & Requests" : (KIND_LABEL[current] || current);
-      loadKind(current);
-      return;
-    }
-    if (isPages) {
-      current = "pages";
-      el("main-title").textContent = "Website Pages";
+  var VIEW_META = {
+    dashboard: ["Dashboard", "Overview", "A live view of registrations, payments, abstracts, and enquiries."],
+    content: ["Homepage & Conference", "Website Management", "Manage the conference announcement and homepage content."],
+    information: ["Important Dates & Venue", "Website Management", "Manage the conference venue, map, and important dates."],
+    media: ["Media Library", "Image & Media", "Manage public-site images and image replacements."],
+    speakers: ["Speakers", "People Management", "Manage speaker profiles shown on the public conference pages."],
+    committee: ["Organizing Committee", "People Management", "Manage organizing and scientific committee profiles."],
+    registrations: ["Registrations", "Conference Operations", "Search, review, and manage submitted registrations."],
+    abstracts: ["Abstracts", "Conference Operations", "Search and review submitted abstracts and uploaded documents."],
+    payments: ["Payments", "Conference Operations", "Review registration payment status and verified amounts."],
+    accommodation: ["Accommodation", "Conference Operations", "Review accommodation add-ons submitted with registrations."],
+    enquiries: ["Enquiries & Requests", "Conference Operations", "Review contact enquiries and brochure requests."],
+    settings: ["Registration Pricing", "Financial Configuration", "Manage registration periods, fees, and add-on prices."],
+    coupons: ["Coupons", "Financial Configuration", "Manage registration discount codes."],
+    pages: ["Pages", "Existing Module", "Manage public website pages using the existing page editor."]
+  };
+  var SUBMISSION_VIEWS = ["registrations", "abstracts", "payments", "accommodation", "enquiries"];
+
+  function activateView(view) {
+    if (!VIEW_META[view]) return;
+    current = view;
+    document.querySelectorAll(".admin-view").forEach(function (panel) {
+      panel.style.display = panel.id === view + "-view" || (view === "registrations" && panel.id === "sub-view") ||
+        (view === "abstracts" && panel.id === "sub-view") || (view === "payments" && panel.id === "sub-view") ||
+        (view === "accommodation" && panel.id === "sub-view") || (view === "enquiries" && panel.id === "sub-view") ? "block" : "none";
+    });
+    document.querySelectorAll("#admin-navigation .a-tab").forEach(function (button) {
+      button.classList.toggle("active", button.getAttribute("data-view") === view);
+    });
+    var meta = VIEW_META[view];
+    el("main-title").textContent = meta[0];
+    el("breadcrumb").textContent = meta[1] + " / " + meta[0];
+    el("page-description").textContent = meta[2];
+    var canSave = ["content", "information", "speakers", "committee", "settings", "coupons"].indexOf(view) > -1;
+    el("save-content").style.display = canSave ? "inline-flex" : "none";
+    if (view === "pages") {
       el("pages-index").style.display = "block";
       el("page-editor-view").style.display = "none";
       renderPageList();
-      return;
     }
-    if (isSpeakers) {
-      current = "speakers";
-      el("main-title").textContent = "Speakers";
-      return;
+    if (SUBMISSION_VIEWS.indexOf(view) > -1) {
+      el("submission-search").value = "";
+      el("submission-status").value = "";
+      loadKind(view);
+    } else {
+      loadAll();
     }
-    if (isCommittee) {
-      current = "committee";
-      el("main-title").textContent = "Organizing Committee";
-      var committee = el("committee-editor"); if (committee) { committee.open = true; committee.scrollIntoView({ behavior: "smooth", block: "start" }); }
-      return;
+    if (window.matchMedia("(max-width: 900px)").matches) {
+      $(".a-sidebar").classList.add("is-collapsed");
+      $(".a-nav-toggle").setAttribute("aria-expanded", "false");
     }
-    current = "content";
-    el("main-title").textContent = view === "content" ? "Website Content" : t.textContent.trim();
-    var targets = {
-      data: "stats",
-      information: "conference-information",
-      settings: "registration-settings",
-      coupons: "coupon-settings",
-      accommodation: "accommodation-prices"
-    };
-    var target = el(targets[view] || "conference-information");
-    if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  /* ---------- Navigation ---------- */
+  document.querySelector(".a-nav-tabs").addEventListener("click", function (e) {
+    var target = e.target.closest("[data-view]");
+    if (target) activateView(target.getAttribute("data-view"));
   });
-  document.querySelectorAll(".a-group-toggle").forEach(function (button) {
-    button.addEventListener("click", function () { button.parentNode.classList.toggle("is-collapsed"); });
+  el("dashboard-view").addEventListener("click", function (e) {
+    var target = e.target.closest("[data-view]");
+    if (target) activateView(target.getAttribute("data-view"));
   });
   $(".a-nav-toggle").addEventListener("click", function () {
     var sidebar = $(".a-sidebar"), collapsed = sidebar.classList.toggle("is-collapsed");
@@ -222,13 +246,13 @@
   });
 
   el("export-btn").addEventListener("click", function () {
-    if (current !== "content") window.open("/admin/api/export/" + encodeURIComponent(current), "_blank");
+    var kind = current === "abstracts" ? "abstract" :
+      (current === "enquiries" || current === "accommodation" ? current : "register");
+    window.open("/admin/api/export/" + encodeURIComponent(kind), "_blank");
   });
-  el("submission-kind").addEventListener("change", function () {
-    current = el("submission-kind").value || "all";
-    el("sub-title").textContent = KIND_LABEL[current] || current;
-    loadKind(current);
-  });
+  el("submission-search").addEventListener("input", renderCurrentTable);
+  el("submission-status").addEventListener("change", renderCurrentTable);
+  el("submission-sort").addEventListener("change", renderCurrentTable);
 
   /* ---------- Submissions table ---------- */
   var COLS = {
@@ -273,38 +297,119 @@
     return '<span class="pill-status st-' + esc(v) + '">' + esc(v) + "</span>";
   }
 
-  function loadKind(kind) {
-    el("sub-title").textContent = KIND_LABEL[kind] || kind;
-    var endpoint = kind === "all" ? "/admin/api/submissions" : "/admin/api/submissions/" + encodeURIComponent(kind);
+  var currentTableItems = [];
+
+  function loadKind(view) {
+    var labels = {
+      registrations: "Registrations", abstracts: "Abstracts", payments: "Payments",
+      accommodation: "Accommodation", enquiries: "Enquiries & Requests"
+    };
+    var descriptions = {
+      registrations: "Submitted registration records and payment status.",
+      abstracts: "Abstract submissions and uploaded documents.",
+      payments: "Payment status is sourced from stored registration records.",
+      accommodation: "Accommodation quantities submitted with registrations; this module does not store separate hotel bookings.",
+      enquiries: "Contact form submissions and brochure requests."
+    };
+    el("sub-title").textContent = labels[view];
+    el("sub-description").textContent = descriptions[view];
+    el("submission-state").hidden = false;
+    el("submission-state").textContent = "Loading records...";
+    el("empty").hidden = true;
+    el("tbody").innerHTML = "";
+    currentTableItems = [];
+    var endpoint = view === "abstracts" ? "/admin/api/submissions/abstract" :
+      (view === "enquiries" ? "/admin/api/submissions" : "/admin/api/submissions/register");
     api(endpoint).then(function (j) {
-      if (!j || !j.ok) return;
-      if (kind === "all") {
-        cache.all = j.items || [];
-        ["register", "abstract", "contact", "brochure"].forEach(function (recordKind) {
-          cache[recordKind] = cache.all.filter(function (item) { return item.kind === recordKind; });
-        });
+      if (!j || !j.ok) throw new Error("The server returned an invalid submissions response.");
+      var items = j.items || [];
+      if (view === "enquiries") {
+        cache.contact = items.filter(function (item) { return item.kind === "contact"; });
+        cache.brochure = items.filter(function (item) { return item.kind === "brochure"; });
+        currentTableItems = cache.contact.concat(cache.brochure);
       } else {
-        cache[kind] = j.items || [];
+        var kind = view === "abstracts" ? "abstract" : "register";
+        cache[kind] = items;
+        currentTableItems = view === "accommodation" ? items.filter(function (record) {
+          return Number(d(record, "qty_accom_single")) > 0 || Number(d(record, "qty_accom_double")) > 0;
+        }) : items;
       }
-      renderTable(kind, cache[kind] || []);
+      el("submission-state").hidden = true;
+      renderCurrentTable();
     }).catch(function (err) {
-      if (err.message !== "unauth") toast("Could not load " + (KIND_LABEL[kind] || kind).toLowerCase(), true);
+      if (err.message !== "unauth") {
+        el("submission-state").hidden = false;
+        el("submission-state").textContent = "Records could not be loaded. Refresh to try again.";
+        toast("Could not load " + labels[view].toLowerCase(), true);
+      }
     });
   }
 
-  function renderTable(kind, items) {
-    var cols = kind === "all" ? [
-      { h: "Form", f: function (r) { return esc(KIND_LABEL[r.kind] || r.kind); } },
-      { h: "Reference", f: function (r) { return '<span class="a-ref">' + esc(r.reference) + "</span>"; } },
-      { h: "Name / Title", f: function (r) { return esc(d(r, "fullName") || d(r, "authorName") || d(r, "title")); } },
-      { h: "Email", f: function (r) { return esc(d(r, "email")); } },
-      { h: "Status", f: function (r) { return r.kind === "register" ? paySelect(r) : statusPill(r); } },
-      { h: "Amount", f: function (r) { return r.kind === "register" ? money(r.amount, r.amountCurrency || r.transactionCurrency || "EUR") : "—"; } },
-      { h: "Received", f: function (r) { return '<span class="a-sub">' + fmt(r.receivedAt) + "</span>"; } }
-    ] : COLS[kind];
+  function renderCurrentTable() {
+    if (SUBMISSION_VIEWS.indexOf(current) < 0) return;
+    var items = currentTableItems.slice();
+    var query = el("submission-search").value.trim().toLowerCase();
+    var status = el("submission-status").value;
+    var sort = el("submission-sort").value;
+    var statuses = [];
+    currentTableItems.forEach(function (record) {
+      var value = record.paymentStatus || record.status || "New";
+      if (statuses.indexOf(value) < 0) statuses.push(value);
+    });
+    statuses.sort();
+    var statusSelect = el("submission-status");
+    var selectedStatus = statusSelect.value;
+    statusSelect.innerHTML = '<option value="">All statuses</option>' + statuses.map(function (value) {
+      return '<option value="' + esc(value) + '">' + esc(value) + "</option>";
+    }).join("");
+    statusSelect.value = statuses.indexOf(selectedStatus) > -1 ? selectedStatus : "";
+    status = statusSelect.value;
+    items = items.filter(function (record) {
+      var recordStatus = record.paymentStatus || record.status || "New";
+      var searchable = [record.reference, record.kind, recordStatus, record.adminNotes, JSON.stringify(record.data || {})].join(" ").toLowerCase();
+      return (!query || searchable.indexOf(query) > -1) && (!status || recordStatus === status);
+    });
+    items.sort(function (a, b) {
+      if (sort === "name") {
+        var aName = d(a, "fullName") || d(a, "authorName") || d(a, "title") || "";
+        var bName = d(b, "fullName") || d(b, "authorName") || d(b, "title") || "";
+        return String(aName).localeCompare(String(bName));
+      }
+      var delta = String(a.receivedAt || "").localeCompare(String(b.receivedAt || ""));
+      return sort === "oldest" ? delta : -delta;
+    });
+    renderTable(current, items);
+  }
+
+  function renderTable(view, items) {
+    var kind = view === "abstracts" ? "abstract" : "register";
+    var cols;
+    if (view === "accommodation") {
+      cols = [
+        { h: "Reference", f: function (r) { return '<span class="a-ref">' + esc(r.reference) + "</span>"; } },
+        { h: "Registrant", f: function (r) { return esc(d(r, "fullName")); } },
+        { h: "Single nights", f: function (r) { return esc(d(r, "qty_accom_single") || "0"); } },
+        { h: "Double nights", f: function (r) { return esc(d(r, "qty_accom_double") || "0"); } },
+        { h: "Payment", f: function (r) { return paySelect(r); } },
+        { h: "Received", f: function (r) { return '<span class="a-sub">' + esc(fmt(r.receivedAt)) + "</span>"; } }
+      ];
+    } else if (view === "enquiries") {
+      cols = [
+        { h: "Type", f: function (r) { return esc(KIND_LABEL[r.kind] || r.kind); } },
+        { h: "Reference", f: function (r) { return '<span class="a-ref">' + esc(r.reference) + "</span>"; } },
+        { h: "Name", f: function (r) { return esc(d(r, "fullName")); } },
+        { h: "Email", f: function (r) { return esc(d(r, "email")); } },
+        { h: "Subject / Organization", f: function (r) { return esc(d(r, "subject") || d(r, "organization")); } },
+        { h: "Status", f: function (r) { return statusPill(r); } },
+        { h: "Received", f: function (r) { return '<span class="a-sub">' + esc(fmt(r.receivedAt)) + "</span>"; } }
+      ];
+    } else {
+      cols = COLS[kind];
+    }
     if (!cols) return;
     el("thead").innerHTML = "<tr>" + cols.map(function (c) { return "<th>" + c.h + "</th>"; }).join("") + "</tr>";
-    el("empty").style.display = items.length ? "none" : "block";
+    el("empty").hidden = items.length > 0;
+    el("empty").textContent = currentTableItems.length ? "No records match the selected search and filters." : "No records yet.";
     el("tbody").innerHTML = items.map(function (r) {
       return '<tr data-ref="' + esc(r.reference) + '" data-kind="' + esc(r.kind || kind) + '">' +
         cols.map(function (c) { return "<td>" + c.f(r) + "</td>"; }).join("") + "</tr>";
@@ -447,11 +552,19 @@
   var FEE_CATS = ["Speaker", "Delegate", "Poster", "Student", "Virtual"];
 
   function loadContent() {
+    el("management-state").hidden = false;
+    el("management-state").textContent = "Loading saved website settings...";
     api("/api/content").then(function (j) {
-      contentData = (j && j.content) ? j.content : (j || {});
+      if (!j || !j.content) throw new Error("The server returned an invalid website settings response.");
+      contentData = j.content;
       fillContent(contentData);
+      el("management-state").hidden = true;
     }).catch(function (err) {
-      if (err.message !== "unauth") toast("Could not load website settings", true);
+      if (err.message !== "unauth") {
+        el("management-state").hidden = false;
+        el("management-state").textContent = "Saved settings could not be loaded. Refresh to try again.";
+        toast("Could not load website settings", true);
+      }
     });
   }
 
@@ -477,12 +590,12 @@
   }
 
   function renderDates(dates) {
-    el("dates-list").innerHTML = dates.map(function (dt, i) {
+    el("dates-list").innerHTML = dates.length ? dates.map(function (dt, i) {
       return "<div class='a-row' data-date='" + i + "'>" +
         "<input class='a-input' data-df='label' value='" + esc(dt.label) + "' placeholder='Label'>" +
         "<input class='a-input' data-df='value' value='" + esc(dt.value) + "' placeholder='Value'>" +
         "<button class='a-btn ghost sm' data-rmdate='" + i + "'>Remove</button></div>";
-    }).join("");
+    }).join("") : "<p class='a-empty a-empty-inline'>No important dates configured.</p>";
   }
 
   function renderMedia(media) {
@@ -492,12 +605,34 @@
       var path = media[item.key] || item.defaultPath;
       return "<article class='a-media-card' data-media-item='" + esc(item.key) + "'><img src='" + esc(path) + "' alt='" + esc(item.name) + " preview' data-media-preview><div class='a-media-meta'><span class='a-media-location'>" + esc(item.page) + " · " + esc(item.section) + "</span><h3>" + esc(item.name) + "</h3><p class='a-sub'>" + esc(path) + "</p><div class='a-media-actions'><label class='a-btn ghost sm'>Replace image<input type='file' accept='image/jpeg,image/png,image/webp,image/gif' data-media-file hidden></label><button class='a-btn ghost sm' type='button' data-media-restore>Restore default</button></div><input type='hidden' data-media-path value='" + esc(media[item.key] || "") + "'><span class='a-sub' data-media-status>" + (media[item.key] ? "Custom image in use" : "Original image in use") + "</span></div></article>";
     }).join("");
+    el("media-search").value = "";
+    filterItems("media-list", "[data-media-item]", "media-search", "media-no-results");
   }
+
+  function filterItems(listId, selector, searchId, emptyId) {
+    var query = el(searchId).value.trim().toLowerCase();
+    var visible = 0;
+    var items = el(listId).querySelectorAll(selector);
+    items.forEach(function (item) {
+      var fields = Array.prototype.map.call(item.querySelectorAll("input,textarea,select"), function (field) {
+        return field.value || (field.options && field.options[field.selectedIndex] ? field.options[field.selectedIndex].text : "");
+      }).join(" ");
+      var matches = !query || (item.textContent + " " + fields).toLowerCase().indexOf(query) > -1;
+      item.style.display = matches ? "" : "none";
+      if (matches) visible++;
+    });
+    el(emptyId).hidden = !query || items.length === 0 || visible > 0;
+  }
+  el("media-search").addEventListener("input", function () {
+    filterItems("media-list", "[data-media-item]", "media-search", "media-no-results");
+  });
 
   el("media-list").addEventListener("click", function (e) {
     var restore = e.target.closest("[data-media-restore]"); if (!restore) return;
     var card = restore.closest("[data-media-item]");
     var item = MEDIA_ITEMS.filter(function (x) { return x.key === card.getAttribute("data-media-item"); })[0];
+    if (card.querySelector("[data-media-path]").value &&
+        !window.confirm("Restore the original image for " + item.name + "? Save media changes to publish it.")) return;
     card.querySelector("[data-media-path]").value = "";
     card.querySelector("[data-media-preview]").src = item.defaultPath;
     card.querySelector("[data-media-status]").textContent = "Original image will be restored when saved.";
@@ -516,6 +651,7 @@
 
   el("dates-list").addEventListener("click", function (e) {
     var rm = e.target.closest("[data-rmdate]"); if (!rm) return;
+    if (!window.confirm("Remove this important date? Save changes to publish the removal.")) return;
     rm.closest("[data-date]").remove();
   });
   el("add-date").addEventListener("click", function () {
@@ -547,14 +683,20 @@
     el("home-gallery-photos").appendChild(box);
   });
   el("clear-home-gallery-heading").addEventListener("click", function () {
+    if (el("c-home-gallery-heading").value.trim() &&
+        !window.confirm("Remove the homepage highlights heading? Save changes to publish the removal.")) return;
     el("c-home-gallery-heading").value = "";
   });
   el("clear-home-gallery-photos").addEventListener("click", function () {
+    if (el("home-gallery-photos").children.length &&
+        !window.confirm("Remove all homepage photos? Save changes to publish the removal.")) return;
     el("home-gallery-photos").innerHTML = "";
   });
   el("home-gallery-photos").addEventListener("click", function (e) {
     var remove = e.target.closest("[data-remove-gallery-photo]");
-    if (remove) remove.closest("[data-gallery-photo]").remove();
+    if (remove && window.confirm("Remove this homepage photo? Save changes to publish the removal.")) {
+      remove.closest("[data-gallery-photo]").remove();
+    }
     handleImageUploadEvent(e, el("home-gallery-photos"), "gf");
   });
   el("home-gallery-photos").addEventListener("change", function (e) {
@@ -616,7 +758,12 @@
 
   el("coupons-list").addEventListener("click", function (e) {
     var remove = e.target.closest("[data-remove-coupon]");
-    if (remove) remove.closest("[data-coupon]").remove();
+    if (remove && window.confirm("Remove this coupon? Save changes to publish the removal.")) {
+      remove.closest("[data-coupon]").remove();
+      if (!el("coupons-list").querySelector("[data-coupon]")) {
+        el("coupons-list").innerHTML = "<p class='a-empty'>No coupons configured.</p>";
+      }
+    }
   });
   el("add-coupon").addEventListener("click", function () {
     var coupons = readCoupons();
@@ -817,6 +964,7 @@
   function handleImageUploadEvent(e, list, prefix) {
     var clear = e.target.closest("[data-clear-image]");
     if (clear) {
+      if (!window.confirm("Remove this profile image? Save changes to publish the removal.")) return;
       var clearBox = clear.closest("[data-image-upload]");
       clearBox.querySelector("[data-" + prefix + "='photo']").value = "";
       clearBox.querySelector("[data-image-preview]").hidden = true;
@@ -877,15 +1025,27 @@
     var list = el("members-list");
     list.innerHTML = "";
     (members || []).forEach(function (m) { list.appendChild(memberRow(m)); });
+    if (!list.children.length) list.innerHTML = "<p class='a-empty a-empty-inline'>No committee members configured.</p>";
+    el("committee-search").value = "";
+    filterItems("members-list", "[data-member]", "committee-search", "committee-no-results");
   }
+  el("committee-search").addEventListener("input", function () {
+    filterItems("members-list", "[data-member]", "committee-search", "committee-no-results");
+  });
 
   el("members-list").addEventListener("click", function (e) {
     var rm = e.target.closest("[data-rmmember]"); if (!rm) return;
+    if (!window.confirm("Remove this committee member? Save changes to publish the removal.")) return;
     rm.closest("[data-member]").remove();
+    if (!el("members-list").querySelector("[data-member]")) {
+      el("members-list").innerHTML = "<p class='a-empty a-empty-inline'>No committee members configured.</p>";
+    }
   });
   el("members-list").addEventListener("change", function (e) { handleImageUploadEvent(e, el("members-list"), "mf"); });
   el("members-list").addEventListener("click", function (e) { handleImageUploadEvent(e, el("members-list"), "mf"); });
   el("add-member").addEventListener("click", function () {
+    var empty = el("members-list").querySelector(".a-empty");
+    if (empty) empty.remove();
     el("members-list").appendChild(memberRow({ group: COMMITTEE_GROUPS[0] }));
   });
 
@@ -923,15 +1083,27 @@
     var list = el("speakers-list");
     list.innerHTML = "";
     (speakers || []).forEach(function (m) { list.appendChild(speakerRow(m)); });
+    if (!list.children.length) list.innerHTML = "<p class='a-empty a-empty-inline'>No speakers configured.</p>";
+    el("speaker-search").value = "";
+    filterItems("speakers-list", "[data-speaker]", "speaker-search", "speakers-no-results");
   }
+  el("speaker-search").addEventListener("input", function () {
+    filterItems("speakers-list", "[data-speaker]", "speaker-search", "speakers-no-results");
+  });
 
   el("speakers-list").addEventListener("click", function (e) {
     var rm = e.target.closest("[data-rmspeaker]"); if (!rm) return;
+    if (!window.confirm("Remove this speaker? Save changes to publish the removal.")) return;
     rm.closest("[data-speaker]").remove();
+    if (!el("speakers-list").querySelector("[data-speaker]")) {
+      el("speakers-list").innerHTML = "<p class='a-empty a-empty-inline'>No speakers configured.</p>";
+    }
   });
   el("speakers-list").addEventListener("change", function (e) { handleImageUploadEvent(e, el("speakers-list"), "sf"); });
   el("speakers-list").addEventListener("click", function (e) { handleImageUploadEvent(e, el("speakers-list"), "sf"); });
   el("add-speaker").addEventListener("click", function () {
+    var empty = el("speakers-list").querySelector(".a-empty");
+    if (empty) empty.remove();
     el("speakers-list").appendChild(speakerRow({ group: SPEAKER_GROUPS[0] }));
   });
 
@@ -1048,12 +1220,23 @@
     button.addEventListener("click", saveContent);
   });
   el("refresh-btn").addEventListener("click", loadAll);
-  document.querySelector("[data-refresh-submissions]").addEventListener("click", loadAll);
 
   /* ---------- Boot ---------- */
   function showLogin() { el("login-view").style.display = "grid"; el("shell").style.display = "none"; }
-  function showShell() { el("login-view").style.display = "none"; el("shell").style.display = "block"; loadAll(); }
-  function setAdminUser(username) { el("admin-user").textContent = username || "Administrator"; }
+  function showShell() {
+    el("login-view").style.display = "none";
+    el("shell").style.display = "block";
+    if (window.matchMedia("(max-width: 900px)").matches) {
+      $(".a-sidebar").classList.add("is-collapsed");
+      $(".a-nav-toggle").setAttribute("aria-expanded", "false");
+    }
+    loadAll();
+  }
+  function setAdminUser(username) {
+    var name = username || "Administrator";
+    el("admin-user").textContent = name;
+    el("admin-user").previousElementSibling.textContent = name.charAt(0).toUpperCase();
+  }
 
   el("login-form").addEventListener("submit", function (e) {
     e.preventDefault();
