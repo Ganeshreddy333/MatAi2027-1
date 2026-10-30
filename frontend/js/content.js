@@ -217,6 +217,7 @@
       });
     }
 
+    ensureHomeHeroEventPanel(content);
     applyLegacyHomeHeroLayout();
     renderHomeGallery(content.homeGallery || {});
 
@@ -305,6 +306,35 @@
     legacyContent.querySelectorAll(".hero-cta a[href='sessions.html']").forEach(function (button) {
       button.remove();
     });
+  }
+
+  // Saved page-editor markup can predate the current hero structure. Keep this
+  // admin-managed date/location panel after a saved section is applied, without
+  // replacing the editor-managed hero copy or research-topic content.
+  function ensureHomeHeroEventPanel(content) {
+    if ((location.pathname.split("/").pop() || "index.html").toLowerCase() !== "index.html") return;
+    var hero = document.querySelector(".home-page .home-hero");
+    var description = hero && hero.querySelector(".home-hero-description");
+    if (!hero || !description) return;
+
+    var panel = hero.querySelector(".home-hero-event-details");
+    if (!panel || !panel.querySelector(".home-hero-event-item")) {
+      if (panel) panel.remove();
+      panel = document.createElement("div");
+      panel.className = "home-hero-event-details";
+      panel.setAttribute("aria-label", "Conference date and location");
+      panel.innerHTML =
+        '<div class="home-hero-event-item"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"></rect><path d="M7.5 3.5v3M16.5 3.5v3M4 9h16M8 13h.01M12 13h.01M16 13h.01M8 16.5h.01M12 16.5h.01M16 16.5h.01"></path></svg><strong data-content="site.dateText"></strong></div>' +
+        '<span class="home-hero-event-divider" aria-hidden="true"></span>' +
+        '<div class="home-hero-event-item"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6.5-5.65 6.5-11A6.5 6.5 0 0 0 5.5 10C5.5 15.35 12 21 12 21Z"></path><circle cx="12" cy="10" r="2.25"></circle></svg><strong data-content="site.city"></strong></div>';
+      description.insertAdjacentElement("afterend", panel);
+    }
+
+    var site = content.site || {};
+    var date = panel.querySelector('[data-content="site.dateText"]');
+    var city = panel.querySelector('[data-content="site.city"]');
+    if (date) date.textContent = site.dateText || DEFAULTS.site.dateText;
+    if (city) city.textContent = site.city || DEFAULTS.site.city;
   }
 
   function renderHomeGallery(gallery) {
