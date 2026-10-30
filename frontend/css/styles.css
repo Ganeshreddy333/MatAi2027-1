@@ -1860,8 +1860,8 @@ table.tbl tbody tr:hover { background:#fff0e3; }
 .home-page .site-header .nav-toggle { display:none; }
 
 .home-page .home-hero {
-  min-height:410px;
-  overflow:hidden;
+  min-height:500px;
+  overflow:visible;
   isolation:isolate;
   background:linear-gradient(105deg,#07344f 0%,#07516a 59%,#0a495a 100%);
   color:#fff;
@@ -1869,31 +1869,30 @@ table.tbl tbody tr:hover { background:#fff0e3; }
 .home-page .home-hero::before { content:none; }
 .home-page .home-hero::after {
   position:absolute;
-  inset:0 0 0 auto;
+  inset:0 0 -72px;
   z-index:-1;
-  width:min(65%,900px);
+  width:100%;
   background-image:
-    linear-gradient(90deg,rgba(6,43,65,.2),rgba(6,43,65,.02) 35%,rgba(6,43,65,0) 76%),
+    linear-gradient(105deg,#07344f 0%,rgba(7,63,83,.96) 38%,rgba(7,63,83,.48) 58%,rgba(7,63,83,.04) 82%),
     var(--matai-home-hero-image, url("../images/matai-hero-reference.png"));
-  background-position:center right;
-  background-size:cover;
+  background-position:center,center right;
+  background-size:cover,cover;
   background-repeat:no-repeat;
   content:"";
   opacity:1;
   pointer-events:none;
-  mask-image:linear-gradient(90deg,transparent 0%,#000 15%,#000 100%);
 }
 .home-page .home-hero-container {
   position:relative;
   z-index:1;
   display:flex;
-  min-height:410px;
+  min-height:500px;
   align-items:flex-start;
   max-width:1600px;
-  padding:34px clamp(24px,7.2vw,120px) 88px;
+  padding:42px clamp(24px,7.2vw,120px) 96px;
 }
 .home-page .home-hero-copy {
-  max-width:760px;
+  max-width:820px;
   margin:0;
   text-align:left;
 }
@@ -1907,7 +1906,7 @@ table.tbl tbody tr:hover { background:#fff0e3; }
   background:rgba(31,108,186,.67);
   color:#f4f9ff;
   font-family:var(--font);
-  font-size:.68rem;
+  font-size:.74rem;
   font-weight:650;
   letter-spacing:.015em;
   text-transform:none;
@@ -1922,11 +1921,11 @@ table.tbl tbody tr:hover { background:#fff0e3; }
   stroke-width:1.8;
 }
 .home-page .home-hero h1.hero-title {
-  max-width:730px;
-  margin:0 0 10px;
+  max-width:790px;
+  margin:0 0 14px;
   color:#fff;
   font-family:var(--font-head);
-  font-size:clamp(2rem,2.45vw,2.65rem);
+  font-size:clamp(2.25rem,2.9vw,3.15rem);
   font-weight:500;
   line-height:1.12;
   letter-spacing:-.035em;
@@ -1939,19 +1938,41 @@ table.tbl tbody tr:hover { background:#fff0e3; }
   font-weight:750;
 }
 .home-page .home-hero-description {
-  max-width:540px;
-  margin:0 0 15px;
+  max-width:600px;
+  margin:0 0 19px;
   color:#e5f0f7;
-  font-size:.88rem;
+  font-size:1rem;
   font-weight:450;
   line-height:1.48;
 }
+.home-page .home-hero-event-details {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:.45rem;
+  margin:-7px 0 17px;
+  color:#fff;
+  font-size:.9rem;
+  line-height:1.4;
+}
+.home-page .home-hero-event-details svg {
+  width:16px;
+  height:16px;
+  flex:0 0 auto;
+  fill:none;
+  stroke:#ffcb54;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-width:1.8;
+}
+.home-page .home-hero-event-details strong { font-weight:750; }
+.home-page .home-hero-event-details span { color:#ffcb54; }
 .home-page .home-topic-strip {
   display:inline-flex;
   max-width:min(100%,620px);
   align-items:center;
-  gap:11px;
-  padding:8px 13px;
+  gap:13px;
+  padding:10px 15px;
   border:1px solid rgba(206,232,255,.18);
   border-radius:14px;
   background:rgba(7,40,67,.79);
@@ -1973,7 +1994,7 @@ table.tbl tbody tr:hover { background:#fff0e3; }
   align-items:center;
   column-gap:8px;
   color:#eef5fb;
-  font-size:.65rem;
+  font-size:.72rem;
   font-weight:500;
   line-height:1.35;
 }
@@ -1983,7 +2004,7 @@ table.tbl tbody tr:hover { background:#fff0e3; }
   position:relative;
   z-index:2;
   padding:0 0 25px;
-  background:linear-gradient(115deg,#eef6ff 0%,#fff 48%,#edf6ff 100%);
+  background:linear-gradient(180deg,transparent 0,transparent 72px,#eef6ff 72px,#fff 180px,#edf6ff 100%);
 }
 .home-page .home-action-panel {
   display:grid;
@@ -2758,7 +2779,8 @@ table.tbl tbody tr:hover { background:#fff0e3; }
   display:flex;
   min-height:100%;
   flex-direction:column;
-  justify-content:center;
+  justify-content:space-between;
+  gap:1.25rem;
   overflow:hidden;
   padding:1.7rem;
   border:1px solid rgba(255,255,255,.13);
@@ -2780,9 +2802,13 @@ table.tbl tbody tr:hover { background:#fff0e3; }
 }
 #agenda [data-panel="d1"] .agenda-focus::after { content:"01"; }
 #agenda [data-panel="d2"] .agenda-focus::after { content:"02"; }
-#agenda .agenda-focus h3 { position:relative; z-index:1; margin:0 0 .85rem; color:#d9f3e9; font-size:1.02rem; }
-#agenda .agenda-focus p { position:relative; z-index:1; margin:0; color:#e0ebf0; font-size:.88rem; line-height:1.75; }
-@media(max-width:900px) {
+#agenda .agenda-focus h3 { position:relative; z-index:1; margin:0; color:#d9f3e9; font-size:1.12rem; }
+#agenda .agenda-focus p { position:relative; z-index:1; margin:0; color:#e0ebf0; font-size:.92rem; line-height:1.75; }
+#agenda .agenda-focus-points { position:relative; z-index:1; display:grid; gap:.65rem; margin:0; padding:0; list-style:none; }
+#agenda .agenda-focus-points li { position:relative; padding-left:1.15rem; color:#e0ebf0; font-size:.84rem; line-height:1.55; }
+#agenda .agenda-focus-points li::before { position:absolute; top:.48rem; left:0; width:.42rem; height:.42rem; border-radius:50%; background:#79d2bd; content:""; }
+#agenda .agenda-focus-footer { position:relative; z-index:1; padding-top:.8rem; border-top:1px solid rgba(255,255,255,.2); color:#aee5d7; font-size:.72rem; font-weight:700; line-height:1.5; letter-spacing:.04em; }
+@media(max-width:1100px) {
   #agenda .tab-panel.active { grid-template-columns:1fr; }
   #agenda .agenda-focus { min-height:220px; }
 }
@@ -2942,7 +2968,7 @@ body { background-color:var(--page-bg); color:var(--body); }
 .home-dates-photo-panel .home-gallery-slide { flex-basis: 100%; scroll-snap-align: start; }
 .home-dates-photo-panel .home-gallery-arrow.prev { left: .35rem; }
 .home-dates-photo-panel .home-gallery-arrow.next { right: .35rem; }
-@media (max-width: 760px) {
+@media (max-width: 900px) {
   .home-dates-layout.has-gallery { grid-template-columns: minmax(0, 1fr); }
 }
 
