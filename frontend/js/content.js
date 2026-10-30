@@ -11,6 +11,7 @@
   var DEFAULTS = {
     banner: { enabled: false, text: "Abstract submissions for MatAi 2027 are now open. Register early to secure Early-Bird rates." },
     site: { theme: "Advancing Materials Innovation through Science, Engineering & Artificial Intelligence", dateText: "October 13–14, 2027", city: "Berlin, Germany" },
+    media: {},
     homeGallery: { heading: "", photos: [] },
     dates: [
       { label: "Abstract Submission Deadline", value: "To Be Announced" },
@@ -137,6 +138,21 @@
       var v = get(content, el.getAttribute("data-content"));
       if (v != null) el.textContent = v;
     });
+
+    // Persistent media overrides. If an override is removed in admin, its original
+    // path remains the safe fallback, so public pages never render a broken image.
+    var media = content.media || {};
+    var mediaPaths = {
+      venueWelcome: "images/venue/image3.jpeg", venueAuditorium: "images/venue/image2.jpeg", venueTechnical: "images/venue/technical-presentation-room.png",
+      venueAirportDay: "images/venue/image9.jpeg", venueAirportNight: "images/venue/image10.jpeg", venueTrainInterior: "images/venue/image8.jpeg", venueTrainExterior: "images/venue/image11.jpeg",
+      venueHotel: "images/venue/image13.jpeg", venueHotelExterior: "images/venue/image14.jpeg", venueLandmark1: "images/venue/image4.jpeg", venueLandmark2: "images/venue/image5.jpeg", venueLandmark3: "images/venue/image6.jpeg", venueLandmark4: "images/venue/image17.jpeg", venueLandmark5: "images/venue/image18.jpeg", venueLandmark6: "images/venue/image19.jpeg"
+    };
+    Object.keys(mediaPaths).forEach(function (key) {
+      var original = mediaPaths[key], replacement = media[key];
+      if (!replacement || replacement === original) return;
+      document.querySelectorAll('img[src="' + original + '"]').forEach(function (image) { image.src = replacement; });
+    });
+    if (media.homeHero) document.documentElement.style.setProperty("--matai-home-hero-image", 'url("' + String(media.homeHero).replace(/["\\]/g, "") + '")');
 
     // Dynamic lists, e.g. [data-content-list="dates"]
     document.querySelectorAll('[data-content-list="dates"]').forEach(function (box) {

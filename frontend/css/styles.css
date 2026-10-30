@@ -1874,7 +1874,7 @@ table.tbl tbody tr:hover { background:#fff0e3; }
   width:min(65%,900px);
   background-image:
     linear-gradient(90deg,rgba(6,43,65,.2),rgba(6,43,65,.02) 35%,rgba(6,43,65,0) 76%),
-    url("../images/matai-hero-reference.png");
+    var(--matai-home-hero-image, url("../images/matai-hero-reference.png"));
   background-position:center right;
   background-size:cover;
   background-repeat:no-repeat;
@@ -2441,7 +2441,7 @@ table.tbl tbody tr:hover { background:#fff0e3; }
     height:270px;
     background-image:
       linear-gradient(90deg,rgba(5,35,57,.44),rgba(5,35,57,.19) 62%,rgba(5,35,57,.2)),
-      url("../images/matai-hero-reference.png");
+      var(--matai-home-hero-image, url("../images/matai-hero-reference.png"));
     background-position:center,45% top;
   }
   .home-page .home-hero-container {

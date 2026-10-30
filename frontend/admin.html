@@ -33,19 +33,31 @@
       </div>
     </div>
 
-    <nav class="a-nav-tabs" aria-label="Admin sections">
-      <button class="a-tab active" data-view="content" type="button"><span>▦</span>Content</button>
-      <button class="a-tab" data-view="speakers" type="button"><span>♙</span>Speakers</button>
-      <button class="a-tab" data-view="pages" type="button"><span>▤</span>Pages</button>
-      <button class="a-tab" data-view="data" type="button"><span>▤</span>Data</button>
-      <button class="a-tab" data-view="information" type="button"><span>ⓘ</span>Information</button>
-      <button class="a-tab" data-view="submissions" type="button"><span>▧</span>Submissions</button>
-      <button class="a-tab" data-view="settings" type="button"><span>▦</span>Settings</button>
-      <button class="a-tab" data-view="coupons" type="button"><span>◇</span>Coupons</button>
-      <button class="a-tab" data-view="accommodation" type="button"><span>▱</span>Accommodation</button>
-    </nav>
-
-    <main class="a-main">
+    <div class="a-workspace">
+      <aside class="a-sidebar" aria-label="Administration navigation">
+        <button class="a-nav-toggle" type="button" aria-expanded="true">Navigation</button>
+        <nav class="a-nav-tabs" aria-label="Admin sections">
+          <button class="a-tab active" data-view="dashboard" type="button"><span>▦</span>Dashboard</button>
+          <div class="a-nav-group"><button class="a-group-toggle" type="button">Website Content <span>⌄</span></button><div class="a-group-items">
+            <button class="a-tab" data-view="content" type="button">Homepage &amp; Conference</button><button class="a-tab" data-view="information" type="button">Important Dates &amp; Venue</button>
+          </div></div>
+          <div class="a-nav-group"><button class="a-group-toggle" type="button">Image &amp; Media <span>⌄</span></button><div class="a-group-items">
+            <button class="a-tab" data-view="media" type="button">Media Library</button>
+          </div></div>
+          <div class="a-nav-group"><button class="a-group-toggle" type="button">People <span>⌄</span></button><div class="a-group-items">
+            <button class="a-tab" data-view="speakers" type="button">Speakers</button><button class="a-tab" data-view="committee" type="button">Organizing Committee</button>
+          </div></div>
+          <div class="a-nav-group"><button class="a-group-toggle" type="button">Operations <span>⌄</span></button><div class="a-group-items">
+            <button class="a-tab" data-view="registrations" type="button">Registrations</button><button class="a-tab" data-view="abstracts" type="button">Abstracts</button><button class="a-tab" data-view="payments" type="button">Payments</button><button class="a-tab" data-view="enquiries" type="button">Enquiries &amp; Requests</button>
+          </div></div>
+          <div class="a-nav-group"><button class="a-group-toggle" type="button">Financial Configuration <span>⌄</span></button><div class="a-group-items">
+            <button class="a-tab" data-view="settings" type="button">Registration Pricing</button><button class="a-tab" data-view="coupons" type="button">Coupons</button><button class="a-tab" data-view="accommodation" type="button">Accommodation</button>
+          </div></div>
+          <!-- Pages section deliberately retained, including its editor and restore controls below. -->
+          <button class="a-tab" data-view="pages" type="button"><span>▤</span>Pages</button>
+        </nav>
+      </aside>
+      <main class="a-main">
       <div class="a-stats" id="stats" aria-label="Site activity" style="display:none"></div>
 
       <div class="a-header-actions">
@@ -59,7 +71,17 @@
         </div>
       </div>
 
-      <section id="content-view">
+      <section id="dashboard-view">
+        <div class="a-dashboard-intro"><h2>Conference overview</h2><p class="a-muted">Live operational totals from stored submissions and verified payment records.</p></div>
+        <div class="a-stats dashboard-stats" id="dashboard-stats"></div>
+        <div class="a-card"><h2>Recent activity</h2><div class="a-tablewrap"><table class="a-table"><thead><tr><th>Reference</th><th>Module</th><th>When</th><th>Status</th></tr></thead><tbody id="recent-activity"></tbody></table></div><p class="a-empty" id="recent-empty" style="display:none">No activity yet.</p></div>
+      </section>
+
+      <section id="media-view" style="display:none">
+        <div class="a-card"><div class="a-section-heading"><div><h2>Image &amp; Media Library</h2><p class="a-muted">Images are grouped by public-page location. Replacements are stored persistently; removing an override restores the original asset and prevents a broken reference.</p></div></div><div id="media-list" class="a-media-list"></div><div class="a-save-bottom"><button class="a-btn" id="save-media" type="button">Save Media Changes</button></div></div>
+      </section>
+
+      <section id="content-view" style="display:none">
         <div class="a-card" id="conference-information">
           <h2>Conference Details &amp; Announcement</h2>
           <div class="a-form-grid">
@@ -188,7 +210,8 @@
         </div>
         <div class="a-empty" id="empty" style="display:none">No records yet.</div>
       </section>
-    </main>
+      </main>
+    </div>
   </div>
 
   <div class="a-drawer-bg" id="drawer-bg"></div>

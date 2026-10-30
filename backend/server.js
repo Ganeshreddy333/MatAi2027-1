@@ -220,6 +220,9 @@ const DEFAULT_CONTENT = {
     dateText: "October 13–14, 2027",
     city: "Berlin, Germany"
   },
+  // Only administrator replacements are persisted. The frontend inventory owns
+  // the built-in fallback paths, so Restore Default simply removes an override.
+  media: {},
   homeGallery: { heading: "", photos: [] },
   dates: [
     { label: "Abstract Submission Opens", value: "To Be Announced" },

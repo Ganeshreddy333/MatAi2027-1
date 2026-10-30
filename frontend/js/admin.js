@@ -7,7 +7,7 @@
   var STATUS = ["New", "Reviewed", "Approved", "Rejected", "Completed"];
   var BANK_PAYMENT_STATUSES = ["Pending", "Paid", "Cancelled"];
   var KIND_LABEL = { all: "All Submissions", register: "Registrations", abstract: "Abstracts", contact: "Contacts", brochure: "Brochure Requests" };
-  var current = "content";
+  var current = "dashboard";
   var csrfToken = "";
   var cache = {};      // kind -> items
   var contentData = null;
@@ -50,6 +50,26 @@
     ["addon_accompanying", "Accompanying Person"],
     ["addon_accommodation_single", "Accommodation — Single Occupancy (per night)"],
     ["addon_accommodation_double", "Accommodation — Double Occupancy (per night)"]
+  ];
+  // This inventory is the single source of truth for public-page image overrides.
+  // `defaultPath` remains in use whenever an administrator removes an override.
+  var MEDIA_ITEMS = [
+    { key: "homeHero", page: "Homepage", section: "Hero background", name: "MatAi hero image", defaultPath: "images/matai-hero-reference.png" },
+    { key: "venueWelcome", page: "Venue", section: "Welcome to MatAi 2027", name: "Berlin skyline", defaultPath: "images/venue/image3.jpeg" },
+    { key: "venueAuditorium", page: "Venue", section: "Conference Venue Facilities", name: "Main auditorium", defaultPath: "images/venue/image2.jpeg" },
+    { key: "venueTechnical", page: "Venue", section: "Conference Venue Facilities", name: "Technical presentation room", defaultPath: "images/venue/technical-presentation-room.png" },
+    { key: "venueAirportDay", page: "Venue", section: "Location and Transportation", name: "Airport terminal", defaultPath: "images/venue/image9.jpeg" },
+    { key: "venueAirportNight", page: "Venue", section: "Location and Transportation", name: "Airport at night", defaultPath: "images/venue/image10.jpeg" },
+    { key: "venueTrainInterior", page: "Venue", section: "Location and Transportation", name: "Berlin Hauptbahnhof interior", defaultPath: "images/venue/image8.jpeg" },
+    { key: "venueTrainExterior", page: "Venue", section: "Location and Transportation", name: "Berlin Hauptbahnhof exterior", defaultPath: "images/venue/image11.jpeg" },
+    { key: "venueHotel", page: "Venue", section: "Nearby Accommodation", name: "Hotel accommodation", defaultPath: "images/venue/image13.jpeg" },
+    { key: "venueHotelExterior", page: "Venue", section: "Nearby Accommodation", name: "Hotel exterior", defaultPath: "images/venue/image14.jpeg" },
+    { key: "venueLandmark1", page: "Venue", section: "Explore Berlin", name: "Brandenburg Gate", defaultPath: "images/venue/image4.jpeg" },
+    { key: "venueLandmark2", page: "Venue", section: "Explore Berlin", name: "Reichstag building", defaultPath: "images/venue/image5.jpeg" },
+    { key: "venueLandmark3", page: "Venue", section: "Explore Berlin", name: "Museum Island", defaultPath: "images/venue/image6.jpeg" },
+    { key: "venueLandmark4", page: "Venue", section: "Explore Berlin", name: "Berlin landmarks", defaultPath: "images/venue/image17.jpeg" },
+    { key: "venueLandmark5", page: "Venue", section: "Explore Berlin", name: "Historic attraction", defaultPath: "images/venue/image18.jpeg" },
+    { key: "venueLandmark6", page: "Venue", section: "Explore Berlin", name: "Berlin travel image", defaultPath: "images/venue/image19.jpeg" }
   ];
 
   function $(s, r) { return (r || document).querySelector(s); }
@@ -106,7 +126,8 @@
   function loadAll() {
     api("/admin/api/stats").then(function (j) { if (j && j.ok) renderStats(j.stats); })
       .catch(function (err) { if (err.message !== "unauth") toast("Could not load dashboard statistics", true); });
-    if (current === "content" || current === "pages" || current === "speakers") loadContent();
+    if (current === "dashboard") return;
+    if (["content", "pages", "speakers", "media", "committee"].indexOf(current) > -1) loadContent();
     else loadKind(current);
   }
 
@@ -119,9 +140,16 @@
       { b: c.abstract || 0, l: "Abstracts", a: false },
       { b: (c.contact || 0) + " / " + (c.brochure || 0), l: "Contact / Brochure", a: false }
     ];
-    el("stats").innerHTML = cards.map(function (x) {
+    var markup = cards.map(function (x) {
       return '<div class="a-stat' + (x.a ? " accent" : "") + '"><b>' + x.b + "</b><span>" + x.l + "</span></div>";
     }).join("");
+    el("stats").innerHTML = markup;
+    el("dashboard-stats").innerHTML = markup;
+    var recent = s.recent || [];
+    el("recent-activity").innerHTML = recent.map(function (r) {
+      return "<tr><td class='a-ref'>" + esc(r.reference) + "</td><td>" + esc(KIND_LABEL[r.kind] || r.kind) + "</td><td>" + esc(fmt(r.receivedAt)) + "</td><td>" + esc(r.paymentStatus || "Received") + "</td></tr>";
+    }).join("");
+    el("recent-empty").style.display = recent.length ? "none" : "block";
   }
 
   /* ---------- Tabs ---------- */
@@ -129,19 +157,28 @@
     var t = e.target.closest(".a-tab"); if (!t) return;
     var view = t.getAttribute("data-view");
     document.querySelectorAll(".a-tab").forEach(function (b) { b.classList.toggle("active", b === t); });
-    var isSubmissions = view === "submissions";
+    var submissionKinds = { registrations: "register", abstracts: "abstract", payments: "register", enquiries: "all" };
+    var isSubmissions = view === "submissions" || Object.prototype.hasOwnProperty.call(submissionKinds, view);
     var isPages = view === "pages";
     var isSpeakers = view === "speakers";
-    document.getElementById("content-view").style.display = isSubmissions || isPages || isSpeakers ? "none" : "block";
+    var isDashboard = view === "dashboard";
+    var isMedia = view === "media";
+    var isCommittee = view === "committee";
+    document.getElementById("content-view").style.display = isSubmissions || isPages || isSpeakers || isDashboard || isMedia ? "none" : "block";
     el("speakers-view").style.display = isSpeakers ? "block" : "none";
     el("pages-view").style.display = isPages ? "block" : "none";
     document.getElementById("sub-view").style.display = isSubmissions ? "block" : "none";
-    document.querySelector(".a-header-actions").style.display = isSubmissions ? "none" : "flex";
-    el("save-content").style.display = isPages ? "none" : "inline-flex";
-    el("stats").style.display = view === "data" ? "grid" : "none";
+    el("dashboard-view").style.display = isDashboard ? "block" : "none";
+    el("media-view").style.display = isMedia ? "block" : "none";
+    document.querySelector(".a-header-actions").style.display = (isSubmissions || isDashboard || isMedia) ? "none" : "flex";
+    el("save-content").style.display = (isPages || isMedia) ? "none" : "inline-flex";
+    el("stats").style.display = "none";
+    if (isDashboard) { current = "dashboard"; el("main-title").textContent = "Dashboard"; loadAll(); return; }
+    if (isMedia) { current = "media"; el("main-title").textContent = "Image & Media Management"; loadContent(); return; }
     if (isSubmissions) {
-      current = el("submission-kind").value || "all";
-      el("sub-title").textContent = KIND_LABEL[current] || current;
+      current = submissionKinds[view] || el("submission-kind").value || "all";
+      el("submission-kind").value = current;
+      el("sub-title").textContent = view === "payments" ? "Payment Transactions" : view === "enquiries" ? "Enquiries & Requests" : (KIND_LABEL[current] || current);
       loadKind(current);
       return;
     }
@@ -158,6 +195,12 @@
       el("main-title").textContent = "Speakers";
       return;
     }
+    if (isCommittee) {
+      current = "committee";
+      el("main-title").textContent = "Organizing Committee";
+      var committee = el("committee-editor"); if (committee) { committee.open = true; committee.scrollIntoView({ behavior: "smooth", block: "start" }); }
+      return;
+    }
     current = "content";
     el("main-title").textContent = view === "content" ? "Website Content" : t.textContent.trim();
     var targets = {
@@ -169,6 +212,13 @@
     };
     var target = el(targets[view] || "conference-information");
     if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  document.querySelectorAll(".a-group-toggle").forEach(function (button) {
+    button.addEventListener("click", function () { button.parentNode.classList.toggle("is-collapsed"); });
+  });
+  $(".a-nav-toggle").addEventListener("click", function () {
+    var sidebar = $(".a-sidebar"), collapsed = sidebar.classList.toggle("is-collapsed");
+    this.setAttribute("aria-expanded", String(!collapsed));
   });
 
   el("export-btn").addEventListener("click", function () {
@@ -420,6 +470,7 @@
     renderPeriods(c.registrationPeriods || {});
     renderFixedPrices(c.registrationPricing || {});
     renderCoupons(c.coupons || []);
+    renderMedia(c.media || {});
     renderPageList();
     renderMembers(c.committee || []);
     renderSpeakers(c.speakers || []);
@@ -433,6 +484,35 @@
         "<button class='a-btn ghost sm' data-rmdate='" + i + "'>Remove</button></div>";
     }).join("");
   }
+
+  function renderMedia(media) {
+    var list = el("media-list");
+    if (!list) return;
+    list.innerHTML = MEDIA_ITEMS.map(function (item) {
+      var path = media[item.key] || item.defaultPath;
+      return "<article class='a-media-card' data-media-item='" + esc(item.key) + "'><img src='" + esc(path) + "' alt='" + esc(item.name) + " preview' data-media-preview><div class='a-media-meta'><span class='a-media-location'>" + esc(item.page) + " · " + esc(item.section) + "</span><h3>" + esc(item.name) + "</h3><p class='a-sub'>" + esc(path) + "</p><div class='a-media-actions'><label class='a-btn ghost sm'>Replace image<input type='file' accept='image/jpeg,image/png,image/webp,image/gif' data-media-file hidden></label><button class='a-btn ghost sm' type='button' data-media-restore>Restore default</button></div><input type='hidden' data-media-path value='" + esc(media[item.key] || "") + "'><span class='a-sub' data-media-status>" + (media[item.key] ? "Custom image in use" : "Original image in use") + "</span></div></article>";
+    }).join("");
+  }
+
+  el("media-list").addEventListener("click", function (e) {
+    var restore = e.target.closest("[data-media-restore]"); if (!restore) return;
+    var card = restore.closest("[data-media-item]");
+    var item = MEDIA_ITEMS.filter(function (x) { return x.key === card.getAttribute("data-media-item"); })[0];
+    card.querySelector("[data-media-path]").value = "";
+    card.querySelector("[data-media-preview]").src = item.defaultPath;
+    card.querySelector("[data-media-status]").textContent = "Original image will be restored when saved.";
+  });
+  el("media-list").addEventListener("change", function (e) {
+    var input = e.target.closest("[data-media-file]"); if (!input || !input.files || !input.files[0]) return;
+    var card = input.closest("[data-media-item]"), status = card.querySelector("[data-media-status]");
+    var formData = new FormData(); formData.append("image", input.files[0]); status.textContent = "Uploading image…";
+    api("/admin/api/upload-image", { method: "POST", body: formData }).then(function (result) {
+      if (!result || !result.path) throw new Error("The uploaded image path was not returned.");
+      card.querySelector("[data-media-path]").value = result.path; card.querySelector("[data-media-preview]").src = result.path;
+      status.textContent = "Replacement uploaded. Save media changes to publish it.";
+    }).catch(function (err) { status.textContent = err.message || "Upload failed."; toast(status.textContent, true); }).finally(function () { input.value = ""; });
+  });
+  el("save-media").addEventListener("click", function () { saveContent(); });
 
   el("dates-list").addEventListener("click", function (e) {
     var rm = e.target.closest("[data-rmdate]"); if (!rm) return;
@@ -899,6 +979,11 @@
     document.querySelectorAll("#item-prices [data-fixed-price]").forEach(function (inp) {
       fixedItems[inp.getAttribute("data-fixed-price")] = Math.max(0, Number(inp.value) || 0);
     });
+    var media = {};
+    document.querySelectorAll("#media-list [data-media-item]").forEach(function (row) {
+      var customPath = row.querySelector("[data-media-path]").value.trim();
+      if (customPath) media[row.getAttribute("data-media-item")] = customPath;
+    });
     var pages = Object.assign({}, (contentData && contentData.pages) || {});
     var pageRows = document.querySelectorAll("#page-sections-editor [data-sec]");
     var editingPageNow = el("page-editor-view").style.display !== "none" && pageRows.length > 0;
@@ -942,7 +1027,7 @@
     var payload = {
       banner: { enabled: el("c-banner-on").checked, text: el("c-banner-text").value.trim() },
       site: { theme: el("c-theme").value.trim(), dateText: el("c-dates").value.trim(), city: el("c-city").value.trim(), mapUrl: mapUrl },
-      dates: dates, homeGallery: { heading: el("c-home-gallery-heading").value.trim(), photos: homeGalleryPhotos }, fees: fees, registrationPeriods: registrationPeriods,
+      dates: dates, homeGallery: { heading: el("c-home-gallery-heading").value.trim(), photos: homeGalleryPhotos }, media: media, fees: fees, registrationPeriods: registrationPeriods,
       registrationPricing: {
         fixedItems: fixedItems
       },
