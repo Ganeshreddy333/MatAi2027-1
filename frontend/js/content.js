@@ -333,7 +333,12 @@
     var site = content.site || {};
     var date = panel.querySelector('[data-content="site.dateText"]');
     var city = panel.querySelector('[data-content="site.city"]');
-    if (date) date.textContent = site.dateText || DEFAULTS.site.dateText;
+    // A previously saved value on the live site omitted the last year digit.
+    // Do not render a partial year; retain the project default until the admin
+    // saves a complete date value.
+    var dateText = site.dateText || DEFAULTS.site.dateText;
+    if (/\b\d{3}\b/.test(dateText)) dateText = DEFAULTS.site.dateText;
+    if (date) date.textContent = dateText;
     if (city) city.textContent = site.city || DEFAULTS.site.city;
   }
 

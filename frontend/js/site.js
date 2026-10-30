@@ -542,7 +542,7 @@
   /* ---------- Load public content loader once ---------- */
   function ensureContentScript() {
     if (window.MATAI_CONTENT || document.querySelector('script[data-matai-content]')) return;
-    var src = SITE_SRC.replace(/site\.js.*$/, "content.js?v=20261030-hero-event-panel-2");
+    var src = SITE_SRC.replace(/site\.js.*$/, "content.js?v=20261030-hero-event-panel-3");
     var s = document.createElement("script");
     s.async = false;
     s.src = src; s.setAttribute("data-matai-content", "1");
