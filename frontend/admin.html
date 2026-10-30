@@ -93,14 +93,14 @@
 
         <div class="a-card" id="home-gallery-settings">
           <div class="a-section-heading">
-            <div><h2>Home Page Photo Gallery</h2><p class="a-muted">Add a heading and upload photos to show a scrollable gallery immediately after Important Dates. The gallery stays hidden when no photos are added.</p></div>
+            <div><h2>Important Dates — Right Side</h2><p class="a-muted">Add an optional main heading and photos for the right half of the Important Dates section. Only the heading and photos appear on the home page.</p></div>
             <div class="a-action-buttons">
               <button class="a-btn ghost sm" id="add-home-gallery-photo" type="button">Add photo</button>
               <button class="a-btn ghost sm" id="clear-home-gallery-photos" type="button">Remove all photos</button>
             </div>
           </div>
           <div class="a-row home-gallery-heading-row">
-            <label class="a-field">Gallery heading
+            <label class="a-field">Main heading
               <input class="a-input" id="c-home-gallery-heading" type="text" placeholder="e.g. Conference Highlights">
             </label>
             <button class="a-btn ghost sm" id="clear-home-gallery-heading" type="button">Remove heading</button>
@@ -109,7 +109,7 @@
         </div>
         <div class="a-card" id="registration-settings">
           <h2>Registration Periods &amp; Fees</h2>
-          <p class="a-muted">Choose which tier is currently charged, update its public deadline, and edit category fees in EUR.</p>
+          <p class="a-muted">Choose which tier is currently charged, update its public deadline, and edit category fees in USD.</p>
           <label class="a-field a-active-period">Active registration pricing period
             <select class="a-input" id="reg-active"></select>
           </label>
@@ -119,7 +119,7 @@
 
         <div class="a-card" id="accommodation-prices">
           <h2>Exhibition, Sponsorship &amp; Add-on Prices</h2>
-          <p class="a-muted">All fixed-price registration items are editable here. Prices are in EUR.</p>
+          <p class="a-muted">All fixed-price registration items are editable here. Prices are in USD.</p>
           <div class="fees-grid"><table id="item-prices"></table></div>
           <p class="a-muted">A fixed 5% tax is added to every registration order and its add-ons.</p>
         </div>
@@ -197,6 +197,6 @@
     <div class="db" id="d-body"></div>
   </aside>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="js/admin.js?v=20261025-home-gallery-controls"></script>
+  <script src="js/admin.js?v=20261029-usd-base-pricing"></script>
 </body>
 </html>

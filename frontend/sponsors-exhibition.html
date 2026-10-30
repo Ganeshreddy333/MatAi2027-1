@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=20261025-registration-details-nav">
+<link rel="stylesheet" href="css/styles.css?v=20261029-header-reference-3">
 <style>
 body.sponsors-exhibition-page { background:#f4f5f1; }
 body.sponsors-exhibition-page .page-hero {
@@ -67,6 +67,293 @@ body.sponsors-exhibition-page .sponsor-package-card p, body.sponsors-exhibition-
 body.sponsors-exhibition-page .sponsor-package-card p:has(br), body.sponsors-exhibition-page .exhibition-package-card p:has(br) { padding:.7rem .8rem; border-radius:11px; background:var(--tier-soft); color:#394b45; }
 body.sponsors-exhibition-page .sponsor-doc-content li::before { content:"\2713"; }
 @media(max-width:720px) { body.sponsors-exhibition-page .sponsor-tier-grid, body.sponsors-exhibition-page .exhibition-package-grid { grid-template-columns:1fr; gap:.75rem; } body.sponsors-exhibition-page .diamond-tier { grid-column:auto; } }
+
+/* Three-dimensional sponsor tiers with a matching tier logo medallion. */
+body.sponsors-exhibition-page .sponsor-tier-grid { perspective:1500px; gap:1.25rem; }
+body.sponsors-exhibition-page .sponsor-package-card {
+  position:relative;
+  overflow:hidden;
+  transform-style:preserve-3d;
+  padding:1.45rem;
+  border:1px solid color-mix(in srgb,var(--tier-color) 38%,#fff);
+  border-top:6px solid var(--tier-color);
+  background:linear-gradient(145deg,#fff 0%,var(--tier-soft) 100%);
+  box-shadow:0 7px 0 color-mix(in srgb,var(--tier-color) 38%,#fff),0 18px 34px rgba(23,32,46,.12),inset 0 1px 0 #fff;
+  transition:transform .28s ease,box-shadow .28s ease;
+}
+body.sponsors-exhibition-page .sponsor-package-card::before {
+  position:absolute;
+  inset:0 0 auto;
+  height:46%;
+  border-radius:inherit;
+  background:linear-gradient(125deg,rgba(255,255,255,.75),rgba(255,255,255,0) 65%);
+  content:"";
+  pointer-events:none;
+}
+body.sponsors-exhibition-page .sponsor-package-card > * { position:relative; z-index:1; }
+body.sponsors-exhibition-page .sponsor-package-card:hover {
+  transform:translateY(-8px) rotateX(1deg);
+  box-shadow:0 10px 0 color-mix(in srgb,var(--tier-color) 38%,#fff),0 28px 44px rgba(23,32,46,.18),inset 0 1px 0 #fff;
+}
+body.sponsors-exhibition-page .diamond-tier { --tier-color:#d6ab4c; --tier-soft:#fff7df; --tier-ink:#785a16; }
+body.sponsors-exhibition-page .platinum-tier { --tier-color:#8497ac; --tier-soft:#eff3f8; --tier-ink:#45596d; }
+body.sponsors-exhibition-page .gold-tier { --tier-color:#d69f2d; --tier-soft:#fff4d6; --tier-ink:#805e11; }
+body.sponsors-exhibition-page .silver-tier { --tier-color:#8ba0ad; --tier-soft:#eff4f6; --tier-ink:#536773; }
+body.sponsors-exhibition-page .bronze-tier { --tier-color:#b9704b; --tier-soft:#fff0e8; --tier-ink:#804a2f; }
+body.sponsors-exhibition-page .sponsor-package-card h3:first-child {
+  display:flex;
+  align-items:center;
+  gap:.9rem;
+  width:100%;
+  min-height:4.1rem;
+  margin:0 0 1rem;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  color:var(--tier-ink);
+  font-size:.9rem;
+  letter-spacing:.09em;
+}
+body.sponsors-exhibition-page .sponsor-package-card h3:first-child::before {
+  display:grid;
+  flex:0 0 3.65rem;
+  width:3.65rem;
+  height:3.65rem;
+  place-items:center;
+  border:1px solid rgba(255,255,255,.9);
+  border-radius:18px;
+  background:linear-gradient(145deg,#fff 0%,var(--tier-color) 58%,var(--tier-ink) 100%);
+  box-shadow:inset 4px 4px 8px rgba(255,255,255,.8),inset -5px -6px 9px rgba(0,0,0,.18),0 9px 14px color-mix(in srgb,var(--tier-color) 34%,transparent);
+  color:#fff;
+  font-family:var(--font-head);
+  font-size:1.3rem;
+  font-weight:800;
+  letter-spacing:0;
+  text-shadow:0 2px 3px rgba(0,0,0,.25);
+  transform:translateZ(18px);
+}
+body.sponsors-exhibition-page .diamond-tier h3:first-child::before { content:"D"; clip-path:polygon(50% 0,100% 24%,84% 100%,16% 100%,0 24%); border-radius:0; }
+body.sponsors-exhibition-page .platinum-tier h3:first-child::before { content:"P"; border-radius:50%; }
+body.sponsors-exhibition-page .gold-tier h3:first-child::before { content:"G"; clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,80% 94%,50% 72%,20% 94%,32% 57%,2% 35%,39% 35%); border-radius:0; }
+body.sponsors-exhibition-page .silver-tier h3:first-child::before { content:"S"; border-radius:50% 50% 18px 18px; }
+body.sponsors-exhibition-page .bronze-tier h3:first-child::before { content:"B"; clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%); border-radius:0; }
+body.sponsors-exhibition-page .sponsor-package-card h3:not(:first-child) { border-left:3px solid var(--tier-color); }
+body.sponsors-exhibition-page .sponsor-package-card p:has(br) { border:1px solid color-mix(in srgb,var(--tier-color) 28%,#fff); background:linear-gradient(140deg,var(--tier-soft),#fff); box-shadow:inset 0 1px 0 #fff; }
+@media(max-width:640px) {
+  body.sponsors-exhibition-page .sponsor-package-card { padding:1.15rem; border-radius:16px; }
+  body.sponsors-exhibition-page .sponsor-package-card h3:first-child { font-size:.82rem; }
+}
+
+/* Carry the colorful partnership theme through the full page. */
+body.sponsors-exhibition-page {
+  background:
+    radial-gradient(circle at 8% 20%,rgba(41,157,148,.11),transparent 25rem),
+    radial-gradient(circle at 94% 52%,rgba(218,164,65,.1),transparent 23rem),
+    #f1f6fa;
+}
+body.sponsors-exhibition-page .page-hero {
+  background:linear-gradient(118deg,#102a43 0%,#164d66 48%,#14735d 100%);
+}
+body.sponsors-exhibition-page .page-hero::before {
+  position:absolute;
+  top:-9rem;
+  left:55%;
+  width:30rem;
+  height:30rem;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(92,181,191,.28),rgba(92,181,191,0) 68%);
+  content:"";
+  pointer-events:none;
+}
+body.sponsors-exhibition-page .page-hero h1 { text-shadow:0 5px 20px rgba(0,0,0,.2); }
+body.sponsors-exhibition-page .sponsor-doc-content {
+  border:1px solid #d8e5ec;
+  border-top:6px solid transparent;
+  border-image:linear-gradient(90deg,#168b83,#5c76ce,#d6a443,#d06a3b) 1;
+  background:linear-gradient(155deg,#fff 0%,#fbfdff 65%,#f6fbf9 100%);
+  box-shadow:0 28px 78px rgba(16,42,67,.15);
+}
+body.sponsors-exhibition-page .sponsor-doc-content h2:first-of-type {
+  color:#143b56;
+  border-bottom:1px solid #d9e7ed;
+}
+body.sponsors-exhibition-page .sponsor-doc-content h2:first-of-type::after {
+  display:block;
+  width:5.5rem;
+  height:4px;
+  margin-top:.9rem;
+  border-radius:999px;
+  background:linear-gradient(90deg,#168b83,#6878cf,#e0ad48);
+  content:"";
+}
+body.sponsors-exhibition-page .sponsor-doc-content > h3 {
+  border:1px solid #d8e5ec;
+  border-left:6px solid #168b83;
+  border-radius:0 14px 14px 0;
+  background:linear-gradient(100deg,#e4f5f1 0%,#f3f6ff 58%,#fff 100%);
+  color:#173b54;
+  box-shadow:0 9px 22px rgba(16,42,67,.075);
+}
+body.sponsors-exhibition-page .sponsor-doc-content > h3:nth-of-type(4n + 2) {
+  border-left-color:#d06a3b;
+  background:linear-gradient(100deg,#fff0e7 0%,#fff8f3 58%,#fff 100%);
+}
+body.sponsors-exhibition-page .sponsor-doc-content > h3:nth-of-type(4n + 3) {
+  border-left-color:#6878cf;
+  background:linear-gradient(100deg,#e9edff 0%,#f6f7ff 58%,#fff 100%);
+}
+body.sponsors-exhibition-page .sponsor-doc-content > h3:nth-of-type(4n) {
+  border-left-color:#d1a03d;
+  background:linear-gradient(100deg,#fff4d9 0%,#fffaf0 58%,#fff 100%);
+}
+body.sponsors-exhibition-page .sponsor-doc-content li {
+  border-color:#dce8ed;
+  background:linear-gradient(110deg,#f4faf9,#fff 72%);
+  box-shadow:0 3px 10px rgba(16,42,67,.035);
+}
+body.sponsors-exhibition-page .sponsor-doc-content li:nth-child(4n + 2) { background:linear-gradient(110deg,#fff5ef,#fff 72%); }
+body.sponsors-exhibition-page .sponsor-doc-content li:nth-child(4n + 3) { background:linear-gradient(110deg,#f1f3ff,#fff 72%); }
+body.sponsors-exhibition-page .sponsor-doc-content li:nth-child(4n) { background:linear-gradient(110deg,#fff9e9,#fff 72%); }
+body.sponsors-exhibition-page .sponsor-doc-content li::before { color:#168b83; }
+body.sponsors-exhibition-page .sponsor-doc-content li:nth-child(4n + 2)::before { color:#d06a3b; }
+body.sponsors-exhibition-page .sponsor-doc-content li:nth-child(4n + 3)::before { color:#6878cf; }
+body.sponsors-exhibition-page .sponsor-doc-content li:nth-child(4n)::before { color:#b47a13; }
+body.sponsors-exhibition-page .exhibition-package-grid { perspective:1300px; }
+body.sponsors-exhibition-page .exhibition-package-card {
+  --tier-color:#168b83;
+  --tier-soft:#eaf7f4;
+  --tier-ink:#145f60;
+  overflow:hidden;
+  transform-style:preserve-3d;
+  border:1px solid color-mix(in srgb,var(--tier-color) 35%,#fff);
+  border-top:6px solid var(--tier-color);
+  background:linear-gradient(145deg,#fff,var(--tier-soft));
+  box-shadow:0 7px 0 color-mix(in srgb,var(--tier-color) 32%,#fff),0 17px 32px rgba(23,32,46,.1);
+}
+body.sponsors-exhibition-page .premium-booth-card { --tier-color:#6878cf; --tier-soft:#eef0ff; --tier-ink:#4657a3; }
+body.sponsors-exhibition-page .exhibition-package-card:hover { transform:translateY(-7px) rotateX(1deg); box-shadow:0 10px 0 color-mix(in srgb,var(--tier-color) 32%,#fff),0 26px 42px rgba(23,32,46,.16); }
+body.sponsors-exhibition-page .exhibition-package-card h3:first-child {
+  display:flex;
+  align-items:center;
+  gap:.75rem;
+  width:100%;
+  padding:.15rem 0 .7rem;
+  border-radius:0;
+  border-bottom:1px solid color-mix(in srgb,var(--tier-color) 28%,#fff);
+  background:transparent;
+  color:var(--tier-ink);
+}
+body.sponsors-exhibition-page .exhibition-package-card h3:first-child::before {
+  display:grid;
+  flex:0 0 2.8rem;
+  width:2.8rem;
+  height:2.8rem;
+  place-items:center;
+  border:1px solid rgba(255,255,255,.8);
+  border-radius:13px;
+  background:linear-gradient(145deg,#fff,var(--tier-color),var(--tier-ink));
+  box-shadow:inset 3px 3px 6px rgba(255,255,255,.7),inset -4px -4px 7px rgba(0,0,0,.16),0 6px 11px rgba(16,42,67,.14);
+  color:#fff;
+  content:"E";
+  font-size:1rem;
+  font-weight:800;
+  transform:translateZ(12px);
+}
+body.sponsors-exhibition-page .standard-booth-card h3:first-child::before { content:"S"; }
+body.sponsors-exhibition-page .premium-booth-card h3:first-child::before { content:"P"; }
+body.sponsors-exhibition-page .sponsor-doc-content h2:last-of-type {
+  background:linear-gradient(115deg,#102a43 0%,#176879 58%,#14745c 100%);
+  box-shadow:0 13px 30px rgba(16,73,86,.24);
+}
+
+/* Open, editorial package layout: keep the emblems dimensional and reduce boxes. */
+body.sponsors-exhibition-page .sponsor-doc-content {
+  max-width:1160px;
+  padding:clamp(1rem,3vw,2rem) clamp(1rem,3.5vw,2.5rem);
+  border:0;
+  border-image:none;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+body.sponsors-exhibition-page .sponsor-doc-content > h3 {
+  padding:.45rem 0 .55rem 1rem;
+  border:0;
+  border-left:4px solid #168b83;
+  border-bottom:1px solid #d8e5ec;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+body.sponsors-exhibition-page .sponsor-doc-content > h3:nth-of-type(4n + 2) { border-left-color:#d06a3b; }
+body.sponsors-exhibition-page .sponsor-doc-content > h3:nth-of-type(4n + 3) { border-left-color:#6878cf; }
+body.sponsors-exhibition-page .sponsor-doc-content > h3:nth-of-type(4n) { border-left-color:#d1a03d; }
+body.sponsors-exhibition-page .sponsor-doc-content li {
+  padding:.35rem .25rem .35rem 1.7rem;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+body.sponsors-exhibition-page .sponsor-doc-content li:nth-child(4n + 2),
+body.sponsors-exhibition-page .sponsor-doc-content li:nth-child(4n + 3),
+body.sponsors-exhibition-page .sponsor-doc-content li:nth-child(4n) { background:transparent; }
+body.sponsors-exhibition-page .sponsor-package-card,
+body.sponsors-exhibition-page .sponsor-package-card:hover,
+body.sponsors-exhibition-page .exhibition-package-card,
+body.sponsors-exhibition-page .exhibition-package-card:hover {
+  overflow:visible;
+  padding:1.3rem 1rem 1.2rem 1.2rem;
+  border:0;
+  border-left:2px solid var(--tier-color);
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  transform:none;
+}
+body.sponsors-exhibition-page .sponsor-package-card::before { display:none; }
+body.sponsors-exhibition-page .sponsor-package-card:hover,
+body.sponsors-exhibition-page .exhibition-package-card:hover { border-left-width:4px; }
+body.sponsors-exhibition-page .sponsor-package-card h3:first-child,
+body.sponsors-exhibition-page .exhibition-package-card h3:first-child {
+  width:100%;
+  min-height:3.8rem;
+  margin:0 0 .8rem;
+  padding:0 0 .8rem;
+  border:0;
+  border-bottom:1px solid color-mix(in srgb,var(--tier-color) 35%,#fff);
+  border-radius:0;
+  background:transparent;
+  color:var(--tier-ink);
+}
+body.sponsors-exhibition-page .sponsor-package-card h3:not(:first-child),
+body.sponsors-exhibition-page .exhibition-package-card h3:not(:first-child) {
+  width:max-content;
+  max-width:100%;
+  margin:1.2rem 0 .35rem;
+  padding:0 0 .3rem;
+  border:0;
+  border-bottom:1px solid color-mix(in srgb,var(--tier-color) 32%,#fff);
+  border-radius:0;
+  background:transparent;
+  color:var(--tier-ink);
+}
+body.sponsors-exhibition-page .sponsor-package-card p:has(br),
+body.sponsors-exhibition-page .exhibition-package-card p:has(br) {
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  color:#43554f;
+  line-height:1.8;
+}
+@media(max-width:640px) {
+  body.sponsors-exhibition-page .sponsor-doc-content { padding:1rem 0; }
+  body.sponsors-exhibition-page .sponsor-package-card,
+  body.sponsors-exhibition-page .exhibition-package-card { padding:1rem .25rem 1rem .9rem; }
+}
 </style>
 </head><body class="sponsors-exhibition-page">
 <div id="site-header"></div>
@@ -292,6 +579,6 @@ body.sponsors-exhibition-page .sponsor-doc-content li::before { content:"\2713";
 <p><a class="btn btn-primary" href="sponsors-brochure.html">Request the Sponsorship &amp; Exhibition Brochure</a></p>
 </div></section>
 <div id="site-footer"></div>
-<script src="js/site.js?v=20261025-registration-details-nav"></script>
+<script src="js/site.js?v=20261029-conference-header-logo-2"></script>
 <script src="js/forms.js?v=20261020-public-refresh"></script>
 </body></html>

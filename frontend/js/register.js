@@ -18,41 +18,135 @@
   var TAX_RATE = 0.05;
   var DISCOUNT_CODES = {};
 
-  // EUR is the only transaction currency currently configured for checkout.
-  var CUR = { EUR: { sym: "€", rate: 1 } };
-  var currencySelect = form.querySelector('select[name="currency"]');
+  // Registration prices are stored in USD. Checkout is charged in EUR.
+  var CUR = {
+    USD: { code: "USD", sym: "$", rate: 1 },
+    EUR: { code: "EUR", sym: "€", rate: null },
+    GBP: { code: "GBP", sym: "£", rate: null },
+    INR: { code: "INR", sym: "₹", rate: null }
+  };
+  var currencyRatesReady = false;
+  var currencyRatesFailed = false;
+  var currencyRateDate = "";
+  var currencySelect = form.querySelector('select[name="preferredCurrency"]');
+  var transactionCurrencyInput = id("transaction-currency");
   var originalCurrencyInput = id("original-selected-currency");
   var currencyFallbackInput = id("currency-fallback-confirmed");
   var currencyFallbackDialog = id("currency-fallback-dialog");
   var currencyFallbackMessage = id("currency-fallback-message");
   var currencySelectionNote = id("currency-selection-note");
+  var rateDateInput = id("currency-rate-date");
+  var usdToEurInput = id("usd-to-eur-rate");
   var pendingFallbackCurrency = "";
 
   function id(x) { return document.getElementById(x); }
   function num(el) { var v = parseInt(el && el.value, 10); return (isNaN(v) || v < 0) ? 0 : v; }
   function curInfo() {
-    var s = form.querySelector('select[name="currency"]');
-    var c = s ? s.value : "EUR";
-    return CUR[c] || CUR.EUR;
+    var selected = currencySelect && currencySelect.value || "EUR";
+    return CUR[selected] && Number.isFinite(CUR[selected].rate) ? CUR[selected] : CUR.USD;
   }
   function fmt(eur, ci) {
     ci = ci || curInfo();
     var v = Math.round((eur || 0) * ci.rate * 100) / 100;
-    var fractionDigits = Math.round(v) === v ? 0 : 2;
-    return ci.sym + v.toLocaleString("en-US", {
-      minimumFractionDigits: fractionDigits,
-      maximumFractionDigits: 2
-    });
+    return new Intl.NumberFormat(ci.code === "INR" ? "en-IN" : "en-US", {
+      style: "currency", currency: ci.code, minimumFractionDigits: 2, maximumFractionDigits: 2
+    }).format(v);
+  }
+
+  function formatAmountOnly(amount, ci) {
+    return new Intl.NumberFormat(ci && ci.code === "INR" ? "en-IN" : "en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount);
+  }
+
+  function fmtCents(cents, ci) {
+    return new Intl.NumberFormat(ci.code === "INR" ? "en-IN" : "en-US", {
+      style: "currency", currency: ci.code, minimumFractionDigits: 2, maximumFractionDigits: 2
+    }).format((cents || 0) / 100);
+  }
+
+  function updateCurrencyNote() {
+    if (!currencySelectionNote || !currencySelect) return;
+    var selected = currencySelect.value;
+    if (currencyRatesFailed) {
+      currencySelectionNote.textContent = "Prices are based in USD, but the current USD-to-EUR checkout rate could not be loaded. Refresh the page before registering.";
+    } else if (!currencyRatesReady) {
+      currencySelectionNote.textContent = "USD prices are shown by default. Loading the latest exchange rates for EUR, GBP, and INR…";
+    } else if (selected === "USD") {
+      currencySelectionNote.textContent = "Prices are shown in USD. Checkout is processed in EUR using the latest published rate (1 USD = " +
+        CUR.EUR.rate.toLocaleString("en-US", { maximumFractionDigits: 5 }) + " EUR, " + currencyRateDate + "). The EUR amount will be confirmed before payment.";
+    } else if (CUR[selected]) {
+      currencySelectionNote.textContent = "USD base prices are converted to " + selected + " using the latest published rate (1 USD = " +
+        CUR[selected].rate.toLocaleString("en-US", { maximumFractionDigits: 5 }) + " " + selected + ", " + currencyRateDate +"). Checkout is processed in EUR.";
+    } else {
+      currencySelectionNote.textContent = "Prices are shown in USD.";
+    }
+  }
+
+  function loadCurrencyRates() {
+    if (!currencySelectionNote) return;
+    if (currencySelect) {
+      Array.prototype.forEach.call(currencySelect.options, function (option) {
+        if (option.value === "EUR" || option.value === "GBP" || option.value === "INR") option.disabled = true;
+      });
+    }
+    updateCurrencyNote();
+    fetch("/api/currency-rates", { cache: "no-store" })
+      .then(function (response) {
+        if (!response.ok) throw new Error("Exchange rate request failed.");
+        return response.json();
+      })
+      .then(function (result) {
+        var rates = result && result.rates || {};
+        var eur = Number(rates.EUR);
+        var gbp = Number(rates.GBP);
+        var inr = Number(rates.INR);
+        if (!Number.isFinite(eur) || eur <= 0 || !result.date) throw new Error("Required exchange rate was missing.");
+        CUR.EUR.rate = eur;
+        if (Number.isFinite(gbp) && gbp > 0) {
+          CUR.GBP.rate = gbp;
+        }
+        if (Number.isFinite(inr) && inr > 0) CUR.INR.rate = inr;
+        if (currencySelect) {
+          var eurOption = currencySelect.querySelector('option[value="EUR"]');
+          var gbpOption = currencySelect.querySelector('option[value="GBP"]');
+          var inrOption = currencySelect.querySelector('option[value="INR"]');
+          if (eurOption) eurOption.disabled = false;
+          if (gbpOption) gbpOption.disabled = !(Number.isFinite(gbp) && gbp > 0);
+          if (inrOption) inrOption.disabled = !(Number.isFinite(inr) && inr > 0);
+        }
+        currencyRateDate = result.date;
+        if (rateDateInput) rateDateInput.value = currencyRateDate;
+        if (usdToEurInput) usdToEurInput.value = String(eur);
+        currencyRatesReady = true;
+        currencyRatesFailed = false;
+        updateCurrencyNote();
+        renderRegistrationOptions();
+        renderOptionalItems();
+        recalc();
+      })
+      .catch(function () {
+        currencyRatesFailed = true;
+        if (currencySelect) {
+          Array.prototype.forEach.call(currencySelect.options, function (option) {
+            if (option.value === "EUR" || option.value === "GBP" || option.value === "INR") option.disabled = true;
+          });
+        }
+        if (currencySelect && currencySelect.value !== "USD") {
+          currencySelect.value = "USD";
+          resetCurrencyFallback();
+        }
+        updateCurrencyNote();
+        recalc();
+      });
   }
 
   function displayCurrencyAmount(amount, currency) {
     try {
       return new Intl.NumberFormat("en-US", {
-        style: "currency",
+      style: "currency",
         currency: currency,
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
-      }).format(amount);
+    }).format(amount);
     } catch (_) {
       return currency + " " + Number(amount).toFixed(2);
     }
@@ -62,6 +156,7 @@
   var sumBody = id("sum-body");
   var sumTotal = id("sum-total");
   var totalInput = id("total-input");
+  var totalDisplay = id("total-display");
   var totalEur = id("total-eur");
   var totalCur = id("total-cur");
   var selItems = id("selected-items");
@@ -69,8 +164,6 @@
   var summaryRegistrationPrice = id("summary-registration-price");
   var summaryParticipants = id("summary-participants");
   var summaryAccommodation = id("summary-accommodation");
-  var summarySocial = id("summary-social");
-  var summaryAccompanying = id("summary-accompanying");
   var summaryNights = id("summary-nights");
   var summaryCheckIn = id("summary-check-in");
   var summaryCheckOut = id("summary-check-out");
@@ -95,28 +188,22 @@
   var lastRegistrationDate = new Date().toISOString().slice(0, 10);
 
   function resetCurrencyFallback() {
-    if (originalCurrencyInput) originalCurrencyInput.value = "EUR";
+    if (transactionCurrencyInput) transactionCurrencyInput.value = "EUR";
+    if (originalCurrencyInput) originalCurrencyInput.value = currencySelect ? currencySelect.value : "USD";
     if (currencyFallbackInput) currencyFallbackInput.value = "false";
+    if (rateDateInput) rateDateInput.value = currencyRateDate;
+    if (usdToEurInput) usdToEurInput.value = currencyRatesReady && CUR.EUR.rate ? String(CUR.EUR.rate) : "";
   }
 
-  function handleCurrencySelection() {
-    if (!currencySelect || currencySelect.value === "EUR") {
-      resetCurrencyFallback();
-      if (currencySelectionNote) {
-        currencySelectionNote.textContent = "EUR is the only configured transaction currency. Other currencies are unavailable for checkout; selecting one will ask you to confirm a switch to EUR. No exchange-rate estimate is applied.";
-      }
-      return;
-    }
-
-    pendingFallbackCurrency = currencySelect.value;
-    var requestedCurrency = pendingFallbackCurrency;
-    currencySelect.value = "EUR";
+  function openCurrencyFallback(requestedCurrency) {
+    pendingFallbackCurrency = requestedCurrency;
     var amount = totalEur ? Number(totalEur.value) : 0;
     if (currencyFallbackMessage) {
-      currencyFallbackMessage.textContent = requestedCurrency +
-        " cannot be used for checkout. The default transaction currency is EUR. " +
-        "Continue with the recalculated total of " + displayCurrencyAmount(amount, "EUR") +
-        " EUR? No exchange-rate conversion will be applied.";
+      var rateText = currencyRatesReady
+        ? "USD base prices are converted at 1 USD = " + CUR.EUR.rate.toLocaleString("en-US", { maximumFractionDigits: 5 }) + " EUR (" + currencyRateDate + "). "
+        : "";
+      currencyFallbackMessage.textContent = rateText + "The payment will be processed in EUR for " +
+        displayCurrencyAmount(amount, "EUR") + ". Continue?";
     }
     if (currencyFallbackDialog && typeof currencyFallbackDialog.showModal === "function") {
       currencyFallbackDialog.showModal();
@@ -127,15 +214,32 @@
     }
   }
 
+  function handleCurrencySelection() {
+    if (!currencySelect || currencySelect.value === "EUR") {
+      resetCurrencyFallback();
+      updateCurrencyNote();
+      renderRegistrationOptions();
+      renderOptionalItems();
+      recalc();
+      return;
+    }
+    if (originalCurrencyInput) originalCurrencyInput.value = currencySelect.value;
+    if (currencyFallbackInput) currencyFallbackInput.value = "false";
+    updateCurrencyNote();
+    renderRegistrationOptions();
+    renderOptionalItems();
+    recalc();
+  }
+
   function confirmCurrencyFallback() {
     if (!pendingFallbackCurrency) return;
     if (originalCurrencyInput) originalCurrencyInput.value = pendingFallbackCurrency;
+    if (transactionCurrencyInput) transactionCurrencyInput.value = "EUR";
     if (currencyFallbackInput) currencyFallbackInput.value = "true";
     if (currencySelectionNote) {
       var amount = totalEur ? Number(totalEur.value) : 0;
-      currencySelectionNote.textContent = "You confirmed payment in EUR instead of " + pendingFallbackCurrency +
-        ". The payable amount is " + displayCurrencyAmount(amount, "EUR") +
-        " EUR. This amount and currency will be checked again before checkout.";
+      currencySelectionNote.textContent = "Prices are based in USD. The confirmed checkout amount is " +
+        displayCurrencyAmount(amount, "EUR") + " using the USD-to-EUR rate dated " + currencyRateDate + ".";
     }
     pendingFallbackCurrency = "";
     recalc();
@@ -143,10 +247,10 @@
 
   function cancelCurrencyFallback() {
     pendingFallbackCurrency = "";
+    if (currencySelect) currencySelect.value = "EUR";
     resetCurrencyFallback();
-    if (currencySelectionNote) {
-      currencySelectionNote.textContent = "The selected currency is not available for checkout. EUR remains selected; choose another payment method or continue in EUR.";
-    }
+    updateCurrencyNote();
+    recalc();
   }
 
   if (currencySelect) {
@@ -246,8 +350,6 @@
       var price = Number(tr.getAttribute("data-price")) || 0;
       return '<div class="registration-addon-option"><div><strong>' + escapeHtml(label) + '</strong><span>' + escapeHtml(detail || "") + '</span></div><b>' + fmt(price) + '</b><label>Qty<select data-selection-for="' + escapeHtml(qty ? qty.name : "") + '" aria-label="Quantity for ' + escapeHtml(label) + '">' + quantityOptions(qty ? qty.value : "0") + '</select></label></div>';
     }
-    var addons = id("registration-addon-list");
-    if (addons) addons.innerHTML = optionHtml("addon_social", "per ticket") + optionHtml("addon_accompanying", "per person");
     var sponsors = id("sponsorship-options");
     if (sponsors) {
       sponsors.innerHTML = rows.filter(function (tr) {
@@ -473,37 +575,42 @@
     });
 
     var grand = 0;
+    var grandEUR = 0;
     var registrationTotal = 0;
     var accommodationTotal = 0;
-    var socialTotal = 0;
-    var accompanyingTotal = 0;
     var participants = 0;
     var items = [];
     rows.forEach(function (tr) {
       var qtyEl = tr.querySelector("input[data-qty]");
       var qty = num(qtyEl);
       var unit = rowUnitPrice(tr);
-      var line = unit * qty;
-      grand += line;
+      var unitUSDCents = Math.round(unit * 100);
+      var unitDisplayCents = Math.round(unitUSDCents * ci.rate);
+      var lineDisplayCents = unitDisplayCents * qty;
+      var unitEURCents = currencyRatesReady ? Math.round(unitUSDCents * CUR.EUR.rate) : 0;
+      grand += lineDisplayCents;
+      grandEUR += unitEURCents * qty;
       if (!tr.hasAttribute("data-fixed")) {
         participants += qty;
-        registrationTotal += line;
+        registrationTotal += lineDisplayCents;
       } else {
         var key = tr.getAttribute("data-price-key");
-        if (key === "addon_accommodation_single" || key === "addon_accommodation_double") accommodationTotal += line;
-        if (key === "addon_social") socialTotal += line;
-        if (key === "addon_accompanying") accompanyingTotal += line;
+        if (key === "addon_accommodation_single" || key === "addon_accommodation_double") accommodationTotal += lineDisplayCents;
       }
       var rtot = tr.querySelector("[data-line]");
-      if (rtot) rtot.textContent = fmt(line, ci);
+      if (rtot) rtot.textContent = fmtCents(lineDisplayCents, ci);
       tr.classList.toggle("chosen", qty > 0);
-      if (qty > 0) items.push({ name: tr.getAttribute("data-item"), qty: qty, unit: unit, line: line });
+      if (qty > 0) items.push({ name: tr.getAttribute("data-item"), qty: qty, unit: unitDisplayCents, line: lineDisplayCents });
     });
 
-    var discount = Math.round(grand * activeDiscount * 100) / 100;
+    var discount = Math.round(grand * activeDiscount);
     var subtotal = Math.max(0, grand - discount);
-    var tax = Math.round(subtotal * TAX_RATE * 100) / 100;
+    var tax = Math.round(subtotal * TAX_RATE);
     var finalTotal = subtotal + tax;
+    var discountEUR = Math.round(grandEUR * activeDiscount);
+    var subtotalEUR = Math.max(0, grandEUR - discountEUR);
+    var taxEUR = Math.round(subtotalEUR * TAX_RATE);
+    var finalTotalEUR = subtotalEUR + taxEUR;
 
     // Build the summary table.
     if (sumBody) {
@@ -515,30 +622,29 @@
             return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
           });
           return '<tr><td>' + name + '</td><td class="c">' + it.qty +
-                 '</td><td class="r">' + fmt(it.unit, ci) + '</td><td class="r">' + fmt(it.line, ci) + '</td></tr>';
+                 '</td><td class="r">' + fmtCents(it.unit, ci) + '</td><td class="r">' + fmtCents(it.line, ci) + '</td></tr>';
         }).join("");
       }
     }
 
-    if (sumTotal) sumTotal.textContent = fmt(finalTotal, ci);
+    if (sumTotal) sumTotal.textContent = fmtCents(finalTotal, ci);
     if (totalCur) totalCur.textContent = ci.sym;
-    if (totalInput) totalInput.value = (Math.round(finalTotal * ci.rate * 100) / 100).toFixed(2);
-    if (totalEur) totalEur.value = finalTotal.toFixed(2);
+    if (totalInput) totalInput.value = (finalTotalEUR / 100).toFixed(2);
+    if (totalDisplay) totalDisplay.value = formatAmountOnly(finalTotal / 100, ci);
+    if (totalEur) totalEur.value = (finalTotalEUR / 100).toFixed(2);
     if (paymentGateway && paymentMethodHidden) paymentMethodHidden.value = paymentGateway.value;
     if (participantCount) participantCount.value = participants;
-    if (summaryRegistrationPrice) summaryRegistrationPrice.textContent = fmt(registrationTotal, ci);
+    if (summaryRegistrationPrice) summaryRegistrationPrice.textContent = fmtCents(registrationTotal, ci);
     if (summaryParticipants) summaryParticipants.textContent = participants;
-    if (summaryAccommodation) summaryAccommodation.textContent = fmt(accommodationTotal, ci);
-    if (summarySocial) summarySocial.textContent = fmt(socialTotal, ci);
-    if (summaryAccompanying) summaryAccompanying.textContent = fmt(accompanyingTotal, ci);
+    if (summaryAccommodation) summaryAccommodation.textContent = fmtCents(accommodationTotal, ci);
     var bookedNights = (sourceQuantity("qty_accom_single") && num(sourceQuantity("qty_accom_single"))) ||
       (sourceQuantity("qty_accom_double") && num(sourceQuantity("qty_accom_double"))) || 0;
     if (summaryNights) summaryNights.textContent = bookedNights ? String(bookedNights) : "—";
     if (summaryCheckIn) summaryCheckIn.textContent = id("check-in-date") && id("check-in-date").value || "—";
     if (summaryCheckOut) summaryCheckOut.textContent = id("check-out-date") && id("check-out-date").value || "—";
-    if (summaryDiscount) summaryDiscount.textContent = "-" + fmt(discount, ci);
-    if (summarySubtotal) summarySubtotal.textContent = fmt(subtotal, ci);
-    if (summaryTax) summaryTax.textContent = fmt(tax, ci);
+    if (summaryDiscount) summaryDiscount.textContent = "-" + fmtCents(discount, ci);
+    if (summarySubtotal) summarySubtotal.textContent = fmtCents(subtotal, ci);
+    if (summaryTax) summaryTax.textContent = fmtCents(tax, ci);
     if (summaryTaxLabel) {
       var taxPercent = (TAX_RATE * 100).toFixed(2).replace(/\.?0+$/, "");
       summaryTaxLabel.textContent = "Tax (" + taxPercent + "%):";
@@ -591,6 +697,22 @@
       }
       return;
     }
+    if (currencySelect && currencySelect.value !== "EUR" && !currencyRatesReady) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      var rateStatus = form.querySelector(".form-status");
+      if (rateStatus) {
+        rateStatus.className = "form-status err";
+        rateStatus.textContent = "The current exchange rate is not available. Please select EUR or try again later.";
+      }
+      return;
+    }
+    if (currencySelect && currencySelect.value !== "EUR" && currencyFallbackInput && currencyFallbackInput.value !== "true") {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      openCurrencyFallback(currencySelect.value);
+      return;
+    }
     if (paymentGateway && paymentGateway.value === "Stripe / Card Payment") {
       e.preventDefault();
       e.stopImmediatePropagation();
@@ -599,7 +721,7 @@
       if (window.MATAI_STRIPE_ENABLED === false) {
         if (status) {
           status.className = "form-status err";
-          status.textContent = "Stripe checkout is not configured. Please select Bank Transfer or contact the organizers.";
+          status.textContent = "Stripe checkout is not configured. Please select another available payment method or contact the organizers.";
         }
         return;
       }
@@ -648,9 +770,7 @@
       activeCoupon = "";
       pendingFallbackCurrency = "";
       resetCurrencyFallback();
-      if (currencySelectionNote) {
-        currencySelectionNote.textContent = "EUR is the only configured transaction currency. Other currencies are unavailable for checkout; selecting one will ask you to confirm a switch to EUR. No exchange-rate estimate is applied.";
-      }
+      updateCurrencyNote();
       syncPaymentChoice();
       if (couponMsg) couponMsg.textContent = "Enter a conference coupon code if one has been provided.";
       recalc();
@@ -692,4 +812,5 @@
     }
   }
   recalc();
+  loadCurrencyRates();
 })();

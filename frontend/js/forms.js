@@ -207,8 +207,18 @@
         var extra = "";
         var downloadUrl = form.getAttribute("data-download-url") || (resp && resp.download);
         if (downloadUrl && via !== "local") {
-          extra = '<br><a class="btn btn-primary btn-sm mt-1" href="' + downloadUrl + '" target="_blank" rel="noopener">Download the Brochure ↓</a>';
-          try { window.open(downloadUrl, "_blank"); } catch (e) {}
+          if (form.getAttribute("data-auto-download") === "true") {
+            var downloadLink = document.createElement("a");
+            downloadLink.href = downloadUrl;
+            downloadLink.download = "";
+            downloadLink.hidden = true;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            downloadLink.remove();
+          } else {
+            extra = '<br><a class="btn btn-primary btn-sm mt-1" href="' + downloadUrl + '" target="_blank" rel="noopener">Download the Brochure ↓</a>';
+            try { window.open(downloadUrl, "_blank"); } catch (e) {}
+          }
         }
         showStatus(form, "ok", form.getAttribute("data-success-message") ||
           ("✓ Thank you! Your " + kind + " submission has been received." +

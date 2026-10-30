@@ -1,14 +1,14 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registration — MatAi 2027</title>
-  <meta name="description" content="Online registration for MatAi 2027 in Berlin — choose your category, exhibition or sponsorship, set quantities, and see your total update live. All fees in EUR (€).">
+  <meta name="description" content="Online registration for MatAi 2027 in Berlin. Registration prices are shown in USD by default, with live currency conversion for EUR and GBP.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261025-registration-details-nav">
+  <link rel="stylesheet" href="css/styles.css?v=20261029-header-reference-3">
 </head>
 <body>
   <div id="site-header"></div>
@@ -37,14 +37,12 @@
         <div class="session-card reveal"><div class="num">STEP 5</div><h4>Complete payment</h4><p>Use an officially listed payment method.</p></div>
         <div class="session-card reveal"><div class="num">STEP 6</div><h4>Retain confirmation</h4><p>Save your registration confirmation and payment receipt.</p></div>
       </div>
-      <div class="callout warn reveal mt-2"><h4>Payment Information</h4><p>All fees are stated in EUR (€). A 5% tax is added to the order subtotal after any coupon discount. The active registration period, deadlines, and prices are managed by the conference organizers and shown in the registration form below.</p></div>
-      <p class="text-muted center mt-1">Registration link: [Insert official MatAi 2027 registration URL]<br>Registration support: [Insert official conference email address]</p>
     </div>
   </section>
 
   <section class="section alt" id="registration-details">
     <div class="container">
-      <div class="center reveal"><span class="eyebrow">Register Now</span><h2>Registration Form</h2><p class="lead">Complete the participant details, select a registration period and any options, then review your summary. All fees are in EUR (€); a 5% tax is added to every order.</p></div>
+      <div class="center reveal"><span class="eyebrow">Register Now</span><h2>Registration Form</h2><p class="lead">Complete the participant details, select a registration period and any options, then review your summary. Prices are shown in USD by default and update when you choose another currency.</p></div>
 
       <form id="register-form" class="form-card reveal mt-2" data-form="register">
         <div class="form-status"></div>
@@ -90,27 +88,31 @@
         </div>
         <h3 class="fm-head">Participants</h3>
         <p class="text-muted">Choose a registration category below and enter the number of participants.</p>
-        <div class="registration-period-cards" id="registration-period-cards"></div>
-        <div class="participant-total"><span>Participants selected</span><input type="number" name="participantCount" id="participant-count" value="0" readonly aria-label="Participants selected"></div>
         <div class="field currency-selection">
           <label for="registration-currency">Preferred payment currency <span class="req">*</span></label>
-          <select id="registration-currency" name="currency" required aria-describedby="currency-selection-note">
-            <option value="EUR" selected>EUR — Euro (€) · default transaction currency</option>
-            <option value="USD">USD — US Dollar ($) · not currently available for checkout</option>
-            <option value="GBP">GBP — British Pound (£) · not currently available for checkout</option>
+          <select id="registration-currency" name="preferredCurrency" required aria-describedby="currency-selection-note">
+            <option value="USD" selected>USD — US Dollar ($) · default preferred currency</option>
+            <option value="EUR">EUR — Euro (€)</option>
+            <option value="GBP">GBP — British Pound (£)</option>
+            <option value="INR">INR — Indian Rupee (₹)</option>
           </select>
-          <input type="hidden" name="originalSelectedCurrency" id="original-selected-currency" value="EUR">
+          <input type="hidden" name="currency" id="transaction-currency" value="EUR">
+          <input type="hidden" name="originalSelectedCurrency" id="original-selected-currency" value="USD">
           <input type="hidden" name="currencyFallbackConfirmed" id="currency-fallback-confirmed" value="false">
-          <p class="text-muted" id="currency-selection-note" role="status">EUR is the only configured transaction currency. Other currencies are unavailable for checkout; selecting one will ask you to confirm a switch to EUR. No exchange-rate estimate is applied.</p>
+          <input type="hidden" name="currencyRateDate" id="currency-rate-date" value="">
+          <input type="hidden" name="usdToEurRate" id="usd-to-eur-rate" value="">
+          <p class="text-muted" id="currency-selection-note" role="status">USD prices are shown by default. Loading the latest exchange rates for EUR and GBP…</p>
         </div>
         <dialog class="currency-fallback-dialog" id="currency-fallback-dialog" aria-labelledby="currency-fallback-title" aria-describedby="currency-fallback-message">
           <h3 id="currency-fallback-title">Confirm payment currency</h3>
           <p id="currency-fallback-message"></p>
           <div class="currency-fallback-actions">
-            <button type="button" class="btn btn-outline" data-currency-fallback-cancel>Keep EUR</button>
+            <button type="button" class="btn btn-outline" data-currency-fallback-cancel>Choose EUR</button>
             <button type="button" class="btn btn-primary" data-currency-fallback-confirm>Continue in EUR</button>
           </div>
         </dialog>
+        <div class="registration-period-cards" id="registration-period-cards"></div>
+        <div class="participant-total"><span>Participants selected</span><input type="number" name="participantCount" id="participant-count" value="0" readonly aria-label="Participants selected"></div>
 
         <!-- Kept as the price source for live Admin-managed rates. -->
         <div class="fee-source" aria-hidden="true">
@@ -130,133 +132,91 @@
               <tr class="grp"><td colspan="6">Participation Registration</td></tr>
               <tr data-item="Speaker Registration" data-eb="649" data-mt="749" data-os="849">
                 <td class="it">Speaker Registration</td>
-                <td class="fp eb" data-base="649">€649</td><td class="fp" data-base="749">€749</td><td class="fp" data-base="849">€849</td>
+                <td class="fp eb" data-base="649">$649</td><td class="fp" data-base="749">$749</td><td class="fp" data-base="849">$849</td>
                 <td class="qty"><input type="number" min="0" value="0" name="qty_speaker" data-qty aria-label="Quantity — Speaker Registration"></td>
-                <td class="rtot" data-line>€0</td>
+                <td class="rtot" data-line>$0</td>
               </tr>
               <tr data-item="Delegate Registration" data-eb="749" data-mt="849" data-os="949">
                 <td class="it">Delegate Registration</td>
-                <td class="fp eb" data-base="749">€749</td><td class="fp" data-base="849">€849</td><td class="fp" data-base="949">€949</td>
+                <td class="fp eb" data-base="749">$749</td><td class="fp" data-base="849">$849</td><td class="fp" data-base="949">$949</td>
                 <td class="qty"><input type="number" min="0" value="0" name="qty_delegate" data-qty aria-label="Quantity — Delegate Registration"></td>
-                <td class="rtot" data-line>€0</td>
+                <td class="rtot" data-line>$0</td>
               </tr>
               <tr data-item="Poster Presentation" data-eb="549" data-mt="649" data-os="749">
                 <td class="it">Poster Presentation</td>
-                <td class="fp eb" data-base="549">€549</td><td class="fp" data-base="649">€649</td><td class="fp" data-base="749">€749</td>
+                <td class="fp eb" data-base="549">$549</td><td class="fp" data-base="649">$649</td><td class="fp" data-base="749">$749</td>
                 <td class="qty"><input type="number" min="0" value="0" name="qty_poster" data-qty aria-label="Quantity — Poster Presentation"></td>
-                <td class="rtot" data-line>€0</td>
+                <td class="rtot" data-line>$0</td>
               </tr>
               <tr data-item="Student Registration" data-eb="399" data-mt="499" data-os="599">
                 <td class="it">Student Registration</td>
-                <td class="fp eb" data-base="399">€399</td><td class="fp" data-base="499">€499</td><td class="fp" data-base="599">€599</td>
+                <td class="fp eb" data-base="399">$399</td><td class="fp" data-base="499">$499</td><td class="fp" data-base="599">$599</td>
                 <td class="qty"><input type="number" min="0" value="0" name="qty_student" data-qty aria-label="Quantity — Student Registration"></td>
-                <td class="rtot" data-line>€0</td>
+                <td class="rtot" data-line>$0</td>
               </tr>
               <tr data-item="Virtual Registration" data-eb="299" data-mt="399" data-os="499">
                 <td class="it">Virtual Registration</td>
-                <td class="fp eb" data-base="299">€299</td><td class="fp" data-base="399">€399</td><td class="fp" data-base="499">€499</td>
+                <td class="fp eb" data-base="299">$299</td><td class="fp" data-base="399">$399</td><td class="fp" data-base="499">$499</td>
                 <td class="qty"><input type="number" min="0" value="0" name="qty_virtual" data-qty aria-label="Quantity — Virtual Registration"></td>
-                <td class="rtot" data-line>€0</td>
+                <td class="rtot" data-line>$0</td>
               </tr>
               <tr class="grp"><td colspan="6">Exhibition <span class="grp-note">— fixed fee</span></td></tr>
-              <tr data-item="Standard Exhibition Booth (3 × 2 m)" data-fixed data-price-key="exhibition_standard" data-price="3500">
-                <td class="it">Standard Exhibition Booth — 3 × 2 m</td>
-                <td class="fp fx" data-base="3500" colspan="3">€3,500</td>
-                <td class="qty"><input type="number" min="0" value="0" name="qty_ex_standard" data-qty aria-label="Quantity — Standard Exhibition Booth"></td>
-                <td class="rtot" data-line>€0</td>
-              </tr>
-              <tr data-item="Premium Exhibition Booth (3 × 3 m)" data-fixed data-price-key="exhibition_premium" data-price="4500">
-                <td class="it">Premium Exhibition Booth — 3 × 3 m</td>
-                <td class="fp fx" data-base="4500" colspan="3">€4,500</td>
-                <td class="qty"><input type="number" min="0" value="0" name="qty_ex_premium" data-qty aria-label="Quantity — Premium Exhibition Booth"></td>
-                <td class="rtot" data-line>€0</td>
+              <tr data-item="Exhibitor" data-fixed data-price-key="exhibition_standard" data-price="3500">
+                <td class="it">Exhibitor</td>
+                <td class="fp fx" data-base="3500" colspan="3">$3,500</td>
+                <td class="qty"><input type="number" min="0" value="0" name="qty_ex_standard" data-qty aria-label="Quantity — Exhibitor"></td>
+                <td class="rtot" data-line>$0</td>
               </tr>
               <tr class="grp"><td colspan="6">Sponsorship <span class="grp-note">— fixed fee</span></td></tr>
               <tr data-item="Diamond Sponsor" data-fixed data-price-key="sponsor_diamond" data-price="10000">
                 <td class="it">Diamond Sponsor</td>
-                <td class="fp fx" data-base="10000" colspan="3">€10,000</td>
+                <td class="fp fx" data-base="10000" colspan="3">$10,000</td>
                 <td class="qty"><input type="number" min="0" value="0" name="qty_sp_diamond" data-qty aria-label="Quantity — Diamond Sponsor"></td>
-                <td class="rtot" data-line>€0</td>
+                <td class="rtot" data-line>$0</td>
               </tr>
               <tr data-item="Platinum Sponsor" data-fixed data-price-key="sponsor_platinum" data-price="7500">
                 <td class="it">Platinum Sponsor</td>
-                <td class="fp fx" data-base="7500" colspan="3">€7,500</td>
+                <td class="fp fx" data-base="7500" colspan="3">$7,500</td>
                 <td class="qty"><input type="number" min="0" value="0" name="qty_sp_platinum" data-qty aria-label="Quantity — Platinum Sponsor"></td>
-                <td class="rtot" data-line>€0</td>
+                <td class="rtot" data-line>$0</td>
               </tr>
               <tr data-item="Gold Sponsor" data-fixed data-price-key="sponsor_gold" data-price="4500">
                 <td class="it">Gold Sponsor</td>
-                <td class="fp fx" data-base="4500" colspan="3">€4,500</td>
+                <td class="fp fx" data-base="4500" colspan="3">$4,500</td>
                 <td class="qty"><input type="number" min="0" value="0" name="qty_sp_gold" data-qty aria-label="Quantity — Gold Sponsor"></td>
-                <td class="rtot" data-line>€0</td>
+                <td class="rtot" data-line>$0</td>
               </tr>
               <tr data-item="Silver Sponsor" data-fixed data-price-key="sponsor_silver" data-price="2000">
                 <td class="it">Silver Sponsor</td>
-                <td class="fp fx" data-base="2000" colspan="3">€2,000</td>
+                <td class="fp fx" data-base="2000" colspan="3">$2,000</td>
                 <td class="qty"><input type="number" min="0" value="0" name="qty_sp_silver" data-qty aria-label="Quantity — Silver Sponsor"></td>
-                <td class="rtot" data-line>€0</td>
+                <td class="rtot" data-line>$0</td>
               </tr>
               <tr data-item="Bronze / Supporting Sponsor" data-fixed data-price-key="sponsor_bronze" data-price="1500">
                 <td class="it">Bronze / Supporting Sponsor</td>
-                <td class="fp fx" data-base="1500" colspan="3">€1,500</td>
+                <td class="fp fx" data-base="1500" colspan="3">$1,500</td>
                 <td class="qty"><input type="number" min="0" value="0" name="qty_sp_bronze" data-qty aria-label="Quantity — Bronze Sponsor"></td>
-                <td class="rtot" data-line>€0</td>
+                <td class="rtot" data-line>$0</td>
               </tr>
               <tr class="grp"><td colspan="6">Special Sponsorship <span class="grp-note">— fixed fee</span></td></tr>
-              <tr data-item="Conference Reception Sponsor" data-fixed data-price-key="sponsor_reception" data-price="3500">
-                <td class="it">Conference Reception Sponsor</td>
-                <td class="fp fx" data-base="3500" colspan="3">€3,500</td>
-                <td class="qty"><input type="number" min="0" value="0" name="qty_ss_reception" data-qty aria-label="Quantity — Conference Reception Sponsor"></td>
-                <td class="rtot" data-line>€0</td>
-              </tr>
-              <tr data-item="Conference Kit Sponsor" data-fixed data-price-key="sponsor_kit" data-price="2000">
-                <td class="it">Conference Kit Sponsor</td>
-                <td class="fp fx" data-base="2000" colspan="3">€2,000</td>
-                <td class="qty"><input type="number" min="0" value="0" name="qty_ss_kit" data-qty aria-label="Quantity — Conference Kit Sponsor"></td>
-                <td class="rtot" data-line>€0</td>
-              </tr>
-              <tr data-item="Lanyard &amp; Badge Sponsor" data-fixed data-price-key="sponsor_lanyard" data-price="1500">
-                <td class="it">Lanyard &amp; Badge Sponsor</td>
-                <td class="fp fx" data-base="1500" colspan="3">€1,500</td>
-                <td class="qty"><input type="number" min="0" value="0" name="qty_ss_lanyard" data-qty aria-label="Quantity — Lanyard and Badge Sponsor"></td>
-                <td class="rtot" data-line>€0</td>
-              </tr>
               <tr data-item="Awards &amp; Young Researcher Sponsor" data-fixed data-price-key="sponsor_awards" data-price="2000">
                 <td class="it">Awards &amp; Young Researcher Sponsor</td>
-                <td class="fp fx" data-base="2000" colspan="3">€2,000</td>
+                <td class="fp fx" data-base="2000" colspan="3">$2,000</td>
                 <td class="qty"><input type="number" min="0" value="0" name="qty_ss_awards" data-qty aria-label="Quantity — Awards and Young Researcher Sponsor"></td>
-                <td class="rtot" data-line>€0</td>
-              </tr>
-              <tr data-item="Delegate Kit Insert" data-fixed data-price-key="sponsor_insert" data-price="500">
-                <td class="it">Delegate Kit Insert</td>
-                <td class="fp fx" data-base="500" colspan="3">€500</td>
-                <td class="qty"><input type="number" min="0" value="0" name="qty_ss_insert" data-qty aria-label="Quantity — Delegate Kit Insert"></td>
-                <td class="rtot" data-line>€0</td>
+                <td class="rtot" data-line>$0</td>
               </tr>
               <tr class="grp"><td colspan="6">Add-Ons <span class="grp-note">— fixed fee</span></td></tr>
-              <tr data-item="Social &amp; Networking Event" data-fixed data-price-key="addon_social" data-price="149">
-                <td class="it">Social &amp; Networking Event <span class="text-muted">(per ticket)</span></td>
-                <td class="fp fx" data-base="149" colspan="3">€149</td>
-                <td class="qty"><input type="number" min="0" value="0" name="qty_social" data-qty aria-label="Quantity — Social and Networking Event"></td>
-                <td class="rtot" data-line>€0</td>
-              </tr>
-              <tr data-item="Accompanying Person" data-fixed data-price-key="addon_accompanying" data-price="200">
-                <td class="it">Accompanying Person <span class="text-muted">(per person)</span></td>
-                <td class="fp fx" data-base="200" colspan="3">€200</td>
-                <td class="qty"><input type="number" min="0" value="0" name="qty_accompanying" data-qty aria-label="Quantity — Accompanying Person"></td>
-                <td class="rtot" data-line>€0</td>
-              </tr>
               <tr data-item="Accommodation — Single Occupancy (per night)" data-fixed data-price-key="addon_accommodation_single" data-price="180">
                 <td class="it">Accommodation — Single Occupancy <span class="text-muted">(per night, incl. taxes &amp; breakfast)</span></td>
-                <td class="fp fx" data-base="180" colspan="3">€180</td>
+                <td class="fp fx" data-base="180" colspan="3">$180</td>
                 <td class="qty"><input type="number" min="0" value="0" name="qty_accom_single" data-qty aria-label="Nights — Single Occupancy"></td>
-                <td class="rtot" data-line>€0</td>
+                <td class="rtot" data-line>$0</td>
               </tr>
               <tr data-item="Accommodation — Double Occupancy (per night)" data-fixed data-price-key="addon_accommodation_double" data-price="195">
                 <td class="it">Accommodation — Double Occupancy <span class="text-muted">(per night, incl. taxes &amp; breakfast)</span></td>
-                <td class="fp fx" data-base="195" colspan="3">€195</td>
+                <td class="fp fx" data-base="195" colspan="3">$195</td>
                 <td class="qty"><input type="number" min="0" value="0" name="qty_accom_double" data-qty aria-label="Nights — Double Occupancy"></td>
-                <td class="rtot" data-line>€0</td>
+                <td class="rtot" data-line>$0</td>
               </tr>
             </tbody>
           </table>
@@ -274,9 +234,6 @@
           </div>
           <div class="accommodation-rate-note" id="accommodation-rate-note"></div>
         </div>
-
-        <h3 class="fm-head">Social &amp; Networking Event</h3>
-        <div class="registration-addon-list" id="registration-addon-list"></div>
 
         <details class="registration-extra-group">
           <summary>Exhibition &amp; Sponsorship Options</summary>
@@ -308,23 +265,22 @@
             </table>
           </div>
           <div class="reference-summary">
-            <div class="srow"><span>Registration Price</span><span class="amt" id="summary-registration-price">€0</span></div>
+            <div class="srow"><span>Registration Price</span><span class="amt" id="summary-registration-price">$0.00</span></div>
             <div class="srow"><span>Participants</span><span class="amt" id="summary-participants">0</span></div>
-            <div class="srow"><span>Accommodation</span><span class="amt" id="summary-accommodation">€0</span></div>
-            <div class="srow"><span>Social &amp; Networking Event</span><span class="amt" id="summary-social">€0</span></div>
-            <div class="srow"><span>Accompanying</span><span class="amt" id="summary-accompanying">€0</span></div>
+            <div class="srow"><span>Accommodation</span><span class="amt" id="summary-accommodation">$0.00</span></div>
             <div class="srow"><span>Total No. Nights</span><span class="amt" id="summary-nights">—</span></div>
             <div class="srow"><span>Check-in Date</span><span class="amt" id="summary-check-in">—</span></div>
             <div class="srow"><span>Check-out Date</span><span class="amt" id="summary-check-out">—</span></div>
-            <div class="srow discount"><span>Discount</span><span class="amt" id="summary-discount">-€0</span></div>
-            <div class="srow"><span>Subtotal</span><span class="amt" id="summary-subtotal">€0</span></div>
-            <div class="srow"><span id="summary-tax-label">Tax (5%):</span><span class="amt" id="summary-tax">€0</span></div>
+            <div class="srow discount"><span>Discount</span><span class="amt" id="summary-discount">-$0.00</span></div>
+            <div class="srow"><span>Subtotal</span><span class="amt" id="summary-subtotal">$0.00</span></div>
+            <div class="srow"><span id="summary-tax-label">Tax (5%):</span><span class="amt" id="summary-tax">$0.00</span></div>
           </div>
-          <div class="stotal"><span>TOTAL PRICE</span><span id="sum-total">€0</span></div>
+          <div class="stotal"><span>TOTAL PRICE</span><span id="sum-total">$0.00</span></div>
           </details>
           <div class="sfoot">
             <input type="hidden" name="selectedItems" id="selected-items" value="">
-            <div class="total-field"><span class="cur" id="total-cur">€</span><input type="text" name="totalPrice" id="total-input" value="0" readonly aria-label="Total price"></div>
+            <div class="total-field"><span class="cur" id="total-cur">$</span><input type="text" id="total-display" value="0.00" readonly aria-label="Total price in selected currency"></div>
+            <input type="hidden" name="totalPrice" id="total-input" value="0.00">
             <input type="hidden" name="totalPriceEUR" id="total-eur" value="0">
             <input type="hidden" name="period" id="registration-period" value="Early Bird">
             <input type="hidden" name="paymentMethod" id="payment-method-hidden" value="Razorpay">
@@ -350,17 +306,12 @@
                 <span class="payment-method-radio" aria-hidden="true"></span>
                 <span class="payment-method-content"><img class="payment-brand-logo" src="assets/razorpay-logo.svg" alt="Razorpay"><span class="payment-region-pill"><span aria-hidden="true">&#127760;</span> GLOBAL PAYMENTS</span><span class="payment-method-description">Pay securely with Razorpay (India &amp; International)</span><span class="payment-badges" aria-label="Accepted payment types"><span class="payment-badge"><img src="assets/visa-logo.svg" alt="Visa"></span><span class="payment-badge"><img src="assets/mastercard-logo.svg" alt="Mastercard"></span><span class="payment-badge"><img src="assets/amex-logo.svg" alt="American Express"></span><span class="payment-badge"><img src="assets/upi-logo.svg" alt="UPI"></span><span class="payment-badge"><img src="assets/rupay-logo.svg" alt="RuPay"></span><span class="payment-badge payment-badge-netbanking"><img src="assets/net-banking-icon.svg" alt=""><span>Net Banking</span></span><span class="payment-badge payment-badge-wallet"><span aria-hidden="true">&#128179;</span><span>Wallets</span></span></span><span class="payment-capabilities">Credit &amp; debit cards <b>|</b> UPI <b>|</b> Net banking <b>|</b> Wallets <b>|</b> International cards</span></span>
               </label>
-              <label class="payment-method-card payment-method-compact">
-                <input type="radio" name="paymentGatewayChoice" value="Bank Transfer">
-                <span class="payment-method-radio" aria-hidden="true"></span>
-                <span class="payment-method-content"><img class="payment-brand-logo" src="assets/net-banking-icon.svg" alt=""><span class="payment-region-pill">MANUAL PAYMENT</span><span class="payment-method-description">Bank transfer with organizer follow-up.</span><span class="payment-capabilities">Your registration remains pending until payment is confirmed.</span></span>
-              </label>
             </div>
 
             <div class="field full human-verification" data-human-verification></div>
 
             <p class="summary-note">By clicking "Continue to payment", you agree to the privacy policy, terms &amp; conditions, and cancellation policy. Final billing is in EUR (€).</p>
-            <div class="field full" style="max-width:520px;margin:0 auto 1.2rem;text-align:left"><label class="chk"><input type="checkbox" name="terms" id="terms-check" required> I have read and agree to the <a href="#" id="terms-open">Terms &amp; Conditions</a>. <span class="req">*</span></label><div class="error-msg">Please accept the terms &amp; conditions</div></div>
+            <div class="field full form-consent"><label class="chk"><input type="checkbox" name="terms" id="terms-check" required><span>I have read and agree to the <a href="#" id="terms-open">Terms &amp; Conditions</a>. <span class="req">*</span></span></label><div class="error-msg">Please accept the terms &amp; conditions</div></div>
             <div class="payment-action-row"><div class="payment-protection"><span class="payment-protection-icon" aria-hidden="true"><svg viewBox="0 0 48 52"><path d="M24 2 43 9v14c0 13-8 22-19 27C13 45 5 36 5 23V9L24 2Z"/><path class="shield-check" d="m15 25 6 6 12-13"/></svg></span><div><strong>Your payment information is protected</strong><span>We use industry-standard encryption to keep your data safe.</span></div></div><div class="payment-actions"><button type="submit" class="btn btn-primary">Continue to payment <span aria-hidden="true">→</span></button></div></div>
           </div>
         </div>
@@ -382,7 +333,7 @@
               <li>Certificate of participation / presentation.</li>
               <li>Inclusion of accepted abstracts in the conference proceedings (subject to guidelines).</li>
             </ul>
-            <p class="text-muted" style="font-size:.85rem">Accommodation, the social &amp; networking event, and accompanying-person access are optional add-ons. Their prices are included in your summary when selected above.</p>
+            <p class="text-muted" style="font-size:.85rem">Optional accommodation is included in your summary when selected above.</p>
           </div>
         </details>
         <details class="policy-accordion">
@@ -438,15 +389,15 @@
         <details class="policy-accordion">
           <summary>Payment &amp; Governing Terms</summary>
           <div class="policy-body">
-            <p>All fees are stated in EUR (€). A 5% tax is added to the order subtotal after any coupon discount. Bank charges, payment gateway fees, or currency conversion charges may also apply. By completing registration you agree to the conference privacy policy and these registration terms.</p>
-            <p>Registration8.docx also contains proposed USD conversions of the supplied euro-denominated rates. Those figures are estimates and should be confirmed before publication or payment collection; the registration form remains unchanged and continues to show its configured EUR amounts.</p>
+            <p>Registration prices use USD as the base currency. The form converts displayed prices to the selected currency using the latest published exchange rate; checkout is processed in EUR. A 5% tax is added to the order subtotal after any coupon discount. Bank charges, payment gateway fees, or currency conversion charges may also apply.</p>
+            <p>The payable EUR amount is calculated from the USD base prices using the exchange rate shown with the form and is confirmed before payment.</p>
             <p>Applicable taxes or VAT may be additional where required. Bank charges and payment gateway fees may apply. Currency conversion and transaction charges may apply. Payment confirmation is subject to successful processing and verification. Participants should retain their payment receipt for reference. Sponsorship and exhibition payments may be governed by separate written agreements. Payment instructions will be provided through the official registration process.</p>
           </div>
         </details>
         <details class="policy-accordion">
-          <summary>Participation Registration Fees — Proposed USD Equivalents</summary>
+          <summary>Participation Registration Fees</summary>
           <div class="policy-body">
-            <p>The following table presents the proposed USD equivalents listed in Registration8.docx. The document states that the estimates are based on €1 = US$1.10 and that final published rates should be confirmed by the organizers.</p>
+            <p>USD is the base currency for the fee schedule. The registration form converts these prices to the selected display currency using the latest published exchange rate.</p>
             <div class="table-wrap"><table class="tbl"><thead><tr><th>Registration Category</th><th>Early Bird</th><th>Mid-Term</th><th>On-Spot</th></tr></thead><tbody>
               <tr><td>Speaker Registration</td><td>$649</td><td>$749</td><td>$849</td></tr>
               <tr><td>Delegate Registration</td><td>$749</td><td>$849</td><td>$949</td></tr>
@@ -454,7 +405,7 @@
               <tr><td>Student Registration</td><td>$399</td><td>$499</td><td>$599</td></tr>
               <tr><td>Virtual Registration</td><td>$299</td><td>$399</td><td>$499</td></tr>
             </tbody></table></div>
-            <p>Mid-Term is €100 above Early Bird, and On-Spot is €200 above Early Bird in the original fee schedule. Confirm final USD rates before publication.</p>
+            <p>Mid-Term is $100 above Early Bird, and On-Spot is $200 above Early Bird in the fee schedule.</p>
           </div>
         </details>
         <details class="policy-accordion">
@@ -471,9 +422,9 @@
           <summary>Sponsorship Packages</summary>
           <div class="policy-body">
             <p>MatAi 2027 welcomes organizations, research institutions, technology companies, publishers, and industry partners interested in supporting scientific exchange and increasing their visibility among conference participants.</p>
-            <p>The following USD amounts are indicative conversions of the euro-denominated fees in the supplied sponsorship schedule. Sponsorship fees are fixed and do not have Mid-Term or On-Spot rates. Benefits, branding placements, and deliverables should be confirmed in the applicable sponsorship agreement.</p>
+            <p>The following sponsorship amounts are shown in USD. Sponsorship fees are fixed and do not have Mid-Term or On-Spot rates. Benefits, branding placements, and deliverables should be confirmed in the applicable sponsorship agreement.</p>
             <div class="table-wrap"><table class="tbl"><thead><tr><th>Sponsorship Package</th><th>Fee (USD)</th></tr></thead><tbody>
-              <tr><td>Diamond Sponsor</td><td>$8500</td></tr><tr><td>Platinum Sponsor</td><td>$7500</td></tr><tr><td>Gold Sponsor</td><td>$5500</td></tr><tr><td>Silver Sponsor</td><td>$4599</td></tr><tr><td>Bronze / Supporting Sponsor</td><td>$3999</td></tr><tr><td>Conference Kit Sponsor</td><td>$1,500</td></tr><tr><td>Awards &amp; Young Researcher Sponsor</td><td>$1000</td></tr>
+              <tr><td>Diamond Sponsor</td><td>$8500</td></tr><tr><td>Platinum Sponsor</td><td>$7500</td></tr><tr><td>Gold Sponsor</td><td>$5500</td></tr><tr><td>Silver Sponsor</td><td>$4599</td></tr><tr><td>Bronze / Supporting Sponsor</td><td>$3999</td></tr><tr><td>Awards &amp; Young Researcher Sponsor</td><td>$1000</td></tr>
             </tbody></table></div>
             <p><strong>Confirmation required:</strong> Registration8.docx describes the Diamond package source amount as “85,000” without a currency symbol and says the $7,500 figure assumes the original amount was USD 85,000. Confirm the source amount and currency before publishing.</p>
           </div>
@@ -482,8 +433,8 @@
           <summary>Exhibition Opportunities</summary>
           <div class="policy-body">
             <p>MatAi 2027 offers potential exhibition opportunities for companies and organizations seeking to connect with researchers, academics, and industry professionals in materials science, engineering, and artificial intelligence.</p>
-            <div class="table-wrap"><table class="tbl"><thead><tr><th>Proposed Exhibition Option</th><th>Fee (USD)</th></tr></thead><tbody><tr><td>Standard Booth</td><td>$4500</td></tr><tr><td>Premium Booth</td><td>$3999</td></tr></tbody></table></div>
-            <p>These amounts are illustrative conversions of the euro prices in the supplied content. Booth availability, dimensions, included facilities, location, and branding benefits must be confirmed by the organizers.</p>
+            <div class="table-wrap"><table class="tbl"><thead><tr><th>Exhibition Option</th><th>Fee (USD)</th></tr></thead><tbody><tr><td>Exhibitor</td><td>$4500</td></tr></tbody></table></div>
+            <p>The exhibitor fee is shown in USD. Availability, dimensions, included facilities, location, and branding benefits must be confirmed by the organizers.</p>
             <p>Depending on the selected package and confirmed arrangements, exhibition participation may provide opportunities to:</p>
             <ul class="check-list"><li>Showcase products, technologies, and scientific services.</li><li>Present laboratory equipment and materials characterization solutions.</li><li>Introduce computational tools, AI applications, and research software.</li><li>Connect with researchers, universities, and industry representatives.</li><li>Share product information and promotional materials.</li><li>Explore potential collaborations and business relationships.</li></ul>
             <p>Exhibition booking: [Insert official exhibition booking link]</p>
@@ -496,15 +447,15 @@
             <p>Registration fees depend on the registration period selected under the official conference schedule.</p>
             <h4>Early Bird Registration</h4><p>Early Bird registration offers the lowest listed participation fees. Participants should complete registration and payment within the officially announced Early Bird period to qualify.</p>
             <p>Early Bird deadline: [Insert confirmed deadline]</p>
-            <h4>Mid-Term Registration</h4><p>Mid-Term registration applies after the Early Bird period ends. The supplied fee structure places these rates €100 above the corresponding Early Bird rates.</p>
-            <h4>On-Spot Registration</h4><p>On-Spot registration applies to eligible participants registering at the conference venue, subject to availability and the organizers' procedures. The supplied fee structure places these rates €200 above the corresponding Early Bird rates.</p>
+            <h4>Mid-Term Registration</h4><p>Mid-Term registration applies after the Early Bird period ends. The fee schedule places these rates $100 above the corresponding Early Bird rates.</p>
+            <h4>On-Spot Registration</h4><p>On-Spot registration applies to eligible participants registering at the conference venue, subject to availability and the organizers' procedures. The fee schedule places these rates $200 above the corresponding Early Bird rates.</p>
             <p>On-Spot registration availability should not be assumed, particularly for categories requiring abstract acceptance or presentation scheduling.</p>
           </div>
         </details>
         <details class="policy-accordion">
           <summary>Important Registration Notice</summary>
           <div class="policy-body">
-            <ul class="check-list"><li>Early Bird participation rates are the lowest listed rates.</li><li>Mid-Term rates are €100 higher than Early Bird rates in the original schedule.</li><li>On-Spot rates are €200 higher than Early Bird rates in the original schedule.</li><li>Sponsorship fees are fixed and do not have Mid-Term or On-Spot rates.</li><li>Final USD prices should be confirmed before publication and payment collection.</li><li>Registration, exhibition, and sponsorship benefits are subject to the relevant category and applicable terms.</li></ul>
+            <ul class="check-list"><li>Early Bird participation rates are the lowest listed rates.</li><li>Mid-Term rates are $100 higher than Early Bird rates.</li><li>On-Spot rates are $200 higher than Early Bird rates.</li><li>Sponsorship fees are fixed and do not have Mid-Term or On-Spot rates.</li><li>Registration, exhibition, and sponsorship benefits are subject to the relevant category and applicable terms.</li></ul>
           </div>
         </details>
       </div>
@@ -518,7 +469,7 @@
         <button type="button" class="tc-x" id="tc-close" aria-label="Close">×</button>
       </div>
       <div class="tc-body" id="tc-body">
-        <p class="text-muted">Please read the following terms &amp; conditions for MatAi 2027. You must accept them to complete your registration. All fees are stated in EUR (€).</p>
+        <p class="text-muted">Please read the following terms &amp; conditions for MatAi 2027. You must accept them to complete your registration. USD is the base currency; checkout is processed in EUR after conversion.</p>
 
         <h4>Registration Terms &amp; Conditions</h4>
         <ol class="tc-list">
@@ -539,7 +490,7 @@
         </ol>
 
         <h4>Payment Information</h4>
-        <p>All fees are stated in EUR (€). Participants and organizations are responsible for selecting the correct category and applicable registration period. A 5% tax is added to the order subtotal after any coupon discount. Bank charges, payment gateway fees, transaction charges, or currency conversion charges may also apply. Payment instructions will be provided through the official conference registration process.</p>
+        <p>Registration prices are based in USD ($), then converted to EUR for checkout using the latest published exchange rate. Participants and organizations are responsible for selecting the correct category and applicable registration period. A 5% tax is added to the order subtotal after any coupon discount. Bank charges, payment gateway fees, transaction charges, or currency conversion charges may also apply. Payment instructions will be provided through the official conference registration process.</p>
         <h4>Cancellation &amp; Refund Policy</h4>
         <p>Participants who are unable to attend MatAi 2027 may request cancellation according to the following schedule:</p>
         <div class="table-wrap mt-1">
@@ -574,10 +525,10 @@
   </div>
 
   <div id="site-footer"></div>
-  <script src="js/site.js?v=20261025-registration-details-nav"></script>
+  <script src="js/site.js?v=20261029-conference-header-logo-2"></script>
   <script src="js/forms.js?v=20261020-public-refresh"></script>
   <script src="js/human-verification.js?v=20261016-color-audit"></script>
-  <script src="js/register.js?v=20261024-quantity-select"></script>
+  <script src="js/register.js?v=20261029-remove-bank-transfer-1"></script>
   <script src="js/terms-modal.js"></script>
   <script src="js/checkout.js?v=20261020-public-refresh"></script>
 </body>

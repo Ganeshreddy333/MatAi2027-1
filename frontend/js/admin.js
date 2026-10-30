@@ -21,10 +21,10 @@
     { href: "venue.html", label: "Venue" },
     { href: "general-information.html", label: "General Information" },
     { href: "sponsors-exhibition.html", label: "Sponsors & Exhibition" },
+    { href: "brochure.html", label: "Conference Brochure Request" },
     { href: "sponsors-brochure.html", label: "Sponsorship & Exhibition Brochure" },
     { href: "registration.html", label: "Registration" },
     { href: "contact-us.html", label: "Contact Us" },
-    { href: "brochure.html", label: "Brochure" }
   ];
   var FIXED_PRICE_ITEMS = [
     ["exhibition_standard", "Standard Exhibition Booth — 3 × 2 m"],
@@ -515,11 +515,11 @@
     var prices = pricing.fixedItems || {};
     var rows = FIXED_PRICE_ITEMS.map(function (item) {
       var value = prices[item[0]];
-      return "<tr><td>" + esc(item[1]) + "</td><td><label class='a-price-input'><span>€</span>" +
+      return "<tr><td>" + esc(item[1]) + "</td><td><label class='a-price-input'><span>$</span>" +
         "<input type='number' min='0' step='0.01' data-fixed-price='" + esc(item[0]) +
         "' value='" + esc(value != null ? value : 0) + "' aria-label='" + esc(item[1]) + " price'></label></td></tr>";
     }).join("");
-    el("item-prices").innerHTML = "<thead><tr><th>Registration item</th><th>Price (EUR)</th></tr></thead><tbody>" + rows + "</tbody>";
+    el("item-prices").innerHTML = "<thead><tr><th>Registration item</th><th>Price (USD)</th></tr></thead><tbody>" + rows + "</tbody>";
   }
 
   function renderCoupons(coupons) {

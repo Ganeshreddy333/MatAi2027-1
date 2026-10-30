@@ -83,6 +83,17 @@ final class Application
             readfile($file);
             exit;
         }
+        if ($method === 'GET' && $path === '/api/conference-brochure-file') {
+            $file = $this->root . '/MatAi-2027-pdf.pdf';
+            if (!is_file($file) || !is_readable($file)) {
+                Security::json(['ok' => false, 'error' => 'The conference brochure is not available.'], 404);
+            }
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: attachment; filename="MatAi-2027-Conference-Brochure.pdf"');
+            header('Content-Length: ' . (string) filesize($file));
+            readfile($file);
+            exit;
+        }
         if ($method === 'GET' && $path === '/api/csrf') {
             Security::json(['ok' => true, 'token' => $this->security->csrfToken()]);
         }
@@ -197,7 +208,7 @@ final class Application
             'register' => ['fullName', 'email', 'period', 'institution', 'country'],
             'abstract' => ['title', 'authorName', 'email', 'institution', 'country', 'session', 'abstract'],
             'contact' => ['fullName', 'email', 'subject', 'message'],
-            'brochure' => ['fullName', 'email'],
+            'brochure' => ['fullName', 'email', 'phone', 'organization', 'country'],
         ][$kind];
         foreach ($required as $field) {
             if (!isset($data[$field]) || (is_string($data[$field]) && trim($data[$field]) === '')) {
@@ -244,7 +255,9 @@ final class Application
         $this->notifications->notifySubmission($kind, $record);
         $result = ['ok' => true, 'reference' => $reference];
         if ($kind === 'brochure') {
-            $result['download'] = '/brochure.html';
+            $result['download'] = (($data['brochureType'] ?? '') === 'conference')
+                ? '/api/conference-brochure-file'
+                : '/api/sponsors-brochure-file';
         }
         Security::json($result, 201);
     }

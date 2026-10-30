@@ -2,7 +2,7 @@
 
 const BASE_CURRENCY = "EUR";
 const TRANSACTION_CURRENCIES = new Set([BASE_CURRENCY]);
-const SELECTABLE_CURRENCIES = new Set(["EUR", "USD", "GBP"]);
+const SELECTABLE_CURRENCIES = new Set(["EUR", "USD", "GBP", "INR"]);
 
 function currencyError(message) {
   const error = new Error(message);

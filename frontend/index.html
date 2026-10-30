@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261028-home-alignment-8">
+  <link rel="stylesheet" href="css/styles.css?v=20261029-header-reference-3">
 </head>
 <body class="home-page">
   <div id="site-header"></div>
@@ -50,11 +50,11 @@
           <span>Submit Your<br>Abstract Now</span>
           <b aria-hidden="true">›</b>
         </a>
-        <a class="btn btn-ghost home-action-button" href="brochure.html">
+        <button class="btn btn-ghost home-action-button" type="button" data-home-brochure-open aria-haspopup="dialog" aria-controls="home-brochure-dialog">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 5.5c3-.9 5.8-.5 8.5 1.2v13c-2.7-1.7-5.5-2.1-8.5-1.2zM20.5 5.5c-3-.9-5.8-.5-8.5 1.2v13c2.7-1.7 5.5-2.1 8.5-1.2z"></path><path d="M7 9h2.5M7 12h2.5M14.5 9H17M14.5 12H17"></path></svg>
           <span>Brochure</span>
           <b aria-hidden="true">›</b>
-        </a>
+        </button>
         <a class="btn btn-primary home-action-button" href="registration.html#register-form">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3"></circle><path d="M3.5 19v-1.3a5.5 5.5 0 0 1 11 0V19zM18 8v6M15 11h6"></path></svg>
           <span>Register Now</span>
@@ -114,7 +114,7 @@
       <div class="center reveal">
         <h2>Conference Highlights</h2>
       </div>
-      <div class="grid cols-3 mt-2">
+      <div class="grid cols-2 highlights-grid mt-2">
         <article class="card reveal"><h3>International Scientific Program</h3><p>A two-day program covering current research and emerging developments across materials science, engineering, computational research, and artificial intelligence.</p></article>
         <article class="card reveal"><h3>Keynote and Plenary Lectures</h3><p>Scientific lectures addressing significant developments, emerging research directions, and broader perspectives within the conference scope.</p></article>
         <article class="card reveal"><h3>Invited and Technical Presentations</h3><p>Specialized presentations featuring current research, methodologies, technologies, and applications from academic and professional communities.</p></article>
@@ -140,34 +140,18 @@
       <ol class="grid cols-2 mt-2">
         <li class="card reveal"><strong>Advanced Materials &amp; Materials Engineering</strong></li>
         <li class="card reveal"><strong>Nanomaterials &amp; Nanotechnology</strong></li>
-        <li class="card reveal"><strong>Polymers &amp; Advanced Polymer Materials</strong></li>
-        <li class="card reveal"><strong>Composite Materials &amp; Hybrid Structures</strong></li>
-        <li class="card reveal"><strong>Metals, Alloys &amp; Metallurgical Engineering</strong></li>
-        <li class="card reveal"><strong>Advanced Ceramics &amp; Functional Ceramics</strong></li>
+        <li class="card reveal"><strong>Polymers, Composite Materials &amp; Hybrid Structures</strong></li>
+        <li class="card reveal"><strong>Metals, Alloys &amp; Advanced Ceramics</strong></li>
         <li class="card reveal"><strong>Smart &amp; Multifunctional Materials</strong></li>
         <li class="card reveal"><strong>Sustainable Materials &amp; Green Engineering</strong></li>
-        <li class="card reveal"><strong>Energy Storage Materials</strong></li>
-        <li class="card reveal"><strong>Energy Conversion &amp; Renewable Energy Materials</strong></li>
+        <li class="card reveal"><strong>Energy Storage, Conversion &amp; Renewable Energy Materials</strong></li>
         <li class="card reveal"><strong>Biomaterials &amp; Biomedical Materials</strong></li>
-        <li class="card reveal"><strong>Electronic, Semiconductor &amp; Photonic Materials</strong></li>
-        <li class="card reveal"><strong>Quantum Materials &amp; Emerging Functional Materials</strong></li>
-        <li class="card reveal"><strong>Artificial Intelligence in Materials Science</strong></li>
-        <li class="card reveal"><strong>Machine Learning &amp; Materials Informatics</strong></li>
-        <li class="card reveal"><strong>AI-Driven Materials Discovery &amp; Design</strong></li>
-        <li class="card reveal"><strong>Computational Materials Science</strong></li>
-        <li class="card reveal"><strong>Multiscale Modelling &amp; Predictive Materials Engineering</strong></li>
-        <li class="card reveal"><strong>AI-Assisted Materials Characterization</strong></li>
-        <li class="card reveal"><strong>Advanced Materials Characterization &amp; Analytical Techniques</strong></li>
-        <li class="card reveal"><strong>Additive Manufacturing &amp; 3D-Printed Materials</strong></li>
-        <li class="card reveal"><strong>Intelligent Manufacturing &amp; Smart Processing</strong></li>
-        <li class="card reveal"><strong>Digital Twins &amp; Digital Materials Engineering</strong></li>
-        <li class="card reveal"><strong>Materials Processing &amp; Manufacturing Technologies</strong></li>
-        <li class="card reveal"><strong>Surface Engineering, Coatings &amp; Interfaces</strong></li>
-        <li class="card reveal"><strong>Materials for Environmental &amp; Climate Technologies</strong></li>
-        <li class="card reveal"><strong>Materials for Aerospace, Automotive &amp; Advanced Engineering</strong></li>
-        <li class="card reveal"><strong>Reliability, Degradation, Failure &amp; Materials Performance</strong></li>
-        <li class="card reveal"><strong>Autonomous Laboratories &amp; AI-Enabled Experimental Research</strong></li>
-        <li class="card reveal"><strong>Future Directions in Materials Science, Engineering &amp; AI</strong></li>
+        <li class="card reveal"><strong>Electronic, Semiconductor, Photonic &amp; Quantum Materials</strong></li>
+        <li class="card reveal"><strong>Artificial Intelligence &amp; Machine Learning in Materials Science</strong></li>
+        <li class="card reveal"><strong>AI-Driven Materials Discovery, Design &amp; Materials Informatics</strong></li>
+        <li class="card reveal"><strong>Computational Materials Science, Multiscale Modelling &amp; Digital Twins</strong></li>
+        <li class="card reveal"><strong>Advanced Materials Characterization, Processing &amp; Additive Manufacturing</strong></li>
+        <li class="card reveal"><strong>Materials for Aerospace, Automotive, Environmental &amp; Climate Technologies</strong></li>
       </ol>
       <div class="btn-row center mt-2">
         <a class="btn btn-outline" href="abstracts.html#abstract-sessions">VIEW SESSION DETAILS</a>
@@ -188,8 +172,8 @@
         <article class="card reveal"><h3>Engineering and Technology Professionals</h3><ul><li>Materials engineers</li><li>Mechanical and chemical engineers</li><li>Manufacturing and process engineers</li><li>Nanotechnology professionals</li><li>Advanced manufacturing specialists</li><li>Technology and innovation professionals</li></ul></article>
         <article class="card reveal"><h3>Early-Career Researchers and Students</h3><ul><li>PhD scholars and doctoral researchers</li><li>Postdoctoral researchers</li><li>Early-career scientists</li><li>Graduate and research students</li></ul></article>
         <article class="card reveal"><h3>Industry and R&amp;D Community</h3><ul><li>Industrial research and development professionals</li><li>Technology developers</li><li>Product development specialists</li><li>Research and innovation managers</li><li>Technical and engineering professionals</li><li>Industry representatives</li></ul></article>
+        <article class="card reveal"><h3>Additional Materials &amp; Technology Fields</h3><p>Researchers in energy materials, biomaterials, polymers and composites, sustainable materials, digital engineering, data science, additive manufacturing, and intelligent manufacturing are also welcome.</p></article>
       </div>
-      <p class="center mt-2">Researchers in energy materials, biomaterials, polymers and composites, sustainable materials, digital engineering, data science, additive manufacturing, and intelligent manufacturing are also welcome.</p>
     </div>
   </section>
 
@@ -198,7 +182,7 @@
       <div class="center reveal">
         <h2>Why Participate in MatAi 2027?</h2>
       </div>
-      <div class="grid cols-3 mt-2">
+      <div class="grid cols-3 why-participate-grid mt-2">
         <article class="card reveal"><h3>Present Your Research</h3><p>Share original research findings, experimental results, theoretical studies, computational investigations, and technical developments with an international scientific audience.</p></article>
         <article class="card reveal"><h3>Explore Emerging Developments</h3><p>Gain insights into advances in advanced materials, materials engineering, nanotechnology, computational materials science, materials informatics, machine learning, and AI-enabled research.</p></article>
         <article class="card reveal"><h3>Connect Across Disciplines</h3><p>Engage with experts from complementary fields and explore perspectives that extend beyond traditional research boundaries.</p></article>
@@ -211,29 +195,28 @@
   </section>
 
   <section class="section alt" id="home-dates">
-    <div class="container narrow">
+    <div class="container home-dates-container">
       <div class="center reveal">
         <h2>Important Dates</h2>
       </div>
-      <div class="date-panel reveal mt-2" aria-label="Important conference dates">
-        <div class="date-row"><span class="dl"><strong>Important Event</strong></span><span class="dv"><strong>Date</strong></span></div>
-        <div class="date-row"><span class="dl">Abstract Submission Deadline</span><span class="dv">To Be Announced</span></div>
-        <div class="date-row"><span class="dl">Abstract Acceptance Notification</span><span class="dv">To Be Announced</span></div>
-        <div class="date-row"><span class="dl">Early Bird Registration Deadline</span><span class="dv">To Be Announced</span></div>
-        <div class="date-row"><span class="dl">Regular Registration Deadline</span><span class="dv">To Be Announced</span></div>
-        <div class="date-row"><span class="dl">Conference Day 1</span><span class="dv">October 13, 2027</span></div>
-        <div class="date-row"><span class="dl">Conference Day 2</span><span class="dv">October 14, 2027</span></div>
-      </div>
-      </div>
-  </section>
-
-  <section class="section home-photo-gallery" id="home-photo-gallery" aria-labelledby="home-photo-gallery-heading" hidden>
-    <div class="container">
-      <div class="center reveal"><span class="eyebrow">MatAi 2027</span><h2 id="home-photo-gallery-heading"></h2></div>
-      <div class="home-gallery-shell mt-2">
-        <button class="home-gallery-arrow prev" type="button" data-home-gallery-prev aria-label="Scroll photos left">‹</button>
-        <div class="home-gallery-track" data-home-gallery-track aria-label="Conference photos" tabindex="0"></div>
-        <button class="home-gallery-arrow next" type="button" data-home-gallery-next aria-label="Scroll photos right">›</button>
+      <div class="home-dates-layout mt-2">
+        <div class="date-panel reveal" aria-label="Important conference dates">
+          <div class="date-row"><span class="dl"><strong>Important Event</strong></span><span class="dv"><strong>Date</strong></span></div>
+          <div class="date-row"><span class="dl">Abstract Submission Deadline</span><span class="dv">To Be Announced</span></div>
+          <div class="date-row"><span class="dl">Abstract Acceptance Notification</span><span class="dv">To Be Announced</span></div>
+          <div class="date-row"><span class="dl">Early Bird Registration Deadline</span><span class="dv">To Be Announced</span></div>
+          <div class="date-row"><span class="dl">Regular Registration Deadline</span><span class="dv">To Be Announced</span></div>
+          <div class="date-row"><span class="dl">Conference Day 1</span><span class="dv">October 13, 2027</span></div>
+          <div class="date-row"><span class="dl">Conference Day 2</span><span class="dv">October 14, 2027</span></div>
+        </div>
+        <section class="home-photo-gallery home-dates-photo-panel" id="home-photo-gallery" aria-labelledby="home-photo-gallery-heading" hidden>
+          <div class="center reveal"><h3 id="home-photo-gallery-heading"></h3></div>
+          <div class="home-gallery-shell mt-2">
+            <button class="home-gallery-arrow prev" type="button" data-home-gallery-prev aria-label="Scroll photos left">‹</button>
+            <div class="home-gallery-track" data-home-gallery-track aria-label="Conference photos" tabindex="0"></div>
+            <button class="home-gallery-arrow next" type="button" data-home-gallery-next aria-label="Scroll photos right">›</button>
+          </div>
+        </section>
       </div>
     </div>
   </section>
@@ -324,16 +307,66 @@
   <section class="section alt" id="contact-information">
     <div class="container narrow">
       <div class="center reveal"><span class="eyebrow">Contact Information</span><h2>MatAi 2027</h2><p class="lead">International Conference on Materials Science, Engineering &amp; Artificial Intelligence</p></div>
-      <div class="card reveal mt-2">
-        <p><strong>Dates:</strong> October 13–14, 2027</p>
-        <p><strong>Location:</strong> Berlin, Germany</p>
-        <p><strong>Email:</strong> <a href="mailto:info@matai2027.org">info@matai2027.org</a></p>
-        <p class="mb-0"><strong>Website:</strong> MatAi 2027 official website</p>
+      <div class="card reveal mt-2 contact-info-card">
+        <div class="contact-info-primary">
+          <p><strong>Dates:</strong> October 13–14, 2027</p>
+          <p><strong>Location:</strong> Berlin, Germany</p>
+          <p><strong>Email:</strong> <a href="mailto:info@matai2027.org">info@matai2027.org</a></p>
+          <p class="mb-0"><strong>Website:</strong> MatAi 2027 official website</p>
+        </div>
+        <div class="contact-info-emails">
+          <p><strong>Abstracts:</strong> <a href="mailto:abstracts@matai2027.org">abstracts@matai2027.org</a></p>
+          <p class="mb-0"><strong>Sponsors:</strong> <a href="mailto:sponsors@matai2027.org">sponsors@matai2027.org</a></p>
+        </div>
       </div>
     </div>
   </section>
 
+  <dialog class="home-brochure-dialog" id="home-brochure-dialog" aria-labelledby="home-brochure-title">
+    <div class="home-brochure-dialog-head">
+      <div><span class="eyebrow">MatAi 2027</span><h2 id="home-brochure-title">Download the Conference Brochure</h2><p>Enter your details and the brochure will download after you submit.</p></div>
+      <button class="home-brochure-close" type="button" data-home-brochure-close aria-label="Close brochure form">&times;</button>
+    </div>
+    <form class="form-card home-brochure-form" data-form="brochure" data-download-url="/api/conference-brochure-file" data-auto-download="true">
+      <div class="form-status" aria-live="polite"></div>
+      <input type="hidden" name="brochureType" value="conference">
+      <div class="form-grid">
+        <div class="field"><label for="home-brochure-name">Full Name <span class="req">*</span></label><input id="home-brochure-name" type="text" name="fullName" autocomplete="name" required><div class="error-msg">Required</div></div>
+        <div class="field"><label for="home-brochure-email">Email <span class="req">*</span></label><input id="home-brochure-email" type="email" name="email" autocomplete="email" required><div class="error-msg">Valid email required</div></div>
+        <div class="field"><label for="home-brochure-phone">Mobile Number <span class="req">*</span></label><input id="home-brochure-phone" type="tel" name="phone" inputmode="tel" autocomplete="tel" required><div class="error-msg">Required</div></div>
+        <div class="field"><label for="home-brochure-organization">Organization <span class="req">*</span></label><input id="home-brochure-organization" type="text" name="organization" autocomplete="organization" required><div class="error-msg">Required</div></div>
+        <div class="field full"><label for="home-brochure-country">Country <span class="req">*</span></label><input id="home-brochure-country" type="text" name="country" autocomplete="country-name" required><div class="error-msg">Required</div></div>
+        <div class="field full"><label for="home-brochure-message">Message</label><textarea id="home-brochure-message" name="message" rows="3" placeholder="Tell us what you would like to know about MatAi 2027."></textarea></div>
+        <div class="field full form-consent"><label class="chk"><input type="checkbox" name="termsAcknowledgement" value="accepted" required><span><strong>I agree to receive conference updates by email.</strong></span></label><div class="error-msg">Please check this box to continue.</div></div>
+      </div>
+      <div class="btn-row mt-2"><button type="submit" class="btn btn-primary">Submit &amp; Download Brochure</button></div>
+    </form>
+  </dialog>
+
   <div id="site-footer"></div>
-  <script src="js/site.js?v=20261028-home-topic-strip"></script>
+  <style>
+    .home-brochure-dialog { width:min(680px, calc(100% - 28px)); max-height:min(90vh, 820px); overflow:auto; border:1px solid #c9dbe5; border-radius:20px; padding:clamp(20px, 4vw, 34px); color:#15324b; background:linear-gradient(145deg,#fff 0%,#f2f8fb 100%); box-shadow:0 24px 80px rgba(9,36,58,.28); }
+    .home-brochure-dialog::backdrop { background:rgba(10,31,49,.62); backdrop-filter:blur(4px); }
+    .home-brochure-dialog-head { display:flex; align-items:flex-start; justify-content:space-between; gap:18px; margin-bottom:20px; }
+    .home-brochure-dialog-head h2 { margin:5px 0 7px; }
+    .home-brochure-dialog-head p { margin:0; color:#557087; }
+    .home-brochure-close { flex:0 0 auto; width:38px; height:38px; border:1px solid #d5e2e9; border-radius:50%; color:#173b55; background:#fff; font-size:25px; line-height:1; cursor:pointer; }
+    .home-brochure-form { margin:0; box-shadow:none; }
+    @media(max-width:600px) { .home-brochure-form .form-grid { grid-template-columns:1fr; } .home-brochure-form .field.full { grid-column:auto; } }
+  </style>
+  <script>
+    (function(){
+      var dialog=document.getElementById("home-brochure-dialog");
+      var opener=document.querySelector("[data-home-brochure-open]");
+      var closer=document.querySelector("[data-home-brochure-close]");
+      if(!dialog||!opener)return;
+      opener.addEventListener("click",function(){dialog.showModal();});
+      if(closer)closer.addEventListener("click",function(){dialog.close();});
+      dialog.addEventListener("click",function(event){if(event.target===dialog)dialog.close();});
+      dialog.addEventListener("close",function(){opener.focus();});
+    })();
+  </script>
+  <script src="js/forms.js?v=20261029-home-brochure-dialog"></script>
+  <script src="js/site.js?v=20261029-conference-header-logo-2"></script>
 </body>
 </html>

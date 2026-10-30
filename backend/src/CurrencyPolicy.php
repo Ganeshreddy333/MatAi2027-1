@@ -9,7 +9,7 @@ use DomainException;
 final class CurrencyPolicy
 {
     public const BASE_CURRENCY = 'EUR';
-    private const SELECTABLE_CURRENCIES = ['EUR', 'USD', 'GBP'];
+    private const SELECTABLE_CURRENCIES = ['EUR', 'USD', 'GBP', 'INR'];
 
     public static function selection(array $input): array
     {

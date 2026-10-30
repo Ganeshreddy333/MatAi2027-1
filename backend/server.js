@@ -34,6 +34,29 @@ const PORT = process.env.PORT || 3000;
 const ROOT = __dirname;
 const FRONTEND_DIR = path.join(ROOT, "..", "frontend");
 const DATA_DIR = path.join(ROOT, "data");
+let exchangeRateCache = null;
+let exchangeRateCacheExpires = 0;
+
+async function getLatestCurrencyRates() {
+  if (exchangeRateCache && exchangeRateCacheExpires > Date.now()) return exchangeRateCache;
+  const response = await fetch("https://api.frankfurter.dev/v2/rates?base=usd&quotes=eur,gbp,inr");
+  if (!response.ok) throw new Error("The latest published exchange rates are unavailable.");
+  const rows = await response.json();
+  const rates = {};
+  let date = "";
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const quote = String(row.quote || "").toUpperCase();
+    const rate = Number(row.rate);
+    if ((quote === "EUR" || quote === "GBP" || quote === "INR") && Number.isFinite(rate) && rate > 0) {
+      rates[quote] = rate;
+      date = row.date || date;
+    }
+  });
+  if (!rates.EUR || !rates.GBP || !rates.INR || !date) throw new Error("The exchange-rate response was incomplete.");
+  exchangeRateCache = { base: "USD", date, rates };
+  exchangeRateCacheExpires = Date.now() + 60 * 60 * 1000;
+  return exchangeRateCache;
+}
 const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 const IMAGE_UPLOAD_DIR = path.join(DATA_DIR, "images");
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "";
@@ -70,7 +93,7 @@ const FORMS = {
   abstract: ["title", "authorName", "email", "institution", "country", "session", "abstract"],
   register: ["fullName", "email", "period", "institution", "country"],
   contact:  ["fullName", "email", "subject", "message"],
-  brochure: ["fullName", "email"]
+  brochure: ["fullName", "email", "phone", "organization", "country"]
 };
 const KINDS = ["register", "abstract", "contact", "brochure"];
 
@@ -189,7 +212,7 @@ function safeUploadName(originalName) {
 /* ---------- Editable site content (CMS) ---------- */
 const DEFAULT_CONTENT = {
   banner: {
-    enabled: true,
+    enabled: false,
     text: "Abstract submissions for MatAi 2027 are now open. Register early to secure Early-Bird rates."
   },
   site: {
@@ -400,10 +423,25 @@ app.get("/api/content", async (_req, res) => {
   }
 });
 
+app.get("/api/currency-rates", async (_req, res) => {
+  try {
+    res.set("Cache-Control", "no-store").json(await getLatestCurrencyRates());
+  } catch (_error) {
+    res.status(503).json({ ok: false, error: "The latest published exchange rates are unavailable." });
+  }
+});
+
 app.get("/api/sponsors-brochure-file", (_req, res) => {
   const brochurePath = path.join(ROOT, "..", "uploads", "Sponsors & Exhibition5.docx");
   res.download(brochurePath, "MatAi-2027-Sponsors-and-Exhibition-Brochure.docx", (err) => {
     if (err && !res.headersSent) res.status(404).json({ ok: false, error: "The sponsorship brochure is not available." });
+  });
+});
+
+app.get("/api/conference-brochure-file", (_req, res) => {
+  const brochurePath = path.join(ROOT, "..", "MatAi-2027-pdf.pdf");
+  res.download(brochurePath, "MatAi-2027-Conference-Brochure.pdf", (err) => {
+    if (err && !res.headersSent) res.status(404).json({ ok: false, error: "The conference brochure is not available." });
   });
 });
 
@@ -425,7 +463,7 @@ const REGISTRATION_ITEMS = [
   { field: "qty_poster", label: "Poster Presentation", category: "Poster" },
   { field: "qty_student", label: "Student Registration", category: "Student" },
   { field: "qty_virtual", label: "Virtual Registration", category: "Virtual" },
-  { field: "qty_ex_standard", label: "Standard Exhibition Booth (3 x 2 m)", fixed: "exhibition_standard" },
+  { field: "qty_ex_standard", label: "Exhibitor", fixed: "exhibition_standard" },
   { field: "qty_ex_premium", label: "Premium Exhibition Booth (3 x 3 m)", fixed: "exhibition_premium" },
   { field: "qty_sp_diamond", label: "Diamond Sponsor", fixed: "sponsor_diamond" },
   { field: "qty_sp_platinum", label: "Platinum Sponsor", fixed: "sponsor_platinum" },
@@ -484,6 +522,14 @@ async function prepareRegistration(input) {
     throw error;
   }
   const currencySelection = selectTransactionCurrency(data);
+  const exchangeRates = await getLatestCurrencyRates();
+  const submittedExchangeRate = Number(data.usdToEurRate);
+  if (data.currencyRateDate !== exchangeRates.date || !Number.isFinite(submittedExchangeRate) ||
+      Math.abs(submittedExchangeRate - exchangeRates.rates.EUR) > 1e-10) {
+    const error = new Error("The exchange rate changed. Refresh the page to update converted prices before continuing.");
+    error.statusCode = 409;
+    throw error;
+  }
 
   const content = mergeDefaults(DEFAULT_CONTENT, await storage.loadContent());
   const period = effectiveRegistrationPeriod(content.registrationPeriods);
@@ -511,10 +557,11 @@ async function prepareRegistration(input) {
       error.statusCode = 500;
       throw error;
     }
-    const unitCents = Math.round(price * 100);
+    const unitUSDCents = Math.round(price * 100);
+    const unitCents = Math.round(unitUSDCents * exchangeRates.rates.EUR);
     grossCents += unitCents * quantity;
     if (!item.fixed) participantCount += quantity;
-    items.push({ name: item.label, category: item.category || "", quantity, unitCents });
+    items.push({ name: item.label, category: item.category || "", quantity, unitCents, unitBaseUSDCents: unitUSDCents });
   }
   if (!items.length) {
     const error = new Error("Select at least one registration item.");
@@ -522,7 +569,7 @@ async function prepareRegistration(input) {
     throw error;
   }
   if (grossCents <= 0 || grossCents > 99999999) {
-    const error = new Error("The registration total must be greater than zero and below €1,000,000.");
+    const error = new Error("The converted registration total must be greater than zero and below €1,000,000.");
     error.statusCode = 400;
     throw error;
   }
@@ -552,6 +599,9 @@ async function prepareRegistration(input) {
   data.selectedItems = items.map((item) => item.name + " ×" + item.quantity).join("; ");
   data.totalPrice = amount.toFixed(2);
   data.totalPriceEUR = amount.toFixed(2);
+  data.pricingBaseCurrency = "USD";
+  data.currencyRateDate = exchangeRates.date;
+  data.usdToEurRate = exchangeRates.rates.EUR;
   data.taxRate = validTaxRate;
   data.taxAmount = (taxCents / 100).toFixed(2);
   data.paymentMethod = gateway;
@@ -1200,7 +1250,9 @@ app.post("/api/:kind", parseAbstractUpload, async (req, res) => {
   try {
     await updateArr(kind, async (arr) => { arr.push(record); });
     const resp = { ok: true, reference };
-    if (kind === "brochure") resp.download = "/brochure.html";
+    if (kind === "brochure") {
+      resp.download = data.brochureType === "conference" ? "/api/conference-brochure-file" : "/api/sponsors-brochure-file";
+    }
     return res.status(201).json(resp);
   } catch (err) {
     console.error("Failed to store submission:", err);

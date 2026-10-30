@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261025-registration-details-nav">
+  <link rel="stylesheet" href="css/styles.css?v=20261029-header-reference-3">
   <style>
     .abstract-submission-grid { grid-template-columns:minmax(130px,.42fr) minmax(0,1.58fr); }
     .abstract-submission-grid .field:nth-child(n+3) { grid-column:1/-1; }
@@ -232,11 +232,9 @@
         <h2>Abstract Submission</h2>
         <p class="lead">Complete the form and upload your abstract document.</p>
       </div>
-      <div class="btn-row mt-2">
-        <a class="btn btn-outline" href="assets/abstract-template.docx" download>Download Abstract Template</a>
-      </div>
       <form class="form-card mt-2" data-form="abstract">
         <div class="form-status" aria-live="polite"></div>
+        <div class="abstract-template-download"><a class="btn btn-outline" href="assets/abstract-template.docx" download>Download Abstract Template</a></div>
         <div class="form-grid abstract-submission-grid">
           <div class="field"><label for="abstract-title">Title <span class="req">*</span></label><select id="abstract-title" name="title" required><option value="">Select title</option><option>Dr.</option><option>Prof.</option><option>Mr.</option><option>Ms.</option><option>Mrs.</option><option>Mx.</option></select><div class="error-msg">Please select a title.</div></div>
           <div class="field"><label for="abstract-name">Name <span class="req">*</span></label><input id="abstract-name" type="text" name="authorName" autocomplete="name" required><div class="error-msg">Required</div></div>
@@ -252,16 +250,19 @@
           <div class="field full captcha-box" data-captcha>
             <label for="abstract-captcha">Captcha Verification <span class="req">*</span></label>
             <div class="captcha-row"><span data-captcha-question aria-label="Math verification question"></span><input id="abstract-captcha" type="text" name="captchaAnswer" inputmode="numeric" autocomplete="off" placeholder="Enter answer" required><button class="human-retry" type="button" data-captcha-reset aria-label="Refresh captcha" title="Refresh captcha">&#8635;</button></div>
-            <div class="error-msg">Solve the captcha before continuing.</div>
             <small data-captcha-status aria-live="polite">Solve the captcha before continuing.</small>
           </div>
+        </div>
+        <div class="field full form-consent abstract-guidelines-acknowledgement">
+          <label class="chk" for="abstract-guidelines-acknowledged"><input id="abstract-guidelines-acknowledged" type="checkbox" name="guidelinesAcknowledged" value="yes" required><span>I have read and agree to the Abstract Submission Guidelines provided above, and confirm that my submission follows them.</span></label>
+          <div class="error-msg">Please review and acknowledge the Abstract Submission Guidelines before submitting.</div>
         </div>
         <div class="btn-row mt-2"><button type="submit" class="btn btn-primary">Submit Abstract</button></div>
       </form>
     </div>
   </section>
   <div id="site-footer"></div>
-  <script src="js/site.js?v=20261025-registration-details-nav"></script>
+  <script src="js/site.js?v=20261029-conference-header-logo-2"></script>
   <script src="js/forms.js?v=20261024-abstract-submit-v8"></script>
 </body>
 </html>

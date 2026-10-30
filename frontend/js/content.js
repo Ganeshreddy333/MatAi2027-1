@@ -9,7 +9,7 @@
   "use strict";
 
   var DEFAULTS = {
-    banner: { enabled: true, text: "Abstract submissions for MatAi 2027 are now open. Register early to secure Early-Bird rates." },
+    banner: { enabled: false, text: "Abstract submissions for MatAi 2027 are now open. Register early to secure Early-Bird rates." },
     site: { theme: "Advancing Materials Innovation through Science, Engineering & Artificial Intelligence", dateText: "October 13–14, 2027", city: "Berlin, Germany" },
     homeGallery: { heading: "", photos: [] },
     dates: [
@@ -295,23 +295,24 @@
     var photos = gallery && Array.isArray(gallery.photos) ? gallery.photos.filter(function (photo) {
       return typeof photo === "string" && /^(https?:\/\/|\/|\.\.?\/)/i.test(photo.trim());
     }) : [];
+    var layout = document.querySelector("#home-dates .home-dates-layout");
     var section = document.getElementById("home-photo-gallery");
-    if (!section && photos.length) {
-      var dates = document.getElementById("home-dates");
-      if (!dates) return;
+    if (!section && photos.length && layout) {
       section = document.createElement("section");
-      section.className = "section home-photo-gallery";
+      section.className = "home-photo-gallery home-dates-photo-panel";
       section.id = "home-photo-gallery";
       section.setAttribute("aria-labelledby", "home-photo-gallery-heading");
-      dates.insertAdjacentElement("afterend", section);
-      section.innerHTML = '<div class="container"><div class="center reveal"><span class="eyebrow">MatAi 2027</span><h2 id="home-photo-gallery-heading"></h2></div><div class="home-gallery-shell mt-2"><button class="home-gallery-arrow prev" type="button" data-home-gallery-prev aria-label="Scroll photos left">‹</button><div class="home-gallery-track" data-home-gallery-track aria-label="Conference photos" tabindex="0"></div><button class="home-gallery-arrow next" type="button" data-home-gallery-next aria-label="Scroll photos right">›</button></div></div>';
+      section.innerHTML = '<div class="center reveal"><h3 id="home-photo-gallery-heading"></h3></div><div class="home-gallery-shell mt-2"><button class="home-gallery-arrow prev" type="button" data-home-gallery-prev aria-label="Scroll photos left">‹</button><div class="home-gallery-track" data-home-gallery-track aria-label="Conference photos" tabindex="0"></div><button class="home-gallery-arrow next" type="button" data-home-gallery-next aria-label="Scroll photos right">›</button></div>';
+      layout.appendChild(section);
     }
     if (!section) return;
     if (!photos.length) {
       section.hidden = true;
+      if (layout) layout.classList.remove("has-gallery");
       return;
     }
     section.hidden = false;
+    if (layout) layout.classList.add("has-gallery");
     var heading = document.getElementById("home-photo-gallery-heading");
     var headingText = String(gallery.heading || "").trim();
     var headingBlock = heading && heading.closest(".center");
@@ -322,7 +323,7 @@
       section.removeAttribute("aria-label");
     } else {
       section.removeAttribute("aria-labelledby");
-      section.setAttribute("aria-label", "Conference photo gallery");
+      section.setAttribute("aria-label", "Conference photos");
     }
     var track = section.querySelector("[data-home-gallery-track]");
     if (!track) return;

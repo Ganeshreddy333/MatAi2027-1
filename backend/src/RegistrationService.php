@@ -16,7 +16,7 @@ final class RegistrationService
         ['qty_poster', 'Poster Presentation', 'Poster'],
         ['qty_student', 'Student Registration', 'Student'],
         ['qty_virtual', 'Virtual Registration', 'Virtual'],
-        ['qty_ex_standard', 'Standard Exhibition Booth (3 x 2 m)', 'exhibition_standard'],
+        ['qty_ex_standard', 'Exhibitor', 'exhibition_standard'],
         ['qty_ex_premium', 'Premium Exhibition Booth (3 x 3 m)', 'exhibition_premium'],
         ['qty_sp_diamond', 'Diamond Sponsor', 'sponsor_diamond'],
         ['qty_sp_platinum', 'Platinum Sponsor', 'sponsor_platinum'],

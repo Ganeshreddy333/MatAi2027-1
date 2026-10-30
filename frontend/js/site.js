@@ -12,8 +12,7 @@
 
   var PAGE_SECTION_NAV = {
     "brochure.html": [
-      { id: "brochure-glance", label: "MatAi 2027 at a Glance" },
-      { id: "brochure-details", label: "Conference Brochure" }
+      { id: "brochure-request", label: "Conference Brochure Request" }
     ],
     "speakers.html": [
       { id: "speaker-overview", label: "Conference Speaker Overview" },
@@ -137,8 +136,8 @@
       '<header class="site-header">' +
       '<div class="container nav">' +
         '<a class="brand" href="index.html">' +
-          '<span class="logo" aria-hidden="true">' + (current === "index.html" ? "M" : "Ai") + "</span>" +
-          '<span class="brand-title"><span class="brand-mat">Mat</span><span class="brand-ai">Ai</span> <span class="brand-year">2027</span><small>' + (current === "index.html" ? "Materials · AI · Engineering" : "Materials · Engineering · AI") + "</small></span>" +
+          '<span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-5 9 5M4 10h16M6 10v8m4-8v8m4-8v8m4-8v8M4 19h16M3 21h18"/></svg></span>' +
+          '<span class="brand-title"><span class="brand-mat">Mat</span><span class="brand-ai">Ai</span> <span class="brand-year">2027</span><small>Materials · AI · Engineering</small></span>' +
         '</a>' +
         '<nav aria-label="Primary"><ul class="nav-links" id="navLinks">' + links + '</ul></nav>' +
         '<div class="nav-cta">' +
@@ -543,7 +542,7 @@
   /* ---------- Load public content loader once ---------- */
   function ensureContentScript() {
     if (window.MATAI_CONTENT || document.querySelector('script[data-matai-content]')) return;
-    var src = SITE_SRC.replace(/site\.js.*$/, "content.js?v=20261028-home-topic-strip");
+    var src = SITE_SRC.replace(/site\.js.*$/, "content.js?v=20261029-banner-default-disabled-1");
     var s = document.createElement("script");
     s.async = false;
     s.src = src; s.setAttribute("data-matai-content", "1");
