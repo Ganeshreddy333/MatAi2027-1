@@ -11,6 +11,8 @@
   var csrfToken = "";
   var cache = {};      // kind -> items
   var contentData = null;
+  var couponRecords = [];
+  var couponUses = {};
   var currentEditPage = "index.html";
   var PAGE_FILES = [
     { href: "index.html", label: "Home Page" },
@@ -753,56 +755,66 @@
   }
 
   function renderCoupons(coupons) {
-    el("coupons-list").innerHTML = (Array.isArray(coupons) ? coupons : []).map(function (coupon, i) {
-      coupon = coupon || {};
-      var link = location.origin + "/registration.html?coupon=" + encodeURIComponent(coupon.code || "");
-      return "<div class='a-row a-coupon' data-coupon='" + i + "'>" +
-        "<label class='switch'><input type='checkbox' data-cf='enabled'" + (coupon.enabled === false ? "" : " checked") + "> Enabled</label>" +
-        "<input class='a-input' data-cf='code' value='" + esc(coupon.code || "") + "' placeholder='Coupon code' aria-label='Coupon code'>" +
-        "<select class='a-input' data-cf='discountType' aria-label='Discount type'><option value='percentage'" + ((coupon.discountType || 'percentage') === 'percentage' ? ' selected' : '') + ">Percentage</option><option value='fixed'" + (coupon.discountType === 'fixed' ? ' selected' : '') + ">Fixed amount</option></select>" +
-        "<input class='a-input' data-cf='discountPercentage' type='number' min='0.01' max='100' step='0.01' value='" + esc(coupon.discountPercentage != null ? coupon.discountPercentage : (coupon.percent != null ? coupon.percent : 10)) + "' aria-label='Discount percentage'>" +
-        "<input class='a-input' data-cf='fixedAmount' type='number' min='0.01' step='0.01' value='" + esc(coupon.fixedAmount != null ? coupon.fixedAmount : '') + "' aria-label='Fixed discount amount'>" +
-        "<input class='a-input' data-cf='maxUses' type='number' min='1' step='1' value='" + esc(coupon.maxUses != null ? coupon.maxUses : 1) + "' aria-label='Maximum uses'>" +
-        "<input class='a-input' data-cf='validUntil' type='datetime-local' value='" + esc(coupon.validUntil || '') + "' aria-label='Valid until'>" +
-        "<a class='a-btn ghost sm' href='" + esc(link) + "' target='_blank' rel='noopener'>Registration link</a><button class='a-btn ghost sm' data-copy-coupon type='button'>Copy</button>" +
-        "<button class='a-btn ghost sm' data-remove-coupon type='button'>Remove</button></div>";
-    }).join("") || "<p class='a-empty'>No coupons configured.</p>";
+    couponRecords = Array.isArray(coupons) ? coupons.map(function (coupon) { return Object.assign({}, coupon); }) : [];
+    drawCoupons();
+    api("/admin/api/submissions/register").then(function (response) {
+      couponUses = {};
+      (response.items || []).forEach(function (record) {
+        var code = String((record.data || {}).couponCode || "").trim().toUpperCase();
+        if (code && ["Pending", "Paid"].indexOf(record.paymentStatus || "Pending") > -1) couponUses[code] = (couponUses[code] || 0) + 1;
+      });
+      drawCoupons();
+    }).catch(function () {});
+  }
+
+  function drawCoupons() {
+    el("coupons-list").innerHTML = couponRecords.map(function (coupon, index) {
+      var code = String(coupon.code || "").toUpperCase(), uses = couponUses[code] || 0;
+      var link = location.origin + "/registration.html?coupon=" + encodeURIComponent(code);
+      var discount = coupon.discountType === "fixed" ? "$" + Number(coupon.fixedAmount || 0).toFixed(2) : Number(coupon.discountPercentage != null ? coupon.discountPercentage : coupon.percent || 0) + "%";
+      return "<tr><td>" + esc(code) + "</td><td>" + esc(discount) + "</td><td><span class='coupon-table-link'><a href='" + esc(link) + "' target='_blank' rel='noopener'>" + esc(link) + "</a><button class='a-btn ghost sm' data-copy-coupon='" + index + "' type='button'>Copy</button></span></td><td>" + uses + "/" + esc(coupon.maxUses || 0) + "</td><td>" + esc(coupon.enabled === false || coupon.status === "inactive" ? "Inactive" : "Active") + "</td><td><span class='coupon-actions'><button class='a-btn ghost sm' data-edit-coupon='" + index + "' type='button'>Edit</button><button class='a-btn ghost sm' data-toggle-coupon='" + index + "' type='button'>" + (coupon.enabled === false || coupon.status === "inactive" ? "Activate" : "Deactivate") + "</button><button class='a-btn danger sm' data-remove-coupon='" + index + "' type='button'>Delete</button></span></td></tr>";
+    }).join("");
+    if (couponRecords.length) el("coupons-list").innerHTML = "<div class='a-tablewrap'><table class='a-table'><thead><tr><th>Code</th><th>Discount</th><th>Registration Link</th><th>Uses</th><th>Status</th><th>Actions</th></tr></thead><tbody>" + el("coupons-list").innerHTML + "</tbody></table></div>";
+    else el("coupons-list").innerHTML = "<p class='a-empty'>No coupons configured.</p>";
   }
 
   el("coupons-list").addEventListener("click", function (e) {
     var copy = e.target.closest("[data-copy-coupon]");
     if (copy) {
-      var code = copy.closest("[data-coupon]").querySelector("[data-cf='code']").value.trim().toUpperCase();
+      var code = couponRecords[Number(copy.getAttribute("data-copy-coupon"))].code;
       if (code && navigator.clipboard) navigator.clipboard.writeText(location.origin + "/registration.html?coupon=" + encodeURIComponent(code)).then(function () { toast("Registration link copied"); });
       return;
     }
+    var edit = e.target.closest("[data-edit-coupon]"); if (edit) { openCoupon(Number(edit.getAttribute("data-edit-coupon"))); return; }
+    var toggle = e.target.closest("[data-toggle-coupon]"); if (toggle) { var c = couponRecords[Number(toggle.getAttribute("data-toggle-coupon"))]; c.enabled = !((c.enabled !== false) && c.status !== "inactive"); c.status = c.enabled ? "active" : "inactive"; persistCoupons(); return; }
     var remove = e.target.closest("[data-remove-coupon]");
-    if (remove && window.confirm("Remove this coupon? Save changes to publish the removal.")) {
-      remove.closest("[data-coupon]").remove();
-      if (!el("coupons-list").querySelector("[data-coupon]")) {
-        el("coupons-list").innerHTML = "<p class='a-empty'>No coupons configured.</p>";
-      }
-    }
+    if (remove && window.confirm("Archive this coupon? Historical redemption records will be retained.")) { couponRecords.splice(Number(remove.getAttribute("data-remove-coupon")), 1); persistCoupons(); }
   });
-  el("add-coupon").addEventListener("click", function () {
-    var coupons = readCoupons();
-    coupons.push({ code: "", discountType: "percentage", discountPercentage: 10, maxUses: 1, enabled: true });
-    renderCoupons(coupons);
-  });
-  function readCoupons() {
-    return Array.prototype.map.call(document.querySelectorAll("#coupons-list [data-coupon]"), function (row) {
-      var field = function (name) { return row.querySelector("[data-cf='" + name + "']"); };
-      return {
-        code: field("code").value.trim().toUpperCase(),
-        discountType: field("discountType").value,
-        discountPercentage: Number(field("discountPercentage").value) || 0,
-        fixedAmount: Number(field("fixedAmount").value) || 0,
-        maxUses: Number(field("maxUses").value) || 0,
-        validUntil: field("validUntil").value,
-        enabled: field("enabled").checked
-      };
-    }).filter(function (coupon) { return coupon.code; });
+  function readCoupons() { return couponRecords.slice(); }
+  function couponFormFields() { return { code: el("coupon-code-field"), type: el("coupon-type-field"), percent: el("coupon-percent-field"), fixed: el("coupon-fixed-field"), max: el("coupon-max-field"), until: el("coupon-until-field"), status: el("coupon-status-field") }; }
+  function syncCouponDiscountFields() { var fields = couponFormFields(), fixed = fields.type.value === "fixed"; el("coupon-percent-wrap").hidden = fixed; el("coupon-fixed-wrap").hidden = !fixed; fields.percent.required = !fixed; fields.fixed.required = fixed; }
+  function openCoupon(index) {
+    var coupon = index === null ? { code: "", discountType: "percentage", discountPercentage: 10, fixedAmount: "", maxUses: 1, enabled: true, status: "active", validUntil: "" } : couponRecords[index];
+    var fields = couponFormFields(); el("coupon-edit-index").value = index === null ? "" : String(index); el("coupon-modal-title").textContent = index === null ? "Add Coupon" : "Edit Coupon";
+    fields.code.value = coupon.code || ""; fields.type.value = coupon.discountType || "percentage"; fields.percent.value = coupon.discountPercentage != null ? coupon.discountPercentage : (coupon.percent || ""); fields.fixed.value = coupon.fixedAmount || ""; fields.max.value = coupon.maxUses || 1; fields.until.value = coupon.validUntil || ""; fields.status.value = coupon.enabled === false || coupon.status === "inactive" ? "inactive" : "active"; syncCouponDiscountFields(); el("coupon-form-error").textContent = "";
+    el("coupon-modal").classList.add("open"); el("coupon-modal").setAttribute("aria-hidden", "false"); fields.code.focus();
   }
+  function closeCoupon() { el("coupon-modal").classList.remove("open"); el("coupon-modal").setAttribute("aria-hidden", "true"); }
+  function persistCoupons() {
+    if (!contentData) return; contentData.coupons = couponRecords;
+    api("/admin/api/content", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: contentData }) }).then(function (response) { contentData = response.content || contentData; couponRecords = contentData.coupons || couponRecords; drawCoupons(); toast("Coupon saved"); }).catch(function (error) { toast(error.message || "Coupon could not be saved", true); });
+  }
+  el("add-coupon").addEventListener("click", function () { openCoupon(null); });
+  el("coupon-type-field").addEventListener("change", syncCouponDiscountFields);
+  document.querySelectorAll("[data-close-coupon]").forEach(function (button) { button.addEventListener("click", closeCoupon); });
+  el("coupon-modal").addEventListener("click", function (event) { if (event.target === this) closeCoupon(); });
+  el("coupon-form").addEventListener("submit", function (event) {
+    event.preventDefault(); var fields = couponFormFields(), code = fields.code.value.trim().toUpperCase(), fixed = fields.type.value === "fixed", value = Number(fixed ? fields.fixed.value : fields.percent.value), max = Number(fields.max.value), index = el("coupon-edit-index").value;
+    if (!/^[A-Z0-9][A-Z0-9_-]{2,63}$/.test(code) || !isFinite(value) || value <= 0 || (!fixed && value > 100) || !Number.isInteger(max) || max < 1) { el("coupon-form-error").textContent = "Enter a unique code, valid discount, and maximum uses of at least one."; return; }
+    if (couponRecords.some(function (coupon, i) { return i !== Number(index) && String(coupon.code || "").toUpperCase() === code; })) { el("coupon-form-error").textContent = "Coupon codes must be unique."; return; }
+    var coupon = { code: code, discountType: fields.type.value, discountPercentage: fixed ? null : value, fixedAmount: fixed ? value : null, maxUses: max, validUntil: fields.until.value, enabled: fields.status.value === "active", status: fields.status.value };
+    if (index === "") couponRecords.push(coupon); else couponRecords[Number(index)] = coupon; closeCoupon(); persistCoupons();
+  });
 
   function renderPageList() {
     var list = el("page-list");

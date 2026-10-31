@@ -204,6 +204,24 @@
         </div>
       </section>
 
+      <div class="a-modal" id="coupon-modal" aria-hidden="true">
+        <form class="a-modal-dialog" id="coupon-form" aria-labelledby="coupon-modal-title">
+          <div class="a-section-heading"><h2 id="coupon-modal-title">Add Coupon</h2><button class="a-btn ghost sm" type="button" data-close-coupon>Close</button></div>
+          <input type="hidden" id="coupon-edit-index">
+          <div class="a-form-grid">
+            <label class="a-field">Coupon Code<input class="a-input" id="coupon-code-field" maxlength="64" required></label>
+            <label class="a-field">Status<select class="a-input" id="coupon-status-field"><option value="active">Active</option><option value="inactive">Inactive</option></select></label>
+            <label class="a-field">Discount Type<select class="a-input" id="coupon-type-field"><option value="percentage">Percentage</option><option value="fixed">Fixed Amount</option></select></label>
+            <label class="a-field" id="coupon-percent-wrap">Discount Percent (%)<input class="a-input" id="coupon-percent-field" type="number" min="0.01" max="100" step="0.01"></label>
+            <label class="a-field" id="coupon-fixed-wrap" hidden>Fixed Discount Amount<input class="a-input" id="coupon-fixed-field" type="number" min="0.01" step="0.01"></label>
+            <label class="a-field">Maximum Uses<input class="a-input" id="coupon-max-field" type="number" min="1" step="1" required></label>
+            <label class="a-field">Valid Until<input class="a-input" id="coupon-until-field" type="datetime-local"></label>
+          </div>
+          <p class="a-msg err" id="coupon-form-error" role="alert"></p>
+          <div class="a-action-buttons"><button class="a-btn" type="submit" id="coupon-save">Save Coupon</button></div>
+        </form>
+      </div>
+
       <section class="admin-view" id="committee-view" style="display:none">
         <div class="a-card" id="committee-editor">
           <div class="a-section-heading">

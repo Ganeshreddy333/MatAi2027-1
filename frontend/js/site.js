@@ -47,7 +47,6 @@
     ],
     "abstracts.html": [
       { id: "abstract-sessions", label: "Sessions" },
-      { id: "abstract-guidelines", label: "Abstract Guidelines" },
       { id: "abstract-submission", label: "Abstract Submission" }
     ],
     "general-information.html": [

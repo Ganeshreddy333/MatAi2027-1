@@ -578,19 +578,27 @@ async function prepareRegistration(input) {
     throw error;
   }
 
-  let discountPercent = 0;
+  let discountCents = 0;
   const couponCode = String(data.couponCode || "").trim().toUpperCase();
   if (couponCode) {
     const coupon = (Array.isArray(content.coupons) ? content.coupons : []).find((entry) =>
-      entry && entry.enabled !== false && String(entry.code || "").trim().toUpperCase() === couponCode);
-    if (!coupon || !Number.isFinite(Number(coupon.percent)) || Number(coupon.percent) <= 0 || Number(coupon.percent) > 100) {
+      entry && entry.enabled !== false && entry.status !== "inactive" && String(entry.code || "").trim().toUpperCase() === couponCode);
+    const expired = coupon && coupon.validUntil && new Date(coupon.validUntil).getTime() < Date.now();
+    if (!coupon || expired) {
       const error = new Error("The coupon code is invalid or expired.");
       error.statusCode = 400;
       throw error;
     }
-    discountPercent = Number(coupon.percent) / 100;
+    if (coupon.discountType === "fixed") {
+      if (!Number.isFinite(Number(coupon.fixedAmount)) || Number(coupon.fixedAmount) <= 0) { const error = new Error("The coupon code is invalid or expired."); error.statusCode = 400; throw error; }
+      discountCents = Math.min(grossCents, Math.round(Number(coupon.fixedAmount) * 100));
+    } else {
+      const percent = Number(coupon.discountPercentage != null ? coupon.discountPercentage : coupon.percent);
+      if (!Number.isFinite(percent) || percent <= 0 || percent > 100) { const error = new Error("The coupon code is invalid or expired."); error.statusCode = 400; throw error; }
+      discountCents = Math.round(grossCents * percent / 100);
+    }
+    data.couponMaxUses = Number(coupon.maxUses);
   }
-  const discountCents = Math.round(grossCents * discountPercent);
   const subtotalCents = Math.max(0, grossCents - discountCents);
   const validTaxRate = 0.05;
   const taxCents = Math.round(subtotalCents * validTaxRate);
@@ -617,6 +625,17 @@ async function prepareRegistration(input) {
     preferredCurrency: currencySelection.preferredCurrency,
     transactionCurrency: currencySelection.transactionCurrency
   };
+}
+
+function appendRegistrationWithCouponLimit(records, record) {
+  const code = String(record.data && record.data.couponCode || "").trim().toUpperCase();
+  const maxUses = Number(record.data && record.data.couponMaxUses);
+  if (code && Number.isInteger(maxUses) && maxUses > 0) {
+    const uses = records.filter((item) => String(item.data && item.data.couponCode || "").trim().toUpperCase() === code &&
+      ["Pending", "Paid"].includes(item.paymentStatus)).length;
+    if (uses >= maxUses) { const error = new Error("This coupon has reached its maximum number of uses."); error.statusCode = 409; throw error; }
+  }
+  records.push(record);
 }
 
 async function stripeRequest(endpoint, params, method) {
@@ -912,7 +931,7 @@ app.post("/api/checkout/stripe", async (req, res) => {
       stripeCheckoutSessionId: session.id,
       data: registration.data
     };
-    await updateArr("register", async (arr) => { arr.push(record); });
+    await updateArr("register", async (arr) => { appendRegistrationWithCouponLimit(arr, record); });
     return res.status(201).json({
       ok: true, reference, url: session.url,
       amount: registration.amount, currency: registration.transactionCurrency
@@ -1002,7 +1021,7 @@ app.post("/api/checkout/paypal/order", async (req, res) => {
       throw new Error("PayPal did not return a valid approval link.");
     }
     await updateArr("register", async (arr) => {
-      arr.push({
+      appendRegistrationWithCouponLimit(arr, {
         reference, kind: "register", receivedAt: new Date().toISOString(), ip: req.ip, status: "New",
         paymentStatus: "Pending", amount: registration.amount, amountCurrency: registration.transactionCurrency,
         preferredCurrency: registration.preferredCurrency, transactionCurrency: registration.transactionCurrency,
@@ -1101,7 +1120,7 @@ app.post("/api/checkout/razorpay/order", async (req, res) => {
       throw new Error("Razorpay order details did not match the requested amount.");
     }
     await updateArr("register", async (arr) => {
-      arr.push({
+      appendRegistrationWithCouponLimit(arr, {
         reference, kind: "register", receivedAt: new Date().toISOString(), ip: req.ip, status: "New",
         paymentStatus: "Pending", amount: registration.amount, amountCurrency: registration.transactionCurrency,
         preferredCurrency: registration.preferredCurrency, transactionCurrency: registration.transactionCurrency,
@@ -1261,7 +1280,7 @@ app.post("/api/:kind", parseAbstractUpload, async (req, res) => {
   }
 
   try {
-    await updateArr(kind, async (arr) => { arr.push(record); });
+    await updateArr(kind, async (arr) => { kind === "register" ? appendRegistrationWithCouponLimit(arr, record) : arr.push(record); });
     const resp = { ok: true, reference };
     if (kind === "brochure") {
       resp.download = data.brochureType === "conference" ? "/api/conference-brochure-file" : "/api/sponsors-brochure-file";

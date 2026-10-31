@@ -363,7 +363,7 @@
   function applyCoupons(coupons) {
     DISCOUNT_CODES = {};
     (Array.isArray(coupons) ? coupons : []).forEach(function (coupon) {
-      if (!coupon || coupon.enabled === false || !coupon.code) return;
+      if (!coupon || coupon.enabled === false || coupon.status === "inactive" || !coupon.code) return;
       if (coupon.validUntil && new Date(coupon.validUntil).getTime() < Date.now()) return;
       var percent = Number(coupon.discountPercentage != null ? coupon.discountPercentage : coupon.percent);
       if ((coupon.discountType || "percentage") === "percentage" && isFinite(percent) && percent > 0 && percent <= 100) {
