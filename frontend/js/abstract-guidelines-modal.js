@@ -41,7 +41,7 @@
     document.body.style.overflow = "";
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
-  opener.addEventListener("click", function (event) { event.preventDefault(); open(); });
+  opener.addEventListener("click", function (event) { event.preventDefault(); event.stopPropagation(); open(); });
   closeButtons.forEach(function (button) { button.addEventListener("click", close); });
   modal.addEventListener("click", function (event) { if (event.target === modal) close(); });
   document.addEventListener("keydown", function (event) {

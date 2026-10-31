@@ -3363,6 +3363,9 @@ form[data-form] .form-consent input[type="checkbox"]:focus-visible {
   outline-offset: 2px;
 }
 form[data-form] .form-consent a { color: #1769e0; text-decoration: underline; text-underline-offset: 2px; }
+form[data-form] .form-consent .consent-link { display:inline; margin:0; padding:0; border:0; background:transparent; color:#1769e0; font:inherit; font-weight:inherit; text-decoration:underline; text-underline-offset:2px; cursor:pointer; }
+form[data-form] .form-consent .consent-link:hover { color:#0d4da8; }
+form[data-form] .form-consent .consent-link:focus-visible { outline:3px solid rgba(23,105,224,.25); outline-offset:3px; border-radius:2px; }
 form[data-form] .form-consent .error-msg { margin: .45rem 0 0 1.7rem; }
 form[data-form] .form-consent.invalid {
   border-color: #dc6b5f;
