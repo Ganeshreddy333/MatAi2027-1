@@ -18,7 +18,7 @@
   var TAX_RATE = 0.05;
   var DISCOUNT_CODES = {};
 
-  // Registration prices are stored in USD. Checkout is charged in EUR.
+  // Amounts are quoted and charged in the confirmed transaction currency; no browser conversion.
   var CUR = {
     USD: { code: "USD", sym: "$", rate: 1 },
     EUR: { code: "EUR", sym: "€", rate: null },
@@ -42,8 +42,7 @@
   function id(x) { return document.getElementById(x); }
   function num(el) { var v = parseInt(el && el.value, 10); return (isNaN(v) || v < 0) ? 0 : v; }
   function curInfo() {
-    var selected = currencySelect && currencySelect.value || "EUR";
-    return CUR[selected] && Number.isFinite(CUR[selected].rate) ? CUR[selected] : CUR.USD;
+    return CUR.USD;
   }
   function fmt(eur, ci) {
     ci = ci || curInfo();
@@ -66,77 +65,17 @@
   function updateCurrencyNote() {
     if (!currencySelectionNote || !currencySelect) return;
     var selected = currencySelect.value;
-    if (currencyRatesFailed) {
-      currencySelectionNote.textContent = "Prices are based in USD, but the current USD-to-EUR checkout rate could not be loaded. Refresh the page before registering.";
-    } else if (!currencyRatesReady) {
-      currencySelectionNote.textContent = "USD prices are shown by default. Loading the latest exchange rates for EUR, GBP, and INR…";
-    } else if (selected === "USD") {
-      currencySelectionNote.textContent = "Prices are shown in USD. Checkout is processed in EUR using the latest published rate (1 USD = " +
-        CUR.EUR.rate.toLocaleString("en-US", { maximumFractionDigits: 5 }) + " EUR, " + currencyRateDate + "). The EUR amount will be confirmed before payment.";
-    } else if (CUR[selected]) {
-      currencySelectionNote.textContent = "USD base prices are converted to " + selected + " using the latest published rate (1 USD = " +
-        CUR[selected].rate.toLocaleString("en-US", { maximumFractionDigits: 5 }) + " " + selected + ", " + currencyRateDate +"). Checkout is processed in EUR.";
-    } else {
-      currencySelectionNote.textContent = "Prices are shown in USD.";
-    }
+    currencySelectionNote.textContent = selected === "USD"
+      ? "USD is the configured checkout currency. The amount shown is the amount sent to the payment provider."
+      : selected + " is not configured for this merchant. Confirm the USD checkout currency before payment.";
   }
 
   function loadCurrencyRates() {
     if (!currencySelectionNote) return;
-    if (currencySelect) {
-      Array.prototype.forEach.call(currencySelect.options, function (option) {
-        if (option.value === "EUR" || option.value === "GBP" || option.value === "INR") option.disabled = true;
-      });
-    }
+    currencyRatesReady = true;
+    currencyRatesFailed = false;
+    resetCurrencyFallback();
     updateCurrencyNote();
-    fetch("/api/currency-rates", { cache: "no-store" })
-      .then(function (response) {
-        if (!response.ok) throw new Error("Exchange rate request failed.");
-        return response.json();
-      })
-      .then(function (result) {
-        var rates = result && result.rates || {};
-        var eur = Number(rates.EUR);
-        var gbp = Number(rates.GBP);
-        var inr = Number(rates.INR);
-        if (!Number.isFinite(eur) || eur <= 0 || !result.date) throw new Error("Required exchange rate was missing.");
-        CUR.EUR.rate = eur;
-        if (Number.isFinite(gbp) && gbp > 0) {
-          CUR.GBP.rate = gbp;
-        }
-        if (Number.isFinite(inr) && inr > 0) CUR.INR.rate = inr;
-        if (currencySelect) {
-          var eurOption = currencySelect.querySelector('option[value="EUR"]');
-          var gbpOption = currencySelect.querySelector('option[value="GBP"]');
-          var inrOption = currencySelect.querySelector('option[value="INR"]');
-          if (eurOption) eurOption.disabled = false;
-          if (gbpOption) gbpOption.disabled = !(Number.isFinite(gbp) && gbp > 0);
-          if (inrOption) inrOption.disabled = !(Number.isFinite(inr) && inr > 0);
-        }
-        currencyRateDate = result.date;
-        if (rateDateInput) rateDateInput.value = currencyRateDate;
-        if (usdToEurInput) usdToEurInput.value = String(eur);
-        currencyRatesReady = true;
-        currencyRatesFailed = false;
-        updateCurrencyNote();
-        renderRegistrationOptions();
-        renderOptionalItems();
-        recalc();
-      })
-      .catch(function () {
-        currencyRatesFailed = true;
-        if (currencySelect) {
-          Array.prototype.forEach.call(currencySelect.options, function (option) {
-            if (option.value === "EUR" || option.value === "GBP" || option.value === "INR") option.disabled = true;
-          });
-        }
-        if (currencySelect && currencySelect.value !== "USD") {
-          currencySelect.value = "USD";
-          resetCurrencyFallback();
-        }
-        updateCurrencyNote();
-        recalc();
-      });
   }
 
   function displayCurrencyAmount(amount, currency) {
@@ -175,6 +114,7 @@
   var couponApply = id("coupon-apply");
   var couponMsg = id("coupon-msg");
   var activeDiscount = 0;
+  var activeFixedDiscount = 0;
   var activeCoupon = "";
   var humanVerification = form.querySelector("[data-human-verification]");
   var paymentGateway = id("payment-gateway");
@@ -188,7 +128,7 @@
   var lastRegistrationDate = new Date().toISOString().slice(0, 10);
 
   function resetCurrencyFallback() {
-    if (transactionCurrencyInput) transactionCurrencyInput.value = "EUR";
+    if (transactionCurrencyInput) transactionCurrencyInput.value = "USD";
     if (originalCurrencyInput) originalCurrencyInput.value = currencySelect ? currencySelect.value : "USD";
     if (currencyFallbackInput) currencyFallbackInput.value = "false";
     if (rateDateInput) rateDateInput.value = currencyRateDate;
@@ -199,11 +139,8 @@
     pendingFallbackCurrency = requestedCurrency;
     var amount = totalEur ? Number(totalEur.value) : 0;
     if (currencyFallbackMessage) {
-      var rateText = currencyRatesReady
-        ? "USD base prices are converted at 1 USD = " + CUR.EUR.rate.toLocaleString("en-US", { maximumFractionDigits: 5 }) + " EUR (" + currencyRateDate + "). "
-        : "";
-      currencyFallbackMessage.textContent = rateText + "The payment will be processed in EUR for " +
-        displayCurrencyAmount(amount, "EUR") + ". Continue?";
+      currencyFallbackMessage.textContent = "This currency is unavailable for the configured payment providers. The payment will be processed in USD for " +
+        displayCurrencyAmount(amount, "USD") + ". Continue?";
     }
     if (currencyFallbackDialog && typeof currencyFallbackDialog.showModal === "function") {
       currencyFallbackDialog.showModal();
@@ -215,7 +152,7 @@
   }
 
   function handleCurrencySelection() {
-    if (!currencySelect || currencySelect.value === "EUR") {
+    if (!currencySelect || currencySelect.value === "USD") {
       resetCurrencyFallback();
       updateCurrencyNote();
       renderRegistrationOptions();
@@ -234,12 +171,11 @@
   function confirmCurrencyFallback() {
     if (!pendingFallbackCurrency) return;
     if (originalCurrencyInput) originalCurrencyInput.value = pendingFallbackCurrency;
-    if (transactionCurrencyInput) transactionCurrencyInput.value = "EUR";
+    if (transactionCurrencyInput) transactionCurrencyInput.value = "USD";
     if (currencyFallbackInput) currencyFallbackInput.value = "true";
     if (currencySelectionNote) {
       var amount = totalEur ? Number(totalEur.value) : 0;
-      currencySelectionNote.textContent = "Prices are based in USD. The confirmed checkout amount is " +
-        displayCurrencyAmount(amount, "EUR") + " using the USD-to-EUR rate dated " + currencyRateDate + ".";
+      currencySelectionNote.textContent = "The confirmed checkout amount is " + displayCurrencyAmount(amount, "USD") + ".";
     }
     pendingFallbackCurrency = "";
     recalc();
@@ -247,7 +183,7 @@
 
   function cancelCurrencyFallback() {
     pendingFallbackCurrency = "";
-    if (currencySelect) currencySelect.value = "EUR";
+    if (currencySelect) currencySelect.value = "USD";
     resetCurrencyFallback();
     updateCurrencyNote();
     recalc();
@@ -324,17 +260,17 @@
         var price = Number(tr.getAttribute("data-" + period.code)) || 0;
         var qty = tr.querySelector("input[data-qty]");
         var control = active && qty
-          ? '<label class="registration-qty"><input type="radio" name="registration-category-choice" value="' + escapeHtml(qty.name) + '" data-registration-category aria-label="Select ' + escapeHtml(item) + ' registration"></label>'
+          ? '<div class="registration-qty"><button type="button" data-quantity-change="-1" data-registration-category="' + escapeHtml(qty.name) + '" aria-label="Remove one ' + escapeHtml(item) + '">−</button><input type="number" min="0" max="100" inputmode="numeric" value="' + escapeHtml(qty.value) + '" data-registration-category-input="' + escapeHtml(qty.name) + '" aria-label="Quantity — ' + escapeHtml(item) + '"><button type="button" data-quantity-change="1" data-registration-category="' + escapeHtml(qty.name) + '" aria-label="Add one ' + escapeHtml(item) + '">+</button></div>'
           : '<span class="registration-qty-unavailable">' + (deadlinePassed ? "Period completed" : "Period not active") + "</span>";
         return '<div class="registration-choice"><div><strong>' + escapeHtml(item) + '</strong><span class="registration-choice-price">' + fmt(price) + '</span></div>' + control + '</div>';
       }).join("");
       return '<section class="registration-period-card' + (active ? ' active' : '') + '"><header><div><h4>' + escapeHtml(label) + '</h4><p>' + escapeHtml(deadline) + '</p></div>' + (active ? '<span class="period-active">Available</span>' : '') + '</header><div class="registration-choices">' + choices + '</div></section>';
     }).join("");
-    var hasSelectedCategory = false;
-    target.querySelectorAll("[data-registration-category]").forEach(function (visible) {
-      var source = sourceQuantity(visible.value);
-      visible.checked = !hasSelectedCategory && !!(source && parseInt(source.value, 10) > 0);
-      if (visible.checked) hasSelectedCategory = true;
+    target.querySelectorAll("[data-quantity-change]").forEach(function (button) {
+      button.addEventListener("click", function () { var source = sourceQuantity(button.getAttribute("data-registration-category")); if (source) { source.value = String(Math.max(0, Math.min(100, num(source) + Number(button.getAttribute("data-quantity-change"))))); renderRegistrationOptions(); recalc(); } });
+    });
+    target.querySelectorAll("[data-registration-category-input]").forEach(function (input) {
+      input.addEventListener("input", function () { var source = sourceQuantity(input.getAttribute("data-registration-category-input")); if (source) { source.value = String(Math.max(0, Math.min(100, parseInt(input.value, 10) || 0))); recalc(); } });
     });
   }
 
@@ -378,12 +314,6 @@
       var source = sourceQuantity(visible.getAttribute("data-selection-for"));
       if (source) source.value = String(Math.max(0, Math.min(100, parseInt(visible.value, 10) || 0)));
     });
-    var selectedCategory = form.querySelector('[data-registration-category]:checked');
-    rows.forEach(function (tr) {
-      if (tr.hasAttribute("data-fixed")) return;
-      var qty = tr.querySelector("input[data-qty]");
-      if (qty) qty.value = selectedCategory && selectedCategory.value === qty.name ? "1" : "0";
-    });
     var type = id("accommodation-type");
     var nights = id("accommodation-nights");
     var checkIn = id("check-in-date");
@@ -399,7 +329,7 @@
       if (checkIn) checkIn.value = "";
       if (checkOut) checkOut.value = "";
     }
-    var nightCount = Math.max(1, Math.min(14, parseInt(nights && nights.value, 10) || 1));
+    var nightCount = Math.max(1, Math.min(5, parseInt(nights && nights.value, 10) || 1));
     if (hasAccommodation && checkIn && checkOut && checkIn.value) {
       var checkoutDate = new Date(checkIn.value + "T00:00:00Z");
       if (!isNaN(checkoutDate.getTime())) {
@@ -434,16 +364,20 @@
     DISCOUNT_CODES = {};
     (Array.isArray(coupons) ? coupons : []).forEach(function (coupon) {
       if (!coupon || coupon.enabled === false || !coupon.code) return;
-      var percent = Number(coupon.percent);
-      if (isFinite(percent) && percent > 0 && percent <= 100) {
-        DISCOUNT_CODES[String(coupon.code).trim().toUpperCase()] = percent / 100;
+      if (coupon.validUntil && new Date(coupon.validUntil).getTime() < Date.now()) return;
+      var percent = Number(coupon.discountPercentage != null ? coupon.discountPercentage : coupon.percent);
+      if ((coupon.discountType || "percentage") === "percentage" && isFinite(percent) && percent > 0 && percent <= 100) {
+        DISCOUNT_CODES[String(coupon.code).trim().toUpperCase()] = { percent: percent / 100, fixed: 0 };
+      } else if (coupon.discountType === "fixed" && Number(coupon.fixedAmount) > 0) {
+        DISCOUNT_CODES[String(coupon.code).trim().toUpperCase()] = { percent: 0, fixed: Math.round(Number(coupon.fixedAmount) * 100) };
       }
     });
     if (activeCoupon && !DISCOUNT_CODES[activeCoupon]) {
       activeCoupon = "";
       if (couponMsg) couponMsg.textContent = "Coupon not recognized. No discount applied.";
     }
-    activeDiscount = DISCOUNT_CODES[activeCoupon] || 0;
+    activeDiscount = (DISCOUNT_CODES[activeCoupon] || {}).percent || 0;
+    activeFixedDiscount = (DISCOUNT_CODES[activeCoupon] || {}).fixed || 0;
     recalc();
   }
 
@@ -603,7 +537,7 @@
       if (qty > 0) items.push({ name: tr.getAttribute("data-item"), qty: qty, unit: unitDisplayCents, line: lineDisplayCents });
     });
 
-    var discount = Math.round(grand * activeDiscount);
+    var discount = Math.min(grand, activeFixedDiscount || Math.round(grand * activeDiscount));
     var subtotal = Math.max(0, grand - discount);
     var tax = Math.round(subtotal * TAX_RATE);
     var finalTotal = subtotal + tax;
@@ -629,7 +563,7 @@
 
     if (sumTotal) sumTotal.textContent = fmtCents(finalTotal, ci);
     if (totalCur) totalCur.textContent = ci.sym;
-    if (totalInput) totalInput.value = (finalTotalEUR / 100).toFixed(2);
+    if (totalInput) totalInput.value = (finalTotal / 100).toFixed(2);
     if (totalDisplay) totalDisplay.value = formatAmountOnly(finalTotal / 100, ci);
     if (totalEur) totalEur.value = (finalTotalEUR / 100).toFixed(2);
     if (paymentGateway && paymentMethodHidden) paymentMethodHidden.value = paymentGateway.value;
@@ -667,10 +601,11 @@
     couponApply.addEventListener("click", function () {
       var code = (couponCode && couponCode.value ? couponCode.value : "").trim().toUpperCase();
       activeCoupon = code;
-      activeDiscount = DISCOUNT_CODES[code] || 0;
+      activeDiscount = (DISCOUNT_CODES[code] || {}).percent || 0;
+      activeFixedDiscount = (DISCOUNT_CODES[code] || {}).fixed || 0;
       if (couponMsg) {
-        couponMsg.textContent = activeDiscount
-          ? "Coupon applied: " + Math.round(activeDiscount * 100) + "% discount."
+        couponMsg.textContent = (activeDiscount || activeFixedDiscount)
+          ? "Coupon applied: " + (activeFixedDiscount ? fmtCents(activeFixedDiscount, CUR.USD) : Math.round(activeDiscount * 100) + "%") + " discount."
           : (code ? "Coupon not recognized. No discount applied." : "Enter a conference coupon code if one has been provided.");
       }
       recalc();
@@ -697,17 +632,7 @@
       }
       return;
     }
-    if (currencySelect && currencySelect.value !== "EUR" && !currencyRatesReady) {
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      var rateStatus = form.querySelector(".form-status");
-      if (rateStatus) {
-        rateStatus.className = "form-status err";
-        rateStatus.textContent = "The current exchange rate is not available. Please select EUR or try again later.";
-      }
-      return;
-    }
-    if (currencySelect && currencySelect.value !== "EUR" && currencyFallbackInput && currencyFallbackInput.value !== "true") {
+    if (currencySelect && currencySelect.value !== "USD" && currencyFallbackInput && currencyFallbackInput.value !== "true") {
       e.preventDefault();
       e.stopImmediatePropagation();
       openCurrencyFallback(currencySelect.value);
@@ -767,6 +692,7 @@
     setTimeout(function () {
       if (billingGrid) billingGrid.classList.remove("locked");
       activeDiscount = 0;
+      activeFixedDiscount = 0;
       activeCoupon = "";
       pendingFallbackCurrency = "";
       resetCurrencyFallback();
@@ -797,6 +723,14 @@
   renderRegistrationOptions();
   renderOptionalItems();
   var params = new URLSearchParams(location.search);
+  var couponPrefill = (params.get("coupon") || "").trim().toUpperCase();
+  if (couponPrefill && couponCode) {
+    couponCode.value = couponPrefill;
+    activeCoupon = couponPrefill;
+    activeDiscount = (DISCOUNT_CODES[activeCoupon] || {}).percent || 0;
+    activeFixedDiscount = (DISCOUNT_CODES[activeCoupon] || {}).fixed || 0;
+    if (couponMsg) couponMsg.textContent = (activeDiscount || activeFixedDiscount) ? "Coupon applied. It will be revalidated by the server before payment." : "Coupon will be validated by the server before payment.";
+  }
   var categoryPrefill = (params.get("cat") || params.get("pkg") || "").toLowerCase();
   if (categoryPrefill) {
     var preferred = rows.find(function (tr) {
@@ -805,10 +739,7 @@
     var preferredQty = preferred && preferred.querySelector("input[data-qty]");
     if (preferredQty) {
       preferredQty.value = "1";
-      var visibleQty = Array.prototype.find.call(form.querySelectorAll("[data-registration-category]"), function (radio) {
-        return radio.value === preferredQty.name;
-      });
-      if (visibleQty) visibleQty.checked = true;
+      renderRegistrationOptions();
     }
   }
   recalc();

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registration — MatAi 2027</title>
-  <meta name="description" content="Online registration for MatAi 2027 in Berlin. Registration prices are shown in USD by default, with live currency conversion for EUR and GBP.">
+  <meta name="description" content="Online registration for MatAi 2027 in Berlin. Prices and checkout are shown in the confirmed payment currency.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
@@ -92,23 +92,22 @@
           <label for="registration-currency">Preferred payment currency <span class="req">*</span></label>
           <select id="registration-currency" name="preferredCurrency" required aria-describedby="currency-selection-note">
             <option value="USD" selected>USD — US Dollar ($) · default preferred currency</option>
-            <option value="EUR">EUR — Euro (€)</option>
-            <option value="GBP">GBP — British Pound (£)</option>
-            <option value="INR">INR — Indian Rupee (₹)</option>
+            <option value="EUR">EUR — Euro (€) · unavailable, checkout switches to USD</option>
+            <option value="GBP">GBP — British Pound (£) · unavailable, checkout switches to USD</option>
           </select>
-          <input type="hidden" name="currency" id="transaction-currency" value="EUR">
+          <input type="hidden" name="currency" id="transaction-currency" value="USD">
           <input type="hidden" name="originalSelectedCurrency" id="original-selected-currency" value="USD">
           <input type="hidden" name="currencyFallbackConfirmed" id="currency-fallback-confirmed" value="false">
           <input type="hidden" name="currencyRateDate" id="currency-rate-date" value="">
           <input type="hidden" name="usdToEurRate" id="usd-to-eur-rate" value="">
-          <p class="text-muted" id="currency-selection-note" role="status">USD prices are shown by default. Loading the latest exchange rates for EUR and GBP…</p>
+          <p class="text-muted" id="currency-selection-note" role="status">USD is the configured checkout currency. Other options are available only after the merchant enables them.</p>
         </div>
         <dialog class="currency-fallback-dialog" id="currency-fallback-dialog" aria-labelledby="currency-fallback-title" aria-describedby="currency-fallback-message">
           <h3 id="currency-fallback-title">Confirm payment currency</h3>
           <p id="currency-fallback-message"></p>
           <div class="currency-fallback-actions">
-            <button type="button" class="btn btn-outline" data-currency-fallback-cancel>Choose EUR</button>
-            <button type="button" class="btn btn-primary" data-currency-fallback-confirm>Continue in EUR</button>
+            <button type="button" class="btn btn-outline" data-currency-fallback-cancel>Choose USD</button>
+            <button type="button" class="btn btn-primary" data-currency-fallback-confirm>Continue in USD</button>
           </div>
         </dialog>
         <div class="registration-period-cards" id="registration-period-cards"></div>
@@ -228,7 +227,7 @@
           <p class="text-muted">Optional accommodation is charged per night. Choose a room type and enter your stay dates.</p>
           <div class="form-grid">
             <div class="field"><label for="accommodation-type">Room Type</label><select name="accommodationType" id="accommodation-type"><option value="">No accommodation</option><option value="single">Single Occupancy</option><option value="double">Double Occupancy</option></select></div>
-            <div class="field accommodation-stay-field" id="accommodation-nights-field" hidden><label for="accommodation-nights">Number of Nights</label><select name="accommodationNights" id="accommodation-nights"><option value="1">1 night</option><option value="2">2 nights</option><option value="3">3 nights</option><option value="4">4 nights</option><option value="5">5 nights</option><option value="6">6 nights</option><option value="7">7 nights</option><option value="8">8 nights</option><option value="9">9 nights</option><option value="10">10 nights</option><option value="11">11 nights</option><option value="12">12 nights</option><option value="13">13 nights</option><option value="14">14 nights</option></select></div>
+            <div class="field accommodation-stay-field" id="accommodation-nights-field" hidden><label for="accommodation-nights">Number of Nights</label><select name="accommodationNights" id="accommodation-nights"><option value="1">1 night</option><option value="2">2 nights</option><option value="3">3 nights</option><option value="4">4 nights</option><option value="5">5 nights</option></select></div>
             <div class="field accommodation-stay-field" id="accommodation-check-in-field" hidden><label for="check-in-date">Check-in Date</label><input type="date" name="checkInDate" id="check-in-date"></div>
             <div class="field accommodation-stay-field" id="accommodation-check-out-field" hidden><label for="check-out-date">Check-out Date</label><input type="date" name="checkOutDate" id="check-out-date" readonly aria-describedby="accommodation-checkout-help"><span class="hint" id="accommodation-checkout-help">Calculated from your check-in date and number of nights.</span></div>
           </div>
@@ -310,8 +309,9 @@
 
             <div class="field full human-verification" data-human-verification></div>
 
-            <p class="summary-note">By clicking "Continue to payment", you agree to the privacy policy, terms &amp; conditions, and cancellation policy. Final billing is in EUR (€).</p>
+            <p class="summary-note">Your checkout amount is calculated and confirmed by the server in the selected transaction currency.</p>
             <div class="field full form-consent"><label class="chk"><input type="checkbox" name="terms" id="terms-check" required><span>I have read and agree to the <a href="#" id="terms-open">Terms &amp; Conditions</a>. <span class="req">*</span></span></label><div class="error-msg">Please accept the terms &amp; conditions</div></div>
+            <div class="field full form-consent"><label class="chk"><input type="checkbox" name="privacy" id="privacy-check" required><span>I have read and agree to the <a href="#registration-policies">Privacy Policy</a>. <span class="req">*</span></span></label><div class="error-msg">Please accept the privacy policy</div></div>
             <div class="payment-action-row"><div class="payment-protection"><span class="payment-protection-icon" aria-hidden="true"><svg viewBox="0 0 48 52"><path d="M24 2 43 9v14c0 13-8 22-19 27C13 45 5 36 5 23V9L24 2Z"/><path class="shield-check" d="m15 25 6 6 12-13"/></svg></span><div><strong>Your payment information is protected</strong><span>We use industry-standard encryption to keep your data safe.</span></div></div><div class="payment-actions"><button type="submit" class="btn btn-primary">Continue to payment <span aria-hidden="true">→</span></button></div></div>
           </div>
         </div>

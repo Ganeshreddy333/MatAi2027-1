@@ -1,8 +1,8 @@
 "use strict";
 
-const BASE_CURRENCY = "EUR";
+const BASE_CURRENCY = "USD";
 const TRANSACTION_CURRENCIES = new Set([BASE_CURRENCY]);
-const SELECTABLE_CURRENCIES = new Set(["EUR", "USD", "GBP", "INR"]);
+const SELECTABLE_CURRENCIES = new Set(["USD", "EUR", "GBP"]);
 
 function currencyError(message) {
   const error = new Error(message);
@@ -20,7 +20,7 @@ function selectTransactionCurrency(input) {
   const fallbackConfirmed = input && [true, "true", "1", "on"].includes(input.currencyFallbackConfirmed);
 
   if (!TRANSACTION_CURRENCIES.has(selectedCurrency)) {
-    throw currencyError("The selected currency is not available for checkout. Confirm the EUR fallback or choose EUR.");
+    throw currencyError("The selected currency is not available for checkout. Confirm the USD fallback or choose USD.");
   }
   if (!SELECTABLE_CURRENCIES.has(originalSelectedCurrency)) {
     throw currencyError("Select a valid preferred currency.");

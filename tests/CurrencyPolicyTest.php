@@ -11,9 +11,9 @@ final class CurrencyPolicyTest extends TestCase
 {
     public function testPaymentMustMatchExpectedAmountAndCurrency(): void
     {
-        self::assertTrue(CurrencyPolicy::paymentMatches(105.00, 'EUR', 105, 'eur'));
-        self::assertFalse(CurrencyPolicy::paymentMatches(105.00, 'EUR', 104.99, 'EUR'));
-        self::assertFalse(CurrencyPolicy::paymentMatches(105.00, 'EUR', 105.00, 'USD'));
-        self::assertFalse(CurrencyPolicy::paymentMatches(105.00, 'EUR', -1, 'EUR'));
+        self::assertTrue(CurrencyPolicy::paymentMatches(105.00, 'USD', 105, 'usd'));
+        self::assertFalse(CurrencyPolicy::paymentMatches(105.00, 'USD', 104.99, 'USD'));
+        self::assertFalse(CurrencyPolicy::paymentMatches(105.00, 'USD', 105.00, 'EUR'));
+        self::assertFalse(CurrencyPolicy::paymentMatches(105.00, 'USD', -1, 'USD'));
     }
 }

@@ -48,7 +48,7 @@ Without MySQL settings, the PHP backend uses the existing private JSON files und
    php backend/bin/migrate.php
    ```
 
-The migrations are forward-only: `001_initial.sql` creates the application tables, and `002_currency_audit.sql` adds the amount, preferred, and transaction currency columns and backfills only currency values already present in submission JSON. New records keep these normalized columns and the JSON record in sync. Legacy JSON submissions/content are imported once using the existing `legacy-json-v1` migration marker. Original JSON files are not deleted or rewritten. Existing schema, content, identifiers, and records are never dropped or reset.
+The migrations are forward-only: `001_initial.sql` creates the application tables, `002_currency_audit.sql` adds normalized currency fields, and `003_payment_coupon_audit.sql` adds payment-event and coupon-redemption audit tables. For a brand-new hPanel/phpMyAdmin database, import the single self-contained [`backend/migrations/hpanel-full-import.sql`](backend/migrations/hpanel-full-import.sql) file instead. Do not import that full file over an existing installation; use the incremental migration runner there. Legacy JSON submissions/content are imported once using the existing `legacy-json-v1` migration marker. Original JSON files are not deleted or rewritten. Existing schema, content, identifiers, and records are never dropped or reset.
 
 Do not run migrations against production before taking a backup and confirming the target database. The approved local non-production database was migrated and currency persistence was verified on 2026-10-28; historical records with no transaction-currency evidence remain null rather than being assigned a guessed currency.
 

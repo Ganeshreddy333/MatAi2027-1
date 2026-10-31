@@ -134,6 +134,7 @@
               <input class="a-input" id="c-map-url" type="url" placeholder="https://www.google.com/maps/place/...">
               <span class="a-muted">Paste the full Google Maps place or search link. The venue map and directions will use this location.</span>
             </label>
+            <div class="a-map-preview" id="admin-map-preview" hidden><iframe id="admin-map-frame" title="Venue map preview" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe><p class="a-muted" id="admin-map-fallback" hidden>Map preview is unavailable for this link. The saved location will still open in Google Maps.</p></div>
           </div>
         </div>
         <div class="a-card" id="important-dates">
@@ -174,6 +175,18 @@
         </div>
 
         <div class="a-card" id="accommodation-prices">
+          <h2>Accommodation Management</h2>
+          <p class="a-muted">Configure availability, price and permitted booking dates. Attendees can book one to five nights.</p>
+          <div class="a-form-grid">
+            <label class="switch">Accommodation available <input id="accommodation-enabled" type="checkbox"></label>
+            <label class="a-field">Price per night (USD)<input class="a-input" id="accommodation-price" type="number" min="0" step="0.01"></label>
+            <label class="a-field">Available from<input class="a-input" id="accommodation-from" type="date"></label>
+            <label class="a-field">Available until<input class="a-input" id="accommodation-until" type="date"></label>
+            <label class="a-field">Description<textarea class="a-input" id="accommodation-description" rows="2"></textarea></label>
+            <label class="a-field">Terms and conditions<textarea class="a-input" id="accommodation-terms" rows="2"></textarea></label>
+          </div>
+        </div>
+        <div class="a-card">
           <h2>Exhibition, Sponsorship &amp; Add-on Prices</h2>
           <p class="a-muted">All fixed-price registration items are editable here. Prices are in USD.</p>
           <div class="fees-grid"><table id="item-prices"></table></div>
@@ -184,7 +197,7 @@
       <section class="admin-view" id="coupons-view" style="display:none">
         <div class="a-card" id="coupon-settings">
           <div class="a-section-heading">
-            <div><h2>Registration Coupons</h2><p class="a-muted">Coupons apply a percentage discount before tax is calculated.</p></div>
+            <div><h2>Registration Coupons</h2><p class="a-muted">Create percentage or fixed discounts. Coupon links are generated automatically.</p></div>
             <button class="a-btn ghost sm" id="add-coupon" type="button">Add coupon</button>
           </div>
           <div id="coupons-list"></div>

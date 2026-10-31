@@ -103,37 +103,37 @@ final class Application
         if ($method === 'GET' && $path === '/api/checkout/config') {
             $stripeEnabled = PaymentConfiguration::stripeEnabled(
                 $this->config->get('STRIPE_SECRET_KEY'),
-                $this->config->get('STRIPE_EUR_CHECKOUT_VERIFIED')
+                $this->config->get('STRIPE_USD_CHECKOUT_VERIFIED')
             );
             $paypalEnabled = PaymentConfiguration::paypalEnabled(
                 $this->config->get('PAYPAL_CLIENT_ID'),
                 $this->config->get('PAYPAL_CLIENT_SECRET'),
-                $this->config->get('PAYPAL_EUR_CHECKOUT_VERIFIED')
+                $this->config->get('PAYPAL_USD_CHECKOUT_VERIFIED')
             );
             $razorpayEnabled = PaymentConfiguration::razorpayEnabled(
                 $this->config->get('RAZORPAY_KEY_ID'),
                 $this->config->get('RAZORPAY_KEY_SECRET'),
-                $this->config->get('RAZORPAY_CURRENCY', 'EUR'),
-                $this->config->get('RAZORPAY_EUR_CHECKOUT_VERIFIED')
+                $this->config->get('RAZORPAY_CURRENCY', 'USD'),
+                $this->config->get('RAZORPAY_USD_CHECKOUT_VERIFIED')
             );
             Security::json([
                 'ok' => true,
                 'stripe' => [
                     'enabled' => $stripeEnabled,
-                    'currency' => $stripeEnabled ? 'EUR' : null,
-                    'supportedCurrencies' => $stripeEnabled ? ['EUR'] : [],
+                    'currency' => $stripeEnabled ? 'USD' : null,
+                    'supportedCurrencies' => $stripeEnabled ? ['USD'] : [],
                 ],
                 'paypal' => [
                     'enabled' => $paypalEnabled,
                     'mode' => $this->config->get('PAYPAL_MODE', 'sandbox'),
-                    'currency' => $paypalEnabled ? 'EUR' : null,
-                    'supportedCurrencies' => $paypalEnabled ? ['EUR'] : [],
+                    'currency' => $paypalEnabled ? 'USD' : null,
+                    'supportedCurrencies' => $paypalEnabled ? ['USD'] : [],
                 ],
                 'razorpay' => [
                     'enabled' => $razorpayEnabled,
                     'keyId' => $razorpayEnabled ? $this->config->get('RAZORPAY_KEY_ID') : '',
-                    'currency' => $razorpayEnabled ? 'EUR' : null,
-                    'supportedCurrencies' => $razorpayEnabled ? ['EUR'] : [],
+                    'currency' => $razorpayEnabled ? 'USD' : null,
+                    'supportedCurrencies' => $razorpayEnabled ? ['USD'] : [],
                 ],
             ]);
         }
@@ -163,12 +163,12 @@ final class Application
         if ($method === 'GET' && $path === '/api/checkout/stripe/config') {
             $enabled = PaymentConfiguration::stripeEnabled(
                 $this->config->get('STRIPE_SECRET_KEY'),
-                $this->config->get('STRIPE_EUR_CHECKOUT_VERIFIED')
+                $this->config->get('STRIPE_USD_CHECKOUT_VERIFIED')
             );
             Security::json([
                 'ok' => true, 'enabled' => $enabled,
-                'currency' => $enabled ? 'EUR' : null,
-                'supportedCurrencies' => $enabled ? ['EUR'] : [],
+                'currency' => $enabled ? 'USD' : null,
+                'supportedCurrencies' => $enabled ? ['USD'] : [],
             ]);
         }
         if ($method === 'POST' && $path === '/api/checkout/stripe') {
@@ -332,7 +332,7 @@ final class Application
             }
             usort($recent, static fn (array $a, array $b): int => strcmp((string) $b['receivedAt'], (string) $a['receivedAt']));
             Security::json(['ok' => true, 'stats' => [
-                'counts' => $counts, 'revenue' => $revenue, 'revenueCurrency' => 'EUR', 'pending' => $pending, 'paid' => $paid,
+                'counts' => $counts, 'revenue' => $revenue, 'revenueCurrency' => 'USD', 'pending' => $pending, 'paid' => $paid,
                 'recent' => array_slice($recent, 0, 10),
             ]]);
         }
@@ -366,6 +366,7 @@ final class Application
             if (!isset($body['content']) || !is_array($body['content'])) {
                 Security::json(['ok' => false, 'error' => 'Invalid content.'], 400);
             }
+            $this->validateAdministrativeContent($body['content']);
             $this->store->saveContent($body['content']);
             Security::json(['ok' => true, 'content' => $body['content']]);
         }
@@ -662,8 +663,8 @@ final class Application
     private function createStripeCheckout(array $body): never
     {
         $secret = $this->config->get('STRIPE_SECRET_KEY');
-        if (!PaymentConfiguration::stripeEnabled($secret, $this->config->get('STRIPE_EUR_CHECKOUT_VERIFIED'))) {
-            Security::json(['ok' => false, 'error' => 'Stripe checkout is not enabled. The merchant must verify EUR checkout before it can be used.'], 503);
+        if (!PaymentConfiguration::stripeEnabled($secret, $this->config->get('STRIPE_USD_CHECKOUT_VERIFIED'))) {
+            Security::json(['ok' => false, 'error' => 'Stripe checkout is not enabled. The merchant must verify USD checkout before it can be used.'], 503);
         }
         $registration = $this->registrations->prepare($body);
         if (($registration['data']['paymentGateway'] ?? '') !== 'Stripe / Card Payment') {
@@ -717,9 +718,9 @@ final class Application
         if (!PaymentConfiguration::paypalEnabled(
             $this->config->get('PAYPAL_CLIENT_ID'),
             $this->config->get('PAYPAL_CLIENT_SECRET'),
-            $this->config->get('PAYPAL_EUR_CHECKOUT_VERIFIED')
+            $this->config->get('PAYPAL_USD_CHECKOUT_VERIFIED')
         )) {
-            Security::json(['ok' => false, 'error' => 'PayPal checkout is not enabled. The merchant must verify EUR checkout before it can be used.'], 503);
+            Security::json(['ok' => false, 'error' => 'PayPal checkout is not enabled. The merchant must verify USD checkout before it can be used.'], 503);
         }
         $registration = $this->registrations->prepare($body);
         if (($registration['data']['paymentGateway'] ?? '') !== 'PayPal') {
@@ -830,11 +831,11 @@ final class Application
     {
         $key = $this->config->get('RAZORPAY_KEY_ID');
         $secret = $this->config->get('RAZORPAY_KEY_SECRET');
-        $currency = $this->config->get('RAZORPAY_CURRENCY', 'EUR');
+        $currency = $this->config->get('RAZORPAY_CURRENCY', 'USD');
         if (!PaymentConfiguration::razorpayEnabled(
-            $key, $secret, $currency, $this->config->get('RAZORPAY_EUR_CHECKOUT_VERIFIED')
+            $key, $secret, $currency, $this->config->get('RAZORPAY_USD_CHECKOUT_VERIFIED')
         )) {
-            Security::json(['ok' => false, 'error' => 'Razorpay checkout is not enabled. The merchant must verify EUR checkout before it can be used.'], 503);
+            Security::json(['ok' => false, 'error' => 'Razorpay checkout is not enabled. The merchant must verify USD checkout before it can be used.'], 503);
         }
         $registration = $this->registrations->prepare($body);
         if (($registration['data']['paymentGateway'] ?? '') !== 'Razorpay') {
@@ -1069,7 +1070,29 @@ final class Application
             'transactionCurrency' => $registration['transactionCurrency'],
             'data' => $registration['data'],
         ] + $providerFields;
-        $this->store->mutate('register', static function (array &$records) use ($record): void {
+        $couponCode = strtoupper(trim((string) ($registration['data']['couponCode'] ?? '')));
+        $maxUses = null;
+        if ($couponCode !== '') {
+            foreach (($this->store->content()['coupons'] ?? []) as $coupon) {
+                if (is_array($coupon) && strtoupper(trim((string) ($coupon['code'] ?? ''))) === $couponCode) {
+                    $maxUses = isset($coupon['maxUses']) ? (int) $coupon['maxUses'] : null;
+                    break;
+                }
+            }
+        }
+        $this->store->mutate('register', static function (array &$records) use ($record, $couponCode, $maxUses): void {
+            if ($couponCode !== '' && $maxUses !== null && $maxUses > 0) {
+                $uses = 0;
+                foreach ($records as $existing) {
+                    if (strtoupper((string) ($existing['data']['couponCode'] ?? '')) === $couponCode
+                        && in_array($existing['paymentStatus'] ?? '', ['Pending', 'Paid'], true)) {
+                        $uses++;
+                    }
+                }
+                if ($uses >= $maxUses) {
+                    throw new DomainException('This coupon has reached its maximum number of uses.');
+                }
+            }
             $records[] = $record;
         });
         $this->notifications->notifySubmission('register', $record);
@@ -1191,6 +1214,48 @@ final class Application
         return parse_url($url, PHP_URL_SCHEME) === 'https'
             && is_string($host)
             && (strtolower($host) === 'paypal.com' || str_ends_with(strtolower($host), '.paypal.com'));
+    }
+
+    /** Validate financial configuration before it becomes live site content. */
+    private function validateAdministrativeContent(array $content): void
+    {
+        $seen = [];
+        foreach (($content['coupons'] ?? []) as $coupon) {
+            if (!is_array($coupon)) {
+                throw new DomainException('Each coupon must be an object.');
+            }
+            $code = strtoupper(trim((string) ($coupon['code'] ?? '')));
+            if (!preg_match('/^[A-Z0-9][A-Z0-9_-]{2,63}$/', $code) || isset($seen[$code])) {
+                throw new DomainException('Coupon codes must be unique and use 3–64 letters, numbers, hyphens, or underscores.');
+            }
+            $seen[$code] = true;
+            $type = strtolower((string) ($coupon['discountType'] ?? 'percentage'));
+            if (!in_array($type, ['percentage', 'fixed'], true)) {
+                throw new DomainException('Coupon discount type must be percentage or fixed.');
+            }
+            $value = $type === 'fixed' ? ($coupon['fixedAmount'] ?? null) : ($coupon['discountPercentage'] ?? $coupon['percent'] ?? null);
+            if (!is_numeric($value) || (float) $value <= 0 || ($type === 'percentage' && (float) $value > 100)) {
+                throw new DomainException('Coupon discount value is invalid.');
+            }
+            if (isset($coupon['maxUses']) && (!filter_var($coupon['maxUses'], FILTER_VALIDATE_INT) || (int) $coupon['maxUses'] < 1)) {
+                throw new DomainException('Coupon maximum uses must be a positive integer.');
+            }
+            if (!empty($coupon['validUntil']) && strtotime((string) $coupon['validUntil']) === false) {
+                throw new DomainException('Coupon expiry must be a valid date and time.');
+            }
+        }
+        if (isset($content['accommodation'])) {
+            $accommodation = $content['accommodation'];
+            if (!is_array($accommodation) || !is_numeric($accommodation['pricePerNight'] ?? null)
+                || (float) $accommodation['pricePerNight'] < 0) {
+                throw new DomainException('Accommodation price per night must be a valid monetary amount.');
+            }
+            foreach (['availableFrom', 'availableUntil'] as $field) {
+                if (!empty($accommodation[$field]) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $accommodation[$field])) {
+                    throw new DomainException('Accommodation availability dates must use YYYY-MM-DD.');
+                }
+            }
+        }
     }
 
     private function body(): array

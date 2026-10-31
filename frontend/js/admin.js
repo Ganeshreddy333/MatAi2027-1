@@ -577,11 +577,19 @@
     el("c-dates").value = s.dateText || "";
     el("c-city").value = s.city || "";
     el("c-map-url").value = s.mapUrl || "";
+    updateMapPreview(s.mapUrl || "");
     renderDates(c.dates || []);
     renderHomeGallery(c.homeGallery || {});
     renderFees(c.fees || {});
     renderPeriods(c.registrationPeriods || {});
     renderFixedPrices(c.registrationPricing || {});
+    var accommodation = c.accommodation || {};
+    el("accommodation-enabled").checked = accommodation.enabled === true;
+    el("accommodation-price").value = accommodation.pricePerNight != null ? accommodation.pricePerNight : 0;
+    el("accommodation-from").value = accommodation.availableFrom || "";
+    el("accommodation-until").value = accommodation.availableUntil || "";
+    el("accommodation-description").value = accommodation.description || "";
+    el("accommodation-terms").value = accommodation.terms || "";
     renderCoupons(c.coupons || []);
     renderMedia(c.media || {});
     renderPageList();
@@ -747,16 +755,27 @@
   function renderCoupons(coupons) {
     el("coupons-list").innerHTML = (Array.isArray(coupons) ? coupons : []).map(function (coupon, i) {
       coupon = coupon || {};
+      var link = location.origin + "/registration.html?coupon=" + encodeURIComponent(coupon.code || "");
       return "<div class='a-row a-coupon' data-coupon='" + i + "'>" +
         "<label class='switch'><input type='checkbox' data-cf='enabled'" + (coupon.enabled === false ? "" : " checked") + "> Enabled</label>" +
         "<input class='a-input' data-cf='code' value='" + esc(coupon.code || "") + "' placeholder='Coupon code' aria-label='Coupon code'>" +
-        "<label class='a-percent'><input class='a-input' data-cf='percent' type='number' min='1' max='100' step='1' value='" +
-        esc(coupon.percent != null ? coupon.percent : 10) + "' aria-label='Discount percentage'> % off</label>" +
+        "<select class='a-input' data-cf='discountType' aria-label='Discount type'><option value='percentage'" + ((coupon.discountType || 'percentage') === 'percentage' ? ' selected' : '') + ">Percentage</option><option value='fixed'" + (coupon.discountType === 'fixed' ? ' selected' : '') + ">Fixed amount</option></select>" +
+        "<input class='a-input' data-cf='discountPercentage' type='number' min='0.01' max='100' step='0.01' value='" + esc(coupon.discountPercentage != null ? coupon.discountPercentage : (coupon.percent != null ? coupon.percent : 10)) + "' aria-label='Discount percentage'>" +
+        "<input class='a-input' data-cf='fixedAmount' type='number' min='0.01' step='0.01' value='" + esc(coupon.fixedAmount != null ? coupon.fixedAmount : '') + "' aria-label='Fixed discount amount'>" +
+        "<input class='a-input' data-cf='maxUses' type='number' min='1' step='1' value='" + esc(coupon.maxUses != null ? coupon.maxUses : 1) + "' aria-label='Maximum uses'>" +
+        "<input class='a-input' data-cf='validUntil' type='datetime-local' value='" + esc(coupon.validUntil || '') + "' aria-label='Valid until'>" +
+        "<a class='a-btn ghost sm' href='" + esc(link) + "' target='_blank' rel='noopener'>Registration link</a><button class='a-btn ghost sm' data-copy-coupon type='button'>Copy</button>" +
         "<button class='a-btn ghost sm' data-remove-coupon type='button'>Remove</button></div>";
     }).join("") || "<p class='a-empty'>No coupons configured.</p>";
   }
 
   el("coupons-list").addEventListener("click", function (e) {
+    var copy = e.target.closest("[data-copy-coupon]");
+    if (copy) {
+      var code = copy.closest("[data-coupon]").querySelector("[data-cf='code']").value.trim().toUpperCase();
+      if (code && navigator.clipboard) navigator.clipboard.writeText(location.origin + "/registration.html?coupon=" + encodeURIComponent(code)).then(function () { toast("Registration link copied"); });
+      return;
+    }
     var remove = e.target.closest("[data-remove-coupon]");
     if (remove && window.confirm("Remove this coupon? Save changes to publish the removal.")) {
       remove.closest("[data-coupon]").remove();
@@ -767,7 +786,7 @@
   });
   el("add-coupon").addEventListener("click", function () {
     var coupons = readCoupons();
-    coupons.push({ code: "", percent: 10, enabled: true });
+    coupons.push({ code: "", discountType: "percentage", discountPercentage: 10, maxUses: 1, enabled: true });
     renderCoupons(coupons);
   });
   function readCoupons() {
@@ -775,7 +794,11 @@
       var field = function (name) { return row.querySelector("[data-cf='" + name + "']"); };
       return {
         code: field("code").value.trim().toUpperCase(),
-        percent: Number(field("percent").value) || 0,
+        discountType: field("discountType").value,
+        discountPercentage: Number(field("discountPercentage").value) || 0,
+        fixedAmount: Number(field("fixedAmount").value) || 0,
+        maxUses: Number(field("maxUses").value) || 0,
+        validUntil: field("validUntil").value,
         enabled: field("enabled").checked
       };
     }).filter(function (coupon) { return coupon.code; });
@@ -1117,6 +1140,22 @@
           /^\/maps(?:\/|$)/.test(parsed.pathname));
     } catch (_) { return false; }
   }
+  function updateMapPreview(value) {
+    var preview = el("admin-map-preview"), frame = el("admin-map-frame"), fallback = el("admin-map-fallback");
+    if (!preview || !frame || !fallback) return;
+    if (!value || !isGoogleMapsLocationUrl(value)) {
+      preview.hidden = true;
+      frame.removeAttribute("src");
+      return;
+    }
+    var coordinates = value.match(/@(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)/) || value.match(/[?&](?:q|query)=(-?\d{1,2}(?:\.\d+)?),(-?\d{1,3}(?:\.\d+)?)/);
+    var destination = coordinates ? coordinates[1] + "," + coordinates[2] : value;
+    frame.src = "https://www.google.com/maps?q=" + encodeURIComponent(destination) + "&output=embed&z=16";
+    frame.onload = function () { fallback.hidden = true; };
+    frame.onerror = function () { fallback.hidden = false; };
+    preview.hidden = false;
+  }
+  el("c-map-url").addEventListener("input", function () { updateMapPreview(el("c-map-url").value.trim()); });
   function saveContent() {
     var mapUrl = el("c-map-url").value.trim();
     if (mapUrl && !isGoogleMapsLocationUrl(mapUrl)) {
@@ -1203,6 +1242,7 @@
       registrationPricing: {
         fixedItems: fixedItems
       },
+      accommodation: { enabled: el("accommodation-enabled").checked, pricePerNight: Number(el("accommodation-price").value) || 0, availableFrom: el("accommodation-from").value, availableUntil: el("accommodation-until").value, description: el("accommodation-description").value.trim(), terms: el("accommodation-terms").value.trim() },
       coupons: readCoupons(), pages: pages, committee: committee, speakers: speakers
     };
     api("/admin/api/content", {

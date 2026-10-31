@@ -8,8 +8,9 @@ use DomainException;
 
 final class CurrencyPolicy
 {
-    public const BASE_CURRENCY = 'EUR';
-    private const SELECTABLE_CURRENCIES = ['EUR', 'USD', 'GBP', 'INR'];
+    /** Merchant settlement currency; application amounts are never converted. */
+    public const BASE_CURRENCY = 'USD';
+    private const SELECTABLE_CURRENCIES = ['USD', 'EUR', 'GBP'];
 
     public static function selection(array $input): array
     {
@@ -18,7 +19,7 @@ final class CurrencyPolicy
         $fallbackConfirmed = in_array($input['currencyFallbackConfirmed'] ?? null, [true, 'true', '1', 'on', 1], true);
 
         if ($transactionCurrency !== self::BASE_CURRENCY) {
-            throw new DomainException('The selected currency is not available for checkout. Confirm the EUR fallback or choose EUR.');
+            throw new DomainException('The selected currency is not available for checkout. Confirm the USD fallback or choose USD.');
         }
         if (!in_array($preferredCurrency, self::SELECTABLE_CURRENCIES, true)) {
             throw new DomainException('Select a valid preferred currency.');

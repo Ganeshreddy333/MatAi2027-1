@@ -68,7 +68,7 @@ final class RegistrationServiceTest extends TestCase
     public function testUnsupportedTransactionCurrencyIsRejected(): void
     {
         $input = $this->validInput();
-        $input['currency'] = 'USD';
+        $input['currency'] = 'INR';
         $input['originalSelectedCurrency'] = 'USD';
 
         $this->expectException(DomainException::class);
@@ -78,7 +78,7 @@ final class RegistrationServiceTest extends TestCase
     public function testCurrencyFallbackRequiresExplicitConfirmation(): void
     {
         $input = $this->validInput();
-        $input['originalSelectedCurrency'] = 'USD';
+        $input['originalSelectedCurrency'] = 'EUR';
 
         $this->expectException(DomainException::class);
         $this->service->prepare($input);
@@ -87,15 +87,15 @@ final class RegistrationServiceTest extends TestCase
     public function testConfirmedFallbackKeepsPreferredCurrencyForAudit(): void
     {
         $input = $this->validInput();
-        $input['originalSelectedCurrency'] = 'USD';
+        $input['originalSelectedCurrency'] = 'EUR';
         $input['currencyFallbackConfirmed'] = 'true';
 
         $registration = $this->service->prepare($input);
 
         self::assertSame(10500, $registration['totalCents']);
-        self::assertSame('USD', $registration['preferredCurrency']);
-        self::assertSame('EUR', $registration['transactionCurrency']);
-        self::assertSame('EUR', $registration['data']['currency']);
+        self::assertSame('EUR', $registration['preferredCurrency']);
+        self::assertSame('USD', $registration['transactionCurrency']);
+        self::assertSame('USD', $registration['data']['currency']);
         self::assertTrue($registration['data']['currencyFallbackConfirmed']);
     }
 
@@ -108,9 +108,10 @@ final class RegistrationServiceTest extends TestCase
             'institution' => 'Test Institute',
             'country' => 'Germany',
             'terms' => true,
+            'privacy' => true,
             'paymentGateway' => 'Bank Transfer',
-            'currency' => 'EUR',
-            'originalSelectedCurrency' => 'EUR',
+            'currency' => 'USD',
+            'originalSelectedCurrency' => 'USD',
             'currencyFallbackConfirmed' => 'false',
             'qty_speaker' => '1',
         ];

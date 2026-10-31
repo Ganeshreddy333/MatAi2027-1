@@ -9,17 +9,17 @@ use PHPUnit\Framework\TestCase;
 
 final class PaymentConfigurationTest extends TestCase
 {
-    public function testRazorpayRequiresCredentialsAndEurBillingCurrency(): void
+    public function testRazorpayRequiresCredentialsAndUsdBillingCurrency(): void
     {
-        self::assertTrue(PaymentConfiguration::razorpayEnabled('key-id', 'key-secret', 'EUR', 'true'));
-        self::assertFalse(PaymentConfiguration::razorpayEnabled('', 'key-secret', 'EUR'));
-        self::assertFalse(PaymentConfiguration::razorpayEnabled('key-id', '', 'EUR'));
+        self::assertTrue(PaymentConfiguration::razorpayEnabled('key-id', 'key-secret', 'USD', 'true'));
+        self::assertFalse(PaymentConfiguration::razorpayEnabled('', 'key-secret', 'USD'));
+        self::assertFalse(PaymentConfiguration::razorpayEnabled('key-id', '', 'USD'));
         self::assertFalse(PaymentConfiguration::razorpayEnabled('key-id', 'key-secret', 'INR'));
-        self::assertFalse(PaymentConfiguration::razorpayEnabled('key-id', 'key-secret', 'eur'));
-        self::assertFalse(PaymentConfiguration::razorpayEnabled('key-id', 'key-secret', 'EUR', 'false'));
+        self::assertFalse(PaymentConfiguration::razorpayEnabled('key-id', 'key-secret', 'usd'));
+        self::assertFalse(PaymentConfiguration::razorpayEnabled('key-id', 'key-secret', 'USD', 'false'));
     }
 
-    public function testStripeAndPaypalRequireExplicitEurVerification(): void
+    public function testStripeAndPaypalRequireExplicitUsdVerification(): void
     {
         self::assertTrue(PaymentConfiguration::stripeEnabled('stripe-secret', 'true'));
         self::assertFalse(PaymentConfiguration::stripeEnabled('stripe-secret', 'false'));

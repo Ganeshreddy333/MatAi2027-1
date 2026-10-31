@@ -60,7 +60,7 @@ final class Database
             throw new RuntimeException('Could not acquire the database migration lock.');
         }
         try {
-            foreach (['001_initial', '002_currency_audit'] as $migrationKey) {
+            foreach (['001_initial', '002_currency_audit', '003_payment_coupon_audit'] as $migrationKey) {
                 $migration = $root . '/backend/migrations/' . $migrationKey . '.sql';
                 if (!is_file($migration)) {
                     throw new RuntimeException('Required database migration is missing: ' . $migrationKey . '.sql');

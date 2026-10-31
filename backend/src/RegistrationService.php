@@ -49,8 +49,9 @@ final class RegistrationService
         if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             throw new DomainException('Invalid email address.');
         }
-        if (!in_array($data['terms'] ?? null, [true, 'on', 'true', '1', 1], true)) {
-            throw new DomainException('You must accept the registration terms.');
+        if (!in_array($data['terms'] ?? null, [true, 'on', 'true', '1', 1], true)
+            || !in_array($data['privacy'] ?? null, [true, 'on', 'true', '1', 1], true)) {
+            throw new DomainException('You must accept the registration terms and privacy policy.');
         }
         $gateway = (string) ($data['paymentGateway'] ?? '');
         if (!in_array($gateway, ['Stripe / Card Payment', 'PayPal', 'Razorpay', 'Bank Transfer'], true)) {
@@ -66,6 +67,10 @@ final class RegistrationService
         $grossCents = 0;
         $participantCount = 0;
         foreach (self::ITEMS as [$field, $label, $priceKey]) {
+            // Accommodation is calculated only from the dedicated booking controls below.
+            if (in_array($priceKey, ['addon_accommodation_single', 'addon_accommodation_double'], true)) {
+                continue;
+            }
             $raw = (string) ($data[$field] ?? '0');
             if (!preg_match('/^\d{1,3}$/', $raw) || (int) $raw > 100) {
                 throw new DomainException('Invalid quantity for ' . $label . '.');
@@ -90,11 +95,40 @@ final class RegistrationService
             }
             $items[] = ['name' => $label, 'category' => $category ?? '', 'quantity' => $quantity, 'unitCents' => $unitCents];
         }
-        if ($items === [] || $grossCents <= 0 || $grossCents > 99999999) {
-            throw new DomainException('Select one or more registration items with a valid total below €1,000,000.');
+        if ($participantCount < 1 || $grossCents > 99999999) {
+            throw new DomainException('Select at least one participant registration category with a valid total.');
         }
 
-        $discountPercent = 0.0;
+        $accommodation = $this->arrayValue($content['accommodation'] ?? null);
+        $type = (string) ($data['accommodationType'] ?? '');
+        if ($type !== '') {
+            if (!in_array($type, ['single', 'double'], true) || ($accommodation['enabled'] ?? false) !== true) {
+                throw new DomainException('Accommodation is not available.');
+            }
+            $nights = filter_var($data['accommodationNights'] ?? null, FILTER_VALIDATE_INT);
+            if ($nights === false || $nights < 1 || $nights > 5) {
+                throw new DomainException('Accommodation must be booked for one to five nights.');
+            }
+            $price = $accommodation['pricePerNight'] ?? ($content['registrationPricing']['fixedItems']['addon_accommodation_' . $type] ?? null);
+            if (!is_numeric($price) || (float) $price < 0) {
+                throw new DomainException('The configured accommodation price is invalid.');
+            }
+            $checkIn = (string) ($data['checkInDate'] ?? '');
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkIn)) {
+                throw new DomainException('Select a valid accommodation check-in date.');
+            }
+            $availableFrom = (string) ($accommodation['availableFrom'] ?? '');
+            $availableUntil = (string) ($accommodation['availableUntil'] ?? '');
+            if (($availableFrom !== '' && $checkIn < $availableFrom) || ($availableUntil !== '' && $checkIn > $availableUntil)) {
+                throw new DomainException('The selected accommodation date is unavailable.');
+            }
+            $unitCents = (int) round((float) $price * 100);
+            $grossCents += $unitCents * $nights;
+            $items[] = ['name' => 'Accommodation — ' . ucfirst($type) . ' occupancy', 'category' => '', 'quantity' => $nights, 'unitCents' => $unitCents];
+            $data['accommodationNights'] = $nights;
+        }
+
+        $discountCents = 0;
         $couponCode = strtoupper(trim((string) ($data['couponCode'] ?? '')));
         if ($couponCode !== '') {
             $coupon = null;
@@ -105,13 +139,30 @@ final class RegistrationService
                     break;
                 }
             }
-            $percent = $coupon['percent'] ?? null;
-            if (!is_numeric($percent) || (float) $percent <= 0 || (float) $percent > 100) {
+            if ($coupon === null) {
                 throw new DomainException('The coupon code is invalid or expired.');
             }
-            $discountPercent = (float) $percent / 100;
+            $expiresAt = (string) ($coupon['validUntil'] ?? '');
+            $maxUses = filter_var($coupon['maxUses'] ?? null, FILTER_VALIDATE_INT);
+            if (($expiresAt !== '' && strtotime($expiresAt) < time())
+                || ($maxUses !== false && $maxUses > 0 && $this->couponUses($couponCode) >= $maxUses)) {
+                throw new DomainException('The coupon code is invalid or expired.');
+            }
+            $type = strtolower((string) ($coupon['discountType'] ?? 'percentage'));
+            if ($type === 'fixed') {
+                $fixed = $coupon['fixedAmount'] ?? null;
+                if (!is_numeric($fixed) || (float) $fixed <= 0) {
+                    throw new DomainException('The coupon code is invalid or expired.');
+                }
+                $discountCents = min($grossCents, (int) round((float) $fixed * 100));
+            } else {
+                $percent = $coupon['discountPercentage'] ?? $coupon['percent'] ?? null;
+                if (!is_numeric($percent) || (float) $percent <= 0 || (float) $percent > 100) {
+                    throw new DomainException('The coupon code is invalid or expired.');
+                }
+                $discountCents = (int) round($grossCents * ((float) $percent / 100));
+            }
         }
-        $discountCents = (int) round($grossCents * $discountPercent);
         $subtotalCents = max(0, $grossCents - $discountCents);
         $taxCents = (int) round($subtotalCents * 0.05);
         $totalCents = $subtotalCents + $taxCents;
@@ -171,6 +222,7 @@ final class RegistrationService
                 'On-Spot' => ['Speaker' => 849, 'Delegate' => 949, 'Poster' => 749, 'Student' => 599, 'Virtual' => 499],
             ],
             'registrationPricing' => ['fixedItems' => []],
+            'accommodation' => ['enabled' => false, 'pricePerNight' => 0],
             'coupons' => [],
         ];
         foreach ($defaults as $key => $value) {
@@ -197,6 +249,18 @@ final class RegistrationService
     private function arrayValue(mixed $value): array
     {
         return is_array($value) ? $value : [];
+    }
+
+    private function couponUses(string $couponCode): int
+    {
+        $uses = 0;
+        foreach ($this->store->submissions('register') as $record) {
+            $code = strtoupper((string) ($record['data']['couponCode'] ?? ''));
+            if ($code === $couponCode && in_array($record['paymentStatus'] ?? '', ['Pending', 'Paid'], true)) {
+                $uses++;
+            }
+        }
+        return $uses;
     }
 
     private function sanitize(array $input): array
