@@ -797,9 +797,9 @@
     var coupon = index === null ? { code: "", discountType: "percentage", discountPercentage: 10, fixedAmount: "", maxUses: 1, enabled: true, status: "active", validUntil: "" } : couponRecords[index];
     var fields = couponFormFields(); el("coupon-edit-index").value = index === null ? "" : String(index); el("coupon-modal-title").textContent = index === null ? "Add Coupon" : "Edit Coupon";
     fields.code.value = coupon.code || ""; fields.type.value = coupon.discountType || "percentage"; fields.percent.value = coupon.discountPercentage != null ? coupon.discountPercentage : (coupon.percent || ""); fields.fixed.value = coupon.fixedAmount || ""; fields.max.value = coupon.maxUses || 1; fields.until.value = coupon.validUntil || ""; fields.status.value = coupon.enabled === false || coupon.status === "inactive" ? "inactive" : "active"; syncCouponDiscountFields(); el("coupon-form-error").textContent = "";
-    el("coupon-modal").classList.add("open"); el("coupon-modal").setAttribute("aria-hidden", "false"); fields.code.focus();
+    el("coupon-modal").hidden = false; el("coupon-modal").classList.add("open"); el("coupon-modal").setAttribute("aria-hidden", "false"); fields.code.focus();
   }
-  function closeCoupon() { el("coupon-modal").classList.remove("open"); el("coupon-modal").setAttribute("aria-hidden", "true"); }
+  function closeCoupon() { el("coupon-modal").classList.remove("open"); el("coupon-modal").setAttribute("aria-hidden", "true"); el("coupon-modal").hidden = true; }
   function persistCoupons() {
     if (!contentData) return; contentData.coupons = couponRecords;
     api("/admin/api/content", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ content: contentData }) }).then(function (response) { contentData = response.content || contentData; couponRecords = contentData.coupons || couponRecords; drawCoupons(); toast("Coupon saved"); }).catch(function (error) { toast(error.message || "Coupon could not be saved", true); });
