@@ -10,6 +10,7 @@
   modal.className = "tc-modal abstract-guidelines-modal";
   modal.id = "abstract-guidelines-modal";
   modal.setAttribute("aria-hidden", "true");
+  modal.hidden = true;
   modal.innerHTML =
     '<div class="tc-dialog" role="dialog" aria-modal="true" aria-labelledby="abstract-guidelines-modal-title">' +
       '<div class="tc-head"><h3 id="abstract-guidelines-modal-title">Abstract Guidelines</h3>' +
@@ -29,6 +30,7 @@
   var lastFocus = null;
   function open() {
     lastFocus = document.activeElement;
+    modal.hidden = false;
     modal.classList.add("open");
     modal.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
@@ -38,6 +40,7 @@
   function close() {
     modal.classList.remove("open");
     modal.setAttribute("aria-hidden", "true");
+    modal.hidden = true;
     document.body.style.overflow = "";
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
