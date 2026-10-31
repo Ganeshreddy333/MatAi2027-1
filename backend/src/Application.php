@@ -11,6 +11,7 @@ use Throwable;
 
 final class Application
 {
+    private const ABSTRACT_GUIDELINES_VERSION = 'abstracts-page-2027-10-31';
     private readonly Store $store;
     private readonly Security $security;
     private readonly RegistrationService $registrations;
@@ -217,6 +218,15 @@ final class Application
         }
         if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             Security::json(['ok' => false, 'error' => 'Invalid email address.'], 400);
+        }
+        if ($kind === 'abstract') {
+            if (!in_array($data['guidelinesAcknowledged'] ?? null, ['accepted', 'yes', true, 'true', 'on', 1], true)) {
+                Security::json(['ok' => false, 'error' => 'You must read and agree to the Abstract Guidelines before submitting.'], 422);
+            }
+            // Never trust a client-provided consent timestamp or version.
+            $data['guidelinesAcknowledged'] = true;
+            $data['guidelinesConsentAt'] = gmdate(DATE_ATOM);
+            $data['guidelinesVersion'] = self::ABSTRACT_GUIDELINES_VERSION;
         }
         $registration = null;
         if ($kind === 'register') {

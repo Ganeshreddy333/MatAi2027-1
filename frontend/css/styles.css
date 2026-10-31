@@ -502,6 +502,13 @@ table.tbl .no { color:#cbd5e1; }
 .tc-body h4 { font-family:var(--font-head); color:var(--blue); margin:1.4rem 0 .5rem; font-size:1.05rem; }
 .tc-body h4:first-of-type { margin-top:1rem; }
 .tc-body p { color:var(--body); line-height:1.65; font-size:.92rem; margin:.5rem 0; }
+.abstract-guidelines-modal .tc-dialog { max-width:860px; }
+.abstract-guidelines-modal .tc-body { max-height:calc(90vh - 145px); }
+.abstract-guidelines-modal .tc-body h2 { color:var(--blue); font-family:var(--font-head); font-size:1.4rem; margin:.1rem 0 1rem; }
+.abstract-guidelines-modal .tc-body h3 { color:var(--ink); font-family:var(--font-head); font-size:1.05rem; margin:1.35rem 0 .5rem; }
+.abstract-guidelines-modal .tc-body h4 { margin:1rem 0 .35rem; }
+.abstract-guidelines-modal .tc-body ul, .abstract-guidelines-modal .tc-body ol { color:var(--body); line-height:1.6; padding-left:1.35rem; }
+.abstract-guidelines-modal .tc-body li { margin:.35rem 0; }
 .tc-list { margin:.5rem 0 .5rem 1.1rem; padding:0; color:var(--body); }
 .tc-list li { margin-bottom:.5rem; line-height:1.55; font-size:.92rem; }
 .tc-foot { border-top:1px solid var(--line); padding:1rem 1.6rem; display:flex; gap:.8rem; justify-content:flex-end; background:#fff; }

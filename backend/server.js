@@ -30,6 +30,7 @@ const {
 
 const app = express();
 app.disable("x-powered-by");
+const ABSTRACT_GUIDELINES_VERSION = "abstracts-page-2027-10-31";
 const PORT = process.env.PORT || 3000;
 const ROOT = __dirname;
 const FRONTEND_DIR = path.join(ROOT, "..", "frontend");
@@ -1200,6 +1201,15 @@ app.post("/api/:kind", parseAbstractUpload, async (req, res) => {
   }
   if (!isEmail(data.email)) {
     return rejectSubmission(400, { ok: false, error: "Invalid email address." });
+  }
+  if (kind === "abstract") {
+    if (!["accepted", "yes", "true", "on", true, 1].includes(data.guidelinesAcknowledged)) {
+      return rejectSubmission(422, { ok: false, error: "You must read and agree to the Abstract Guidelines before submitting." });
+    }
+    // Consent metadata is generated server-side, not accepted from the browser.
+    data.guidelinesAcknowledged = true;
+    data.guidelinesConsentAt = new Date().toISOString();
+    data.guidelinesVersion = ABSTRACT_GUIDELINES_VERSION;
   }
   if (uploadedFile && kind === "abstract") {
     try {
