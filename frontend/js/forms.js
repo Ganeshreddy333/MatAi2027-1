@@ -148,6 +148,8 @@
   }
 
   function handle(form) {
+    if (form.hasAttribute("data-form-initialized")) return;
+    form.setAttribute("data-form-initialized", "true");
     var kind = form.getAttribute("data-form");
     var endpoint = form.getAttribute("data-endpoint") || ("/api/" + kind);
     var btn = form.querySelector('[type="submit"]');
@@ -284,6 +286,8 @@
       }
     }
   }
+
+  document.addEventListener("matai:content", initializeForms);
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initializeForms, { once: true });
