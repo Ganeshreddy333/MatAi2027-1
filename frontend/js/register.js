@@ -9,8 +9,12 @@
 (function () {
   "use strict";
 
+  var initializedForm = null;
+
+  function initializeRegistrationForm() {
   var form = document.querySelector('form[data-form="register"]');
-  if (!form) return;
+  if (!form || form === initializedForm) return;
+  initializedForm = form;
 
   // The active registration period and fees are managed in Admin.
   var ACTIVE = "eb";
@@ -486,6 +490,7 @@
   if (window.MATAI_CONTENT) applyRegistrationPricing(window.MATAI_CONTENT.registrationPricing);
   if (window.MATAI_CONTENT) applyCoupons(window.MATAI_CONTENT.coupons);
   document.addEventListener("matai:content", function (e) {
+    if (form !== document.querySelector('form[data-form="register"]')) return;
     applyFees(e.detail && e.detail.fees);
     applyRegistrationPeriods(e.detail && e.detail.registrationPeriods);
     applyRegistrationPricing(e.detail && e.detail.registrationPricing);
@@ -768,4 +773,8 @@
   }
   recalc();
   loadCurrencyRates();
+  }
+
+  initializeRegistrationForm();
+  document.addEventListener("matai:content", initializeRegistrationForm);
 })();
