@@ -272,14 +272,19 @@ final class Application
         Security::json($result, 201);
     }
 
-    private function storeAbstractUpload(): ?array
+    private function storeAbstractUpload(): array
     {
         $file = $_FILES['attachment'] ?? null;
         if (!is_array($file) || (int) ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
-            return null;
+            Security::json(['ok' => false, 'error' => 'Please upload your abstract document.'], 400);
         }
-        if ((int) $file['error'] !== UPLOAD_ERR_OK || (int) $file['size'] > 5 * 1024 * 1024) {
-            Security::json(['ok' => false, 'error' => 'The abstract document must be 5 MB or smaller.'], 413);
+        $uploadError = (int) $file['error'];
+        if (in_array($uploadError, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)
+            || (int) $file['size'] >= 5 * 1024 * 1024) {
+            Security::json(['ok' => false, 'error' => 'The abstract document must be smaller than 5 MB.'], 413);
+        }
+        if ($uploadError !== UPLOAD_ERR_OK) {
+            Security::json(['ok' => false, 'error' => 'The abstract document upload could not be processed. Please select it again and retry.'], 400);
         }
         $extension = strtolower(pathinfo((string) $file['name'], PATHINFO_EXTENSION));
         if (!in_array($extension, ['pdf', 'doc', 'docx'], true) || !is_uploaded_file((string) $file['tmp_name'])) {
@@ -1275,6 +1280,12 @@ final class Application
         }
         if ($_POST !== []) {
             return $this->sanitize($_POST);
+        }
+        if (str_starts_with(strtolower((string) ($_SERVER['CONTENT_TYPE'] ?? '')), 'multipart/form-data')) {
+            Security::json([
+                'ok' => false,
+                'error' => 'The upload could not be processed. Please choose a smaller document and try again.',
+            ], 413);
         }
         $input = fopen('php://input', 'rb');
         if ($input === false) {

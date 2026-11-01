@@ -59,12 +59,48 @@
     }
     .abstract-submission-grid { grid-template-columns:minmax(130px,.42fr) minmax(0,1.58fr); }
     .abstract-submission-grid .field:nth-child(n+3) { grid-column:1/-1; }
-    .abstract-upload-zone { display:flex; min-height:150px; padding:1.1rem; flex-direction:column; align-items:center; justify-content:center; gap:.55rem; border:2px dashed #343a46; border-radius:18px; background:#1d2027; color:#fff; text-align:center; }
-    .abstract-upload-zone strong { font-family:var(--font-head); font-size:1.2rem; }
-    .abstract-upload-zone span { color:#e2e5eb; font-size:.85rem; }
-    .abstract-upload-zone input[type=file] { max-width:100%; margin-top:.4rem; color:#fff; }
-    .abstract-upload-zone[data-dragging="true"] { outline:3px solid var(--accent-light); background:#292d36; }
-    .abstract-upload-zone [data-file-name] { color:#f4d59a; }
+    .abstract-upload-zone {
+      display:flex;
+      min-height:160px;
+      padding:1.25rem;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:.55rem;
+      border:2px dashed #82aaa9;
+      border-radius:16px;
+      background:#f2f8f8;
+      color:#173c53;
+      text-align:center;
+      transition:background .2s, border-color .2s;
+    }
+    .abstract-upload-zone strong { font-family:var(--font-head); font-size:1.15rem; color:#173c53; }
+    .abstract-upload-zone span { color:#526a7c; font-size:.85rem; }
+    .abstract-upload-zone input[type=file] {
+      display:block;
+      width:min(100%, 440px);
+      margin-top:.35rem;
+      padding:.45rem;
+      border:1px solid #c5d5dc;
+      border-radius:9px;
+      background:#fff;
+      color:#263d51;
+      font-size:.9rem;
+      text-align:left;
+    }
+    .abstract-upload-zone input[type=file]::file-selector-button {
+      margin-right:.7rem;
+      padding:.55rem .85rem;
+      border:0;
+      border-radius:7px;
+      background:#176d72;
+      color:#fff;
+      font:600 .85rem var(--font);
+      cursor:pointer;
+    }
+    .abstract-upload-zone input[type=file]::file-selector-button:hover { background:#11595e; }
+    .abstract-upload-zone[data-dragging="true"] { border-color:var(--teal-dark); background:#e5f3f1; }
+    .abstract-upload-zone [data-file-name] { color:#34566c; font-size:.88rem; font-weight:600; overflow-wrap:anywhere; }
     .captcha-box {
       max-width: 520px;
       margin: 1rem auto 1.25rem;
@@ -333,7 +369,7 @@
           <div class="field"><label for="abstract-title">Title <span class="req">*</span></label><select id="abstract-title" name="title" required><option value="">Select title</option><option>Dr.</option><option>Prof.</option><option>Mr.</option><option>Ms.</option><option>Mrs.</option><option>Mx.</option></select><div class="error-msg">Please select a title.</div></div>
           <div class="field"><label for="abstract-name">Name <span class="req">*</span></label><input id="abstract-name" type="text" name="authorName" autocomplete="name" required><div class="error-msg">Required</div></div>
           <div class="field"><label for="abstract-email">Email <span class="req">*</span></label><input id="abstract-email" type="email" name="email" autocomplete="email" required><div class="error-msg">Valid email required</div></div>
-          <div class="field"><label for="abstract-phone">Mobile Number <span class="req">*</span></label><input id="abstract-phone" type="tel" name="phone" inputmode="tel" pattern="\+?[0-9\s().-]{7,25}" minlength="7" maxlength="25" autocomplete="tel" required><div class="error-msg">Enter a valid mobile number, including your country code if needed.</div></div>
+          <div class="field"><label for="abstract-phone">Mobile Number <span class="req">*</span></label><input id="abstract-phone" type="tel" name="phone" inputmode="tel" pattern="\+?[0-9\s\x28\x29.\x2D]{7,25}" minlength="7" maxlength="25" autocomplete="tel" required><div class="error-msg">Enter a valid mobile number, including your country code if needed.</div></div>
           <div class="field full"><label for="abstract-organization">Organization <span class="req">*</span></label><input id="abstract-organization" type="text" name="institution" autocomplete="organization" required><div class="error-msg">Required</div></div>
           <div class="field full"><label for="abstract-country">Country <span class="req">*</span></label><select id="abstract-country" name="country" data-country-select required><option value="">Select country</option><option>Australia</option><option>Brazil</option><option>Canada</option><option>China</option><option>France</option><option>Germany</option><option>India</option><option>Italy</option><option>Japan</option><option>Netherlands</option><option>Singapore</option><option>South Africa</option><option>Spain</option><option>United Arab Emirates</option><option>United Kingdom</option><option>United States</option><option>Other</option></select><div class="error-msg">Please select your country.</div></div>
           <div class="field full" data-country-other hidden><label for="abstract-country-other">Country Name <span class="req">*</span></label><input id="abstract-country-other" type="text" name="countryOther" autocomplete="country-name" placeholder="Enter your country"><div class="error-msg">Please enter your country name.</div></div>
@@ -357,7 +393,7 @@
   </section>
   <div id="site-footer"></div>
   <script src="js/site.js?v=20261029-conference-header-logo-2"></script>
-  <script src="js/forms.js?v=20261024-abstract-submit-v8"></script>
+  <script src="js/forms.js?v=20261101-abstract-submit-init-fix-1"></script>
   <script src="js/abstract-guidelines-modal.js?v=20261031-anchor-modal-fix"></script>
 </body>
 </html>

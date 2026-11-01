@@ -202,6 +202,9 @@
       var done = function (via, resp) {
         form.reset();
         updateOtherCountry();
+        form.querySelectorAll('[data-upload-zone] input[type="file"]').forEach(function (input) {
+          input.dispatchEvent(new Event("change", { bubbles: true }));
+        });
         refreshCaptcha(form);
         var ref = (resp && resp.reference) || ("MATAI-" + Date.now().toString(36).toUpperCase());
         var extra = "";
@@ -266,7 +269,7 @@
     });
   }
 
-  document.addEventListener("DOMContentLoaded", function () {
+  function initializeForms() {
     document.querySelectorAll("form[data-form]").forEach(handle);
 
     // Pre-select registration category from ?cat= or ?pkg=
@@ -280,5 +283,11 @@
         });
       }
     }
-  });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializeForms, { once: true });
+  } else {
+    initializeForms();
+  }
 })();
