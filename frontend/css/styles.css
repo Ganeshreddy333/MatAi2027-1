@@ -759,7 +759,11 @@ ul.ticks li::before { content:"✓"; position:absolute; left:0; color:var(--blue
 .registration-qty input[type="radio"] { width:20px; height:20px; margin:0; accent-color:var(--teal-dark); cursor:pointer; }
 .registration-qty-unavailable { color:var(--muted); font-size:.72rem; }
 .participant-total { display:flex; justify-content:space-between; align-items:center; max-width:320px; margin:0 0 1.2rem auto; padding:.7rem 1rem; background:var(--bg-soft); border-radius:8px; font-weight:700; }
-.participant-total input { width:72px; margin:0; text-align:center; }
+.participant-stepper { display:inline-flex; align-items:center; gap:.35rem; }
+.participant-stepper button { display:grid; width:30px; height:30px; place-items:center; padding:0; border:1px solid var(--line); border-radius:7px; background:#fff; color:var(--navy); font:700 1.1rem/1 var(--font); cursor:pointer; }
+.participant-stepper button:hover { border-color:var(--teal); background:var(--paper-warm); }
+.participant-stepper button:focus-visible { outline:3px solid rgba(37,99,166,.25); outline-offset:2px; }
+.participant-stepper output { min-width:1.6rem; color:var(--ink); text-align:center; font-variant-numeric:tabular-nums; }
 .registration-addon-card { padding:1rem; border:1px solid var(--line); border-radius:12px; background:#fff; }
 .registration-addon-card > p { margin:0 0 .8rem; }
 .registration-addon-card .form-grid { margin-top:.4rem; }

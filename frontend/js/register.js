@@ -100,6 +100,9 @@
   var totalCur = id("total-cur");
   var selItems = id("selected-items");
   var participantCount = id("participant-count");
+  var participantCountDisplay = id("participant-count-display");
+  var participantQuantity = 1;
+  var selectedRegistrationCategory = "";
   var summaryRegistrationPrice = id("summary-registration-price");
   var summaryParticipants = id("summary-participants");
   var summaryAccommodation = id("summary-accommodation");
@@ -260,19 +263,38 @@
         var price = Number(tr.getAttribute("data-" + period.code)) || 0;
         var qty = tr.querySelector("input[data-qty]");
         var control = active && qty
-          ? '<div class="registration-qty"><button type="button" data-quantity-change="-1" data-registration-category="' + escapeHtml(qty.name) + '" aria-label="Remove one ' + escapeHtml(item) + '">−</button><input type="number" min="0" max="100" inputmode="numeric" value="' + escapeHtml(qty.value) + '" data-registration-category-input="' + escapeHtml(qty.name) + '" aria-label="Quantity — ' + escapeHtml(item) + '"><button type="button" data-quantity-change="1" data-registration-category="' + escapeHtml(qty.name) + '" aria-label="Add one ' + escapeHtml(item) + '">+</button></div>'
+          ? '<label class="registration-qty"><input type="radio" name="registration-category-choice" value="' + escapeHtml(qty.name) + '"' + (selectedRegistrationCategory === qty.name ? " checked" : "") + ' data-registration-category aria-label="Select ' + escapeHtml(item) + ' registration"></label>'
           : '<span class="registration-qty-unavailable">' + (deadlinePassed ? "Period completed" : "Period not active") + "</span>";
         return '<div class="registration-choice"><div><strong>' + escapeHtml(item) + '</strong><span class="registration-choice-price">' + fmt(price) + '</span></div>' + control + '</div>';
       }).join("");
       return '<section class="registration-period-card' + (active ? ' active' : '') + '"><header><div><h4>' + escapeHtml(label) + '</h4><p>' + escapeHtml(deadline) + '</p></div>' + (active ? '<span class="period-active">Available</span>' : '') + '</header><div class="registration-choices">' + choices + '</div></section>';
     }).join("");
-    target.querySelectorAll("[data-quantity-change]").forEach(function (button) {
-      button.addEventListener("click", function () { var source = sourceQuantity(button.getAttribute("data-registration-category")); if (source) { source.value = String(Math.max(0, Math.min(100, num(source) + Number(button.getAttribute("data-quantity-change"))))); renderRegistrationOptions(); recalc(); } });
-    });
-    target.querySelectorAll("[data-registration-category-input]").forEach(function (input) {
-      input.addEventListener("input", function () { var source = sourceQuantity(input.getAttribute("data-registration-category-input")); if (source) { source.value = String(Math.max(0, Math.min(100, parseInt(input.value, 10) || 0))); recalc(); } });
+    target.querySelectorAll("[data-registration-category]").forEach(function (input) {
+      input.addEventListener("change", function () {
+        selectedRegistrationCategory = input.value;
+        categories.forEach(function (tr) {
+          var source = tr.querySelector("input[data-qty]");
+          if (source) source.value = source.name === selectedRegistrationCategory ? String(participantQuantity) : "0";
+        });
+        recalc();
+      });
     });
   }
+
+  function updateParticipantQuantity(change) {
+    participantQuantity = Math.max(1, Math.min(100, participantQuantity + change));
+    if (participantCount) participantCount.value = String(participantQuantity);
+    if (participantCountDisplay) participantCountDisplay.textContent = String(participantQuantity);
+    var selected = sourceQuantity(selectedRegistrationCategory);
+    if (selected) selected.value = String(participantQuantity);
+    recalc();
+  }
+
+  form.querySelectorAll("[data-participant-change]").forEach(function (button) {
+    button.addEventListener("click", function () {
+      updateParticipantQuantity(Number(button.getAttribute("data-participant-change")) || 0);
+    });
+  });
 
   function renderOptionalItems() {
     function fixedRow(key) {
@@ -567,7 +589,8 @@
     if (totalDisplay) totalDisplay.value = formatAmountOnly(finalTotal / 100, ci);
     if (totalEur) totalEur.value = (finalTotalEUR / 100).toFixed(2);
     if (paymentGateway && paymentMethodHidden) paymentMethodHidden.value = paymentGateway.value;
-    if (participantCount) participantCount.value = participants;
+    if (participantCount) participantCount.value = String(participantQuantity);
+    if (participantCountDisplay) participantCountDisplay.textContent = String(participantQuantity);
     if (summaryRegistrationPrice) summaryRegistrationPrice.textContent = fmtCents(registrationTotal, ci);
     if (summaryParticipants) summaryParticipants.textContent = participants;
     if (summaryAccommodation) summaryAccommodation.textContent = fmtCents(accommodationTotal, ci);
@@ -738,6 +761,7 @@
     });
     var preferredQty = preferred && preferred.querySelector("input[data-qty]");
     if (preferredQty) {
+      selectedRegistrationCategory = preferredQty.name;
       preferredQty.value = "1";
       renderRegistrationOptions();
     }

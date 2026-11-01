@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/styles.css?v=20261029-header-reference-3">
+  <link rel="stylesheet" href="css/styles.css?v=20261101-participant-stepper-1">
 </head>
 <body>
   <div id="site-header"></div>
@@ -111,7 +111,7 @@
           </div>
         </dialog>
         <div class="registration-period-cards" id="registration-period-cards"></div>
-        <div class="participant-total"><span>Participants selected</span><input type="number" name="participantCount" id="participant-count" value="0" readonly aria-label="Participants selected"></div>
+        <div class="participant-total"><span>Participants selected</span><div class="participant-stepper" role="group" aria-label="Participants selected"><button type="button" data-participant-change="-1" aria-label="Remove one participant">−</button><output id="participant-count-display" aria-live="polite">1</output><button type="button" data-participant-change="1" aria-label="Add one participant">+</button><input type="hidden" name="participantCount" id="participant-count" value="1"></div></div>
 
         <!-- Kept as the price source for live Admin-managed rates. -->
         <div class="fee-source" aria-hidden="true">
@@ -528,7 +528,7 @@
   <script src="js/site.js?v=20261029-conference-header-logo-2"></script>
   <script src="js/forms.js?v=20261020-public-refresh"></script>
   <script src="js/human-verification.js?v=20261016-color-audit"></script>
-  <script src="js/register.js?v=20261029-remove-bank-transfer-1"></script>
+  <script src="js/register.js?v=20261101-participant-stepper-1"></script>
   <script src="js/terms-modal.js"></script>
   <script src="js/checkout.js?v=20261020-public-refresh"></script>
 </body>
