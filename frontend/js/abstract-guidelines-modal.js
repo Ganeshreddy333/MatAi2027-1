@@ -2,10 +2,6 @@
 (function () {
   "use strict";
 
-  var source = document.querySelector("#abstract-guidelines .container");
-  var opener = document.getElementById("abstract-guidelines-open");
-  if (!source || !opener) return;
-
   var modal = document.createElement("div");
   modal.className = "tc-modal abstract-guidelines-modal";
   modal.id = "abstract-guidelines-modal";
@@ -20,15 +16,15 @@
     '</div>';
   document.body.appendChild(modal);
 
-  // This copies the existing complete source section at open time; no second
-  // guideline document is maintained for the form.
   var body = modal.querySelector(".abstract-guidelines-modal-body");
-  body.innerHTML = source.innerHTML;
-  body.querySelectorAll(".btn-row").forEach(function (row) { row.remove(); });
 
   var closeButtons = modal.querySelectorAll("button");
   var lastFocus = null;
   function open() {
+    var source = document.querySelector("[data-abstract-guidelines-source] .container, #abstract-guidelines .container");
+    if (!source) return;
+    body.innerHTML = source.innerHTML;
+    body.querySelectorAll(".btn-row").forEach(function (row) { row.remove(); });
     lastFocus = document.activeElement;
     modal.hidden = false;
     modal.classList.add("open");
@@ -44,7 +40,13 @@
     document.body.style.overflow = "";
     if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
-  opener.addEventListener("click", function (event) { event.preventDefault(); event.stopPropagation(); open(); });
+  document.addEventListener("click", function (event) {
+    var opener = event.target.closest && event.target.closest("#abstract-guidelines-open");
+    if (!opener) return;
+    event.preventDefault();
+    event.stopPropagation();
+    open();
+  });
   closeButtons.forEach(function (button) { button.addEventListener("click", close); });
   modal.addEventListener("click", function (event) { if (event.target === modal) close(); });
   document.addEventListener("keydown", function (event) {
