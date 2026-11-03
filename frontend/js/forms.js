@@ -222,7 +222,9 @@
             downloadLink.remove();
           } else {
             extra = '<br><a class="btn btn-primary btn-sm mt-1" href="' + downloadUrl + '" target="_blank" rel="noopener">Download the Brochure ↓</a>';
-            try { window.open(downloadUrl, "_blank"); } catch (e) {}
+            if (form.getAttribute("data-manual-download") !== "true") {
+              try { window.open(downloadUrl, "_blank"); } catch (e) {}
+            }
           }
         }
         showStatus(form, "ok", form.getAttribute("data-success-message") ||

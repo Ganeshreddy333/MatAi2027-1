@@ -328,10 +328,10 @@
 
   <dialog class="home-brochure-dialog" id="home-brochure-dialog" aria-labelledby="home-brochure-title">
     <div class="home-brochure-dialog-head">
-      <div><span class="eyebrow">MatAi 2027</span><h2 id="home-brochure-title">Download the Conference Brochure</h2><p>Enter your details and the brochure will download after you submit.</p></div>
+      <div><span class="eyebrow">MatAi 2027</span><h2 id="home-brochure-title">Get the Conference Brochure</h2><p>Submit your details to access the brochure download.</p></div>
       <button class="home-brochure-close" type="button" data-home-brochure-close aria-label="Close brochure form">&times;</button>
     </div>
-    <form class="form-card home-brochure-form" data-form="brochure" data-download-url="/api/conference-brochure-file" data-auto-download="true">
+    <form class="form-card home-brochure-form" data-form="brochure" data-download-url="/api/conference-brochure-file" data-manual-download="true">
       <div class="form-status" aria-live="polite"></div>
       <input type="hidden" name="brochureType" value="conference">
       <div class="form-grid">
@@ -343,7 +343,7 @@
         <div class="field full"><label for="home-brochure-message">Message</label><textarea id="home-brochure-message" name="message" rows="3" placeholder="Tell us what you would like to know about MatAi 2027."></textarea></div>
         <div class="field full form-consent"><label class="chk"><input type="checkbox" name="termsAcknowledgement" value="accepted" required><span><strong>I agree to receive conference updates by email.</strong></span></label><div class="error-msg">Please check this box to continue.</div></div>
       </div>
-      <div class="btn-row mt-2"><button type="submit" class="btn btn-primary">Submit &amp; Download Brochure</button></div>
+      <div class="btn-row mt-2"><button type="submit" class="btn btn-primary">Submit &amp; Access Brochure</button></div>
     </form>
   </dialog>
 
@@ -370,7 +370,7 @@
       dialog.addEventListener("close",function(){opener.focus();});
     })();
   </script>
-  <script src="js/forms.js?v=20261029-home-brochure-dialog"></script>
+  <script src="js/forms.js?v=20261103-home-brochure-form"></script>
   <script src="js/site.js?v=20261103-admin-integration"></script>
 </body>
 </html>
