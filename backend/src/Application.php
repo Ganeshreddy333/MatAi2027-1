@@ -1234,6 +1234,34 @@ final class Application
     /** Validate financial configuration before it becomes live site content. */
     private function validateAdministrativeContent(array $content): void
     {
+        $periods = $content['registrationPeriods'] ?? null;
+        if ($periods !== null) {
+            $periodNames = ['Early Bird', 'Mid-Term', 'On-Spot'];
+            $categories = ['Speaker', 'Delegate', 'Poster', 'Student', 'Virtual'];
+            if (!is_array($periods)
+                || (isset($periods['active']) && !in_array($periods['active'], $periodNames, true))) {
+                throw new DomainException('Registration period settings are invalid.');
+            }
+            foreach ($periodNames as $periodName) {
+                $config = $periods[$periodName] ?? null;
+                if ($config === null) {
+                    continue;
+                }
+                if (!is_array($config)) {
+                    throw new DomainException('Registration period settings are invalid.');
+                }
+                $categoryDeadlines = $config['categoryDeadlines'] ?? [];
+                if (!is_array($categoryDeadlines)) {
+                    throw new DomainException('Category deadlines must be an object.');
+                }
+                foreach ($categoryDeadlines as $category => $deadline) {
+                    if (!in_array($category, $categories, true)
+                        || (!is_string($deadline) || ($deadline !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $deadline)))) {
+                        throw new DomainException('Category deadlines must use valid YYYY-MM-DD dates.');
+                    }
+                }
+            }
+        }
         $seen = [];
         foreach (($content['coupons'] ?? []) as $coupon) {
             if (!is_array($coupon)) {

@@ -125,7 +125,7 @@
   }
 
   /* ---------- Load dashboard ---------- */
-  function loadAll() {
+  function loadAll(forceContentRefresh) {
     if (current === "dashboard") {
       el("dashboard-state").hidden = false;
       el("dashboard-state").textContent = "Loading dashboard data...";
@@ -143,7 +143,9 @@
       }
     });
     if (current === "dashboard") return;
-    if (["content", "information", "pages", "speakers", "media", "committee", "settings", "coupons"].indexOf(current) > -1) loadContent();
+    if (["content", "information", "pages", "speakers", "media", "committee", "settings", "coupons"].indexOf(current) > -1) {
+      if (forceContentRefresh || contentData === null) loadContent();
+    }
     else loadKind(current);
   }
 
@@ -536,7 +538,7 @@
     }).then(function (j) {
       if (j && j.ok) { toast("Saved"); closeDrawer(); loadAll(); }
       else toast("Save failed", true);
-    }).catch(function () { toast("Save failed", true); });
+    }).catch(function (err) { toast(err.message || "Could not save this record.", true); });
   }
 
   function deleteDrawer() {
@@ -732,6 +734,7 @@
     el("periods-list").innerHTML = FEE_PERIODS.map(function (p) {
       var row = periods[p] || {};
       var deadline = /^\d{4}-\d{2}-\d{2}$/.test(row.deadline || "") ? row.deadline : "";
+      var categoryDeadlines = row.categoryDeadlines || {};
       var periodTitle = p === "On-Spot" ? "Late" : p;
       var defaultLabel = p === "On-Spot" ? "Late Registration" : p;
       var periodLabel = row.label || defaultLabel;
@@ -739,7 +742,15 @@
       return "<div class='a-period' data-period='" + esc(p) + "'>" +
         "<div class='a-row'><label style='width:90px;color:var(--a-muted);font-size:.8rem'>" + esc(periodTitle) + "</label>" +
         "<input class='a-input' data-pf='label' value='" + esc(periodLabel) + "' placeholder='Display label'>" +
-        "<label class='a-date-field'>Deadline<input class='a-input' data-pf='deadline' type='date' value='" + deadline + "'></label></div></div>";
+        "<label class='a-date-field'>Shared deadline<input class='a-input' data-pf='deadline' type='date' value='" + deadline + "'></label></div>" +
+        "<div class='a-period-deadlines'><span class='a-sub'>Optional category deadlines (blank uses the shared deadline)</span><div class='a-period-deadline-grid'>" +
+        FEE_CATS.map(function (category) {
+          var categoryDeadline = categoryDeadlines[category] || "";
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(categoryDeadline)) categoryDeadline = "";
+          return "<label class='a-date-field'>" + esc(category) +
+            "<input class='a-input' data-period-deadline-category='" + esc(category) +
+            "' type='date' value='" + categoryDeadline + "'></label>";
+        }).join("") + "</div></div></div>";
     }).join("");
   }
 
@@ -768,13 +779,13 @@
   }
 
   function drawCoupons() {
-    el("coupons-list").innerHTML = couponRecords.map(function (coupon, index) {
+    var rows = couponRecords.map(function (coupon, index) {
       var code = String(coupon.code || "").toUpperCase(), uses = couponUses[code] || 0;
       var link = location.origin + "/registration.html?coupon=" + encodeURIComponent(code);
       var discount = coupon.discountType === "fixed" ? "$" + Number(coupon.fixedAmount || 0).toFixed(2) : Number(coupon.discountPercentage != null ? coupon.discountPercentage : coupon.percent || 0) + "%";
-      return "<tr><td>" + esc(code) + "</td><td>" + esc(discount) + "</td><td><span class='coupon-table-link'><a href='" + esc(link) + "' target='_blank' rel='noopener'>" + esc(link) + "</a><button class='a-btn ghost sm' data-copy-coupon='" + index + "' type='button'>Copy</button></span></td><td>" + uses + "/" + esc(coupon.maxUses || 0) + "</td><td>" + esc(coupon.enabled === false || coupon.status === "inactive" ? "Inactive" : "Active") + "</td><td><span class='coupon-actions'><button class='a-btn ghost sm' data-edit-coupon='" + index + "' type='button'>Edit</button><button class='a-btn ghost sm' data-toggle-coupon='" + index + "' type='button'>" + (coupon.enabled === false || coupon.status === "inactive" ? "Activate" : "Deactivate") + "</button><button class='a-btn danger sm' data-remove-coupon='" + index + "' type='button'>Delete</button></span></td></tr>";
+      return "<tr><td><strong>" + esc(code) + "</strong></td><td>" + esc(discount) + "</td><td><span class='coupon-table-link'><a href='" + esc(link) + "' target='_blank' rel='noopener' aria-label='Open registration link for " + esc(code) + "'>" + esc(link) + "</a><button class='a-btn ghost sm' data-copy-coupon='" + index + "' type='button'>Copy</button></span></td><td>" + uses + "/" + esc(coupon.maxUses || 0) + "</td><td>" + esc(coupon.enabled === false || coupon.status === "inactive" ? "Inactive" : "Active") + "</td><td><div class='coupon-actions'><button class='a-btn ghost sm' data-edit-coupon='" + index + "' type='button'>Edit</button><button class='a-btn ghost sm' data-toggle-coupon='" + index + "' type='button'>" + (coupon.enabled === false || coupon.status === "inactive" ? "Activate" : "Deactivate") + "</button><button class='a-btn danger sm' data-remove-coupon='" + index + "' type='button'>Delete</button></div></td></tr>";
     }).join("");
-    if (couponRecords.length) el("coupons-list").innerHTML = "<div class='a-tablewrap'><table class='a-table'><thead><tr><th>Code</th><th>Discount</th><th>Registration Link</th><th>Uses</th><th>Status</th><th>Actions</th></tr></thead><tbody>" + el("coupons-list").innerHTML + "</tbody></table></div>";
+    if (couponRecords.length) el("coupons-list").innerHTML = "<div class='a-tablewrap coupon-table-wrap'><table class='a-table coupon-table'><thead><tr><th scope='col'>Code</th><th scope='col'>Discount</th><th scope='col'>Registration Link</th><th scope='col'>Uses</th><th scope='col'>Status</th><th scope='col'>Actions</th></tr></thead><tbody>" + rows + "</tbody></table></div>";
     else el("coupons-list").innerHTML = "<p class='a-empty'>No coupons configured.</p>";
   }
 
@@ -847,7 +858,7 @@
     var box = el("page-sections-editor");
     if (!box) return;
     box.innerHTML = "<p class='a-sub'>Loading page sections...</p>";
-    fetch(currentEditPage)
+    fetch(currentEditPage, { cache: "no-store" })
       .then(function (r) { return r.text(); })
       .then(function (html) {
         var doc = new DOMParser().parseFromString(html, "text/html");
@@ -863,15 +874,20 @@
           var key = "sec-" + i;
           var titleEl = section.querySelector("h2,h3,.eyebrow,p.lead");
           var title = titleEl ? titleEl.textContent.trim() : ("Section " + (i + 1));
-          var currentHtml = saved[key] && saved[key].html != null ? saved[key].html : section.innerHTML.trim();
+          var sourceHtml = section.innerHTML.trim();
+          var currentHtml = saved[key] && saved[key].html != null
+            ? saved[key].html === saved[key].baseHtml ? sourceHtml : saved[key].html
+            : sourceHtml;
           var deleted = saved[key] && saved[key].deleted;
-          return "<div class='a-page-section" + (deleted ? " is-deleted" : "") + "' data-sec='" + key + "'" + (deleted ? " data-deleted='true'" : "") + ">" +
+          var codeChanged = saved[key] && saved[key].baseHtml != null && saved[key].baseHtml !== sourceHtml;
+          return "<div class='a-page-section" + (deleted ? " is-deleted" : "") + "' data-sec='" + key + "' data-source-html=\"" + esc(sourceHtml) + "\"" + (deleted ? " data-deleted='true'" : "") + ">" +
             "<div class='a-row section-title'><strong>" + esc(title || ("Section " + (i + 1))) + "</strong>" +
             "<div class='a-action-buttons'><button class='a-btn ghost sm' data-reset-section='" + key + "' type='button'>Use Original</button>" +
             "<button class='a-btn ghost sm' data-remove-section type='button'>Remove Section</button>" +
             "<button class='a-btn ghost sm' data-restore-section type='button'>Undo Remove</button>" +
             "<button class='a-btn ghost sm' data-toggle-html type='button'>Edit HTML</button></div></div>" +
-            "<div class='a-input page-html' contenteditable='true' data-original='" + esc(section.innerHTML.trim()) + "'>" + currentHtml + "</div>" +
+            (codeChanged && saved[key].html !== saved[key].baseHtml ? "<p class='a-sub'>This section has newer code content. Its saved customization is preserved; use Original to adopt the latest version.</p>" : "") +
+            "<div class='a-input page-html' contenteditable='true' data-original='" + esc(sourceHtml) + "'>" + currentHtml + "</div>" +
             "<textarea class='a-input page-html-source' rows='12' hidden>" + esc(currentHtml) + "</textarea>" +
           "</div>";
         }).join("");
@@ -941,7 +957,7 @@
   });
 
   function addedSectionEditor(key, html) {
-    return "<div class='a-page-section' data-sec='" + esc(key) + "'>" +
+    return "<div class='a-page-section' data-sec='" + esc(key) + "' data-source-html=\"\">" +
       "<div class='a-row section-title'><strong>Added Section</strong>" +
       "<div class='a-action-buttons'><button class='a-btn ghost sm' data-remove-section type='button'>Remove Section</button>" +
       "<button class='a-btn ghost sm' data-toggle-html type='button'>Edit HTML</button></div></div>" +
@@ -1196,7 +1212,15 @@
       var p = row.getAttribute("data-period");
       var label = $("[data-pf='label']", row).value.trim();
       var deadline = $("[data-pf='deadline']", row).value.trim();
-      registrationPeriods[p] = { label: label || p, deadline: deadline || "To Be Announced" };
+      var categoryDeadlines = {};
+      row.querySelectorAll("[data-period-deadline-category]").forEach(function (input) {
+        if (input.value) categoryDeadlines[input.getAttribute("data-period-deadline-category")] = input.value;
+      });
+      registrationPeriods[p] = {
+        label: label || p,
+        deadline: deadline || "To Be Announced",
+        categoryDeadlines: categoryDeadlines
+      };
     });
     var fixedItems = {};
     document.querySelectorAll("#item-prices [data-fixed-price]").forEach(function (inp) {
@@ -1215,13 +1239,19 @@
       pageRows.forEach(function (row) {
         var key = row.getAttribute("data-sec");
         if (row.getAttribute("data-deleted") === "true") {
-          pages[currentEditPage][key] = { deleted: true };
+          pages[currentEditPage][key] = {
+            deleted: true,
+            baseHtml: row.getAttribute("data-source-html") || ""
+          };
         } else {
           var sourceEditor = row.querySelector(".page-html-source");
           var visualEditor = row.querySelector("[contenteditable='true']");
           var html = sourceEditor && !sourceEditor.hidden
             ? sourceEditor.value : (visualEditor ? visualEditor.innerHTML : "");
-          pages[currentEditPage][key] = { html: html };
+          pages[currentEditPage][key] = {
+            html: html,
+            baseHtml: row.getAttribute("data-source-html") || ""
+          };
         }
       });
     }
@@ -1266,12 +1296,12 @@
         toast("Content saved — live site updated");
       }
       else toast("Save failed", true);
-    }).catch(function () { toast("Save failed", true); });
+    }).catch(function (err) { toast(err.message || "Could not save website content.", true); });
   }
   document.querySelectorAll("#save-content, [data-save-content]").forEach(function (button) {
     button.addEventListener("click", saveContent);
   });
-  el("refresh-btn").addEventListener("click", loadAll);
+  el("refresh-btn").addEventListener("click", function () { loadAll(true); });
 
   /* ---------- Boot ---------- */
   function showLogin() { el("login-view").style.display = "grid"; el("shell").style.display = "none"; }

@@ -14,6 +14,7 @@
     media: {},
     homeGallery: { heading: "", photos: [] },
     dates: [
+      { label: "Abstract Submission Opens", value: "To Be Announced" },
       { label: "Abstract Submission Deadline", value: "To Be Announced" },
       { label: "Early-Bird Registration Deadline", value: "To Be Announced" },
       { label: "Conference Dates", value: "October 13–14, 2027" }
@@ -139,40 +140,6 @@
       if (v != null) el.textContent = v;
     });
 
-    // Persistent media overrides. If an override is removed in admin, its original
-    // path remains the safe fallback, so public pages never render a broken image.
-    var media = content.media || {};
-    var mediaPaths = {
-      venueWelcome: "images/venue/image3.jpeg", venueAuditorium: "images/venue/image2.jpeg", venueTechnical: "images/venue/technical-presentation-room.png",
-      venueAirportDay: "images/venue/image9.jpeg", venueAirportNight: "images/venue/image10.jpeg", venueTrainInterior: "images/venue/image8.jpeg", venueTrainExterior: "images/venue/image11.jpeg",
-      venueHotel: "images/venue/image13.jpeg", venueHotelExterior: "images/venue/image14.jpeg", venueLandmark1: "images/venue/image4.jpeg", venueLandmark2: "images/venue/image5.jpeg", venueLandmark3: "images/venue/image6.jpeg", venueLandmark4: "images/venue/image17.jpeg", venueLandmark5: "images/venue/image18.jpeg", venueLandmark6: "images/venue/image19.jpeg"
-    };
-    Object.keys(mediaPaths).forEach(function (key) {
-      var original = mediaPaths[key], replacement = media[key];
-      if (!replacement || replacement === original) return;
-      document.querySelectorAll('img[src="' + original + '"]').forEach(function (image) { image.src = replacement; });
-    });
-    if (media.homeHero) document.documentElement.style.setProperty("--matai-home-hero-image", 'url("' + String(media.homeHero).replace(/["\\]/g, "") + '")');
-
-    // Dynamic lists, e.g. [data-content-list="dates"]
-    document.querySelectorAll('[data-content-list="dates"]').forEach(function (box) {
-      var dates = content.dates || [];
-      box.innerHTML = dates.map(function (d) {
-        return '<div class="date-row"><span class="dl">' + escapeHtml(d.label) +
-          '</span><span class="dv">' + escapeHtml(formatDate(d.value)) + "</span></div>";
-      }).join("");
-    });
-
-    renderRegistrationPlans(content);
-
-    // Fee cells: <td data-fee="Period|Category">
-    var fees = content.fees || {};
-    document.querySelectorAll("[data-fee]").forEach(function (cell) {
-      var p = cell.getAttribute("data-fee").split("|");
-      var v = fees[p[0]] && fees[p[0]][p[1]];
-      if (v != null) cell.textContent = "€" + v;
-    });
-
     // Page section overrides saved from the admin panel.
     var current = (location.pathname.split("/").pop() || "index.html").toLowerCase();
     var pageOverrides = content.pages && content.pages[current];
@@ -195,7 +162,9 @@
       sections.slice().forEach(function (section) {
         var saved = pageOverrides["sec-" + section.getAttribute("data-page-section-index")];
         if (saved && saved.deleted) section.remove();
-        else if (saved && saved.html != null) section.innerHTML = saved.html;
+        else if (saved && saved.html != null && (saved.baseHtml == null || saved.html !== saved.baseHtml)) {
+          section.innerHTML = saved.html;
+        }
       });
       Object.keys(pageOverrides).filter(function (key) {
         return /^sec-\d+$/.test(key) && Number(key.slice(4)) >= originalSectionCount;
@@ -216,6 +185,46 @@
         }
       });
     }
+
+    document.querySelectorAll('[data-content-list="dates"]').forEach(function (box) {
+      var dates = content.dates || [];
+      box.innerHTML = '<div class="date-row"><span class="dl"><strong>Important Event</strong></span><span class="dv"><strong>Date</strong></span></div>' +
+        dates.map(function (d) {
+          return '<div class="date-row"><span class="dl">' + escapeHtml(d.label) +
+            '</span><span class="dv">' + escapeHtml(formatDate(d.value)) + "</span></div>";
+        }).join("");
+    });
+
+    renderRegistrationPlans(content);
+
+    var fees = content.fees || {};
+    document.querySelectorAll("[data-fee]").forEach(function (cell) {
+      var p = cell.getAttribute("data-fee").split("|");
+      var v = fees[p[0]] && fees[p[0]][p[1]];
+      if (v != null) cell.textContent = "€" + v;
+    });
+
+    var media = content.media || {};
+    var mediaPaths = {
+      homeHero: "images/matai-hero-reference.png",
+      venueWelcome: "images/venue/image3.jpeg", venueAuditorium: "images/venue/image2.jpeg", venueTechnical: "images/venue/technical-presentation-room.png",
+      venueAirportDay: "images/venue/image9.jpeg", venueAirportNight: "images/venue/image10.jpeg", venueTrainInterior: "images/venue/image8.jpeg", venueTrainExterior: "images/venue/image11.jpeg",
+      venueHotel: "images/venue/image13.jpeg", venueHotelExterior: "images/venue/image14.jpeg", venueLandmark1: "images/venue/image4.jpeg", venueLandmark2: "images/venue/image5.jpeg", venueLandmark3: "images/venue/image6.jpeg", venueLandmark4: "images/venue/image17.jpeg", venueLandmark5: "images/venue/image18.jpeg", venueLandmark6: "images/venue/image19.jpeg"
+    };
+    Object.keys(mediaPaths).forEach(function (key) {
+      var original = mediaPaths[key], replacement = media[key] || original;
+      document.querySelectorAll("img").forEach(function (image) {
+        var source = image.getAttribute("src");
+        var originalSource = image.getAttribute("data-matai-original-src");
+        if (!originalSource && (source === original || source === "/" + original)) {
+          originalSource = source;
+          image.setAttribute("data-matai-original-src", originalSource);
+        }
+        if (originalSource === original || originalSource === "/" + original) image.src = replacement;
+      });
+    });
+    var heroImage = media.homeHero || mediaPaths.homeHero;
+    document.documentElement.style.setProperty("--matai-home-hero-image", 'url("' + String(heroImage).replace(/["\\]/g, "") + '")');
 
     ensureHomeHeroEventPanel(content);
     applyLegacyHomeHeroLayout();
@@ -436,22 +445,22 @@
     if (!containers.length) return;
 
     var periods = content.registrationPeriods || {};
-    var order = ["Early Bird", "Mid-Term", "On-Spot"];
-    var index = order.indexOf(periods.active);
-    if (index < 0) index = 0;
     var today = new Date().toISOString().slice(0, 10);
-    while (index < order.length - 1) {
-      var current = periods[order[index]] || {};
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(current.deadline || "") || current.deadline >= today) break;
-      index += 1;
-    }
-
-    var period = order[index];
-    var label = periods[period] && periods[period].label || period + " Registration";
-    var fees = content.fees && content.fees[period] || {};
     var categories = ["Speaker", "Delegate", "Poster", "Student", "Virtual"];
-    var plans = categories.filter(function (category) {
-      return fees[category] != null && isFinite(Number(fees[category])) && Number(fees[category]) >= 0;
+    var plans = categories.map(function (category) {
+      var period = effectiveRegistrationPeriod(periods, category, today);
+      var fee = content.fees && content.fees[period] && content.fees[period][category];
+      if (fee == null || !isFinite(Number(fee)) || Number(fee) < 0) return null;
+      return {
+        category: category,
+        period: period,
+        label: periods[period] && periods[period].label || period + " Registration",
+        deadline: (periods[period] && periods[period].categoryDeadlines &&
+          periods[period].categoryDeadlines[category]) || (periods[period] && periods[period].deadline),
+        fee: Number(fee)
+      };
+    }).filter(function (plan) {
+      return plan !== null;
     });
 
     containers.forEach(function (container) {
@@ -459,17 +468,31 @@
         container.innerHTML = '<p class="placeholder-note center">Registration prices are temporarily unavailable. Please contact the organizers.</p>';
         return;
       }
-      container.innerHTML = plans.map(function (category) {
+      container.innerHTML = plans.map(function (plan) {
         return '<article class="card registration-plan">' +
-          '<span class="eyebrow">' + escapeHtml(label) + '</span>' +
-          '<h3>' + escapeHtml(category) + '</h3>' +
-          '<p class="registration-plan-price">€' + Number(fees[category]).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+          '<span class="eyebrow">' + escapeHtml(plan.label) + '</span>' +
+          '<h3>' + escapeHtml(plan.category) + '</h3>' +
+          '<p class="registration-plan-price">€' + plan.fee.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
           '<small> / participant</small></p>' +
+          '<p class="registration-plan-deadline">Deadline: ' + escapeHtml(formatDate(plan.deadline)) + '</p>' +
           '<p>Plus 5% tax. Optional items are priced separately.</p>' +
-          '<a class="btn btn-outline mt-2" href="registration.html">Registration Details</a>' +
+          '<a class="btn btn-outline mt-2" href="registration.html?cat=' + encodeURIComponent(plan.category.toLowerCase()) + '">Registration Details</a>' +
           '</article>';
       }).join("");
     });
+  }
+
+  function effectiveRegistrationPeriod(periods, category, today) {
+    var order = ["Early Bird", "Mid-Term", "On-Spot"];
+    var index = order.indexOf(periods.active);
+    if (index < 0) index = 0;
+    while (index < order.length - 1) {
+      var config = periods[order[index]] || {};
+      var deadline = config.categoryDeadlines && config.categoryDeadlines[category] || config.deadline;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(deadline || "") || deadline >= today) break;
+      index += 1;
+    }
+    return order[index];
   }
 
   function escapeHtml(s) {

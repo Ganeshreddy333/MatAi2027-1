@@ -56,6 +56,42 @@ final class RegistrationServiceTest extends TestCase
         self::assertSame('94.50', $registration['data']['totalPrice']);
     }
 
+    public function testCategoryDeadlineAdvancesOnlyThatCategory(): void
+    {
+        $today = new \DateTimeImmutable('today', new \DateTimeZone('UTC'));
+        $content = [
+            'fees' => [
+                'Early Bird' => ['Speaker' => 100, 'Delegate' => 200],
+                'Mid-Term' => ['Speaker' => 150, 'Delegate' => 250],
+            ],
+            'registrationPeriods' => [
+                'active' => 'Early Bird',
+                'Early Bird' => [
+                    'deadline' => 'To Be Announced',
+                    'categoryDeadlines' => ['Speaker' => $today->modify('-1 day')->format('Y-m-d')],
+                ],
+                'Mid-Term' => [
+                    'deadline' => 'To Be Announced',
+                    'categoryDeadlines' => ['Speaker' => $today->modify('+1 day')->format('Y-m-d')],
+                ],
+            ],
+            'registrationPricing' => ['fixedItems' => []],
+            'coupons' => [],
+        ];
+        file_put_contents($this->dataDirectory . '/content.json', json_encode($content, JSON_THROW_ON_ERROR));
+
+        $speaker = $this->service->prepare($this->validInput());
+        $delegateInput = $this->validInput();
+        $delegateInput['qty_speaker'] = '0';
+        $delegateInput['qty_delegate'] = '1';
+        $delegate = $this->service->prepare($delegateInput);
+
+        self::assertSame('Mid-Term', $speaker['period']);
+        self::assertSame(15750, $speaker['totalCents']);
+        self::assertSame('Early Bird', $delegate['period']);
+        self::assertSame(21000, $delegate['totalCents']);
+    }
+
     public function testInvalidEmailIsRejected(): void
     {
         $input = $this->validInput();

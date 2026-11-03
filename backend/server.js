@@ -21,6 +21,7 @@ const multer = require("multer");
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 const storage = require("./storage");
 const { applyVerifiedPaymentStatus } = require("./payment-status");
+const { effectiveRegistrationPeriod } = require("./registration-period");
 const {
   BASE_CURRENCY,
   isExplicitlyVerified,
@@ -238,9 +239,9 @@ const DEFAULT_CONTENT = {
   },
   registrationPeriods: {
     active: "Early Bird",
-    "Early Bird": { label: "Early Bird Registration", deadline: "To Be Announced" },
-    "Mid-Term": { label: "Mid Term Registration", deadline: "To Be Announced" },
-    "On-Spot": { label: "Late Registration", deadline: "To Be Announced" }
+    "Early Bird": { label: "Early Bird Registration", deadline: "To Be Announced", categoryDeadlines: {} },
+    "Mid-Term": { label: "Mid Term Registration", deadline: "To Be Announced", categoryDeadlines: {} },
+    "On-Spot": { label: "Late Registration", deadline: "To Be Announced", categoryDeadlines: {} }
   },
   registrationPricing: {
     fixedItems: {
@@ -286,6 +287,33 @@ function mergeDefaults(defaults, saved) {
       : value;
   });
   return merged;
+}
+function validateRegistrationPeriods(periods) {
+  if (periods == null) return;
+  const names = ["Early Bird", "Mid-Term", "On-Spot"];
+  const categories = ["Speaker", "Delegate", "Poster", "Student", "Virtual"];
+  if (!periods || typeof periods !== "object" || Array.isArray(periods) ||
+      (periods.active != null && !names.includes(periods.active))) {
+    throw new Error("Registration period settings are invalid.");
+  }
+  for (const name of names) {
+    const config = periods[name];
+    if (config == null) continue;
+    if (typeof config !== "object" || Array.isArray(config)) {
+      throw new Error("Registration period settings are invalid.");
+    }
+    const overrides = config.categoryDeadlines;
+    if (overrides == null) continue;
+    if (typeof overrides !== "object" || Array.isArray(overrides)) {
+      throw new Error("Category deadlines must be an object.");
+    }
+    for (const category of Object.keys(overrides)) {
+      if (!categories.includes(category) ||
+          (overrides[category] !== "" && !/^\d{4}-\d{2}-\d{2}$/.test(overrides[category]))) {
+        throw new Error("Category deadlines must use valid YYYY-MM-DD dates.");
+      }
+    }
+  }
 }
 /* ---------- Middleware ---------- */
 // Provider webhooks above authenticate with provider signatures and intentionally bypass browser CSRF tokens.
@@ -484,20 +512,6 @@ const REGISTRATION_ITEMS = [
   { field: "qty_accom_single", label: "Accommodation — Single Occupancy", fixed: "addon_accommodation_single" },
   { field: "qty_accom_double", label: "Accommodation — Double Occupancy", fixed: "addon_accommodation_double" }
 ];
-const REGISTRATION_PERIODS = ["Early Bird", "Mid-Term", "On-Spot"];
-function effectiveRegistrationPeriod(periods) {
-  let index = REGISTRATION_PERIODS.indexOf(periods && periods.active);
-  if (index < 0) index = 0;
-  const today = new Date().toISOString().slice(0, 10);
-  while (index < REGISTRATION_PERIODS.length - 1) {
-    const current = periods && periods[REGISTRATION_PERIODS[index]];
-    const deadline = current && current.deadline;
-    // A tier remains active through its deadline date, then advances the next day.
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(deadline || "") || deadline >= today) break;
-    index += 1;
-  }
-  return REGISTRATION_PERIODS[index];
-}
 async function prepareRegistration(input) {
   const data = Object.assign({}, input);
   const missing = FORMS.register.filter((field) => {
@@ -536,7 +550,7 @@ async function prepareRegistration(input) {
   }
 
   const content = mergeDefaults(DEFAULT_CONTENT, await storage.loadContent());
-  const period = effectiveRegistrationPeriod(content.registrationPeriods);
+  let period = null;
   const items = [];
   let grossCents = 0;
   let participantCount = 0;
@@ -554,7 +568,14 @@ async function prepareRegistration(input) {
       price = Number(content.registrationPricing && content.registrationPricing.fixedItems &&
         content.registrationPricing.fixedItems[item.fixed]);
     } else {
-      price = Number(content.fees && content.fees[period] && content.fees[period][item.category]);
+      const itemPeriod = effectiveRegistrationPeriod(content.registrationPeriods, item.category);
+      if (!itemPeriod) {
+        const error = new Error("Registration has closed for " + item.label + ".");
+        error.statusCode = 400;
+        throw error;
+      }
+      if (!period) period = itemPeriod;
+      price = Number(content.fees && content.fees[itemPeriod] && content.fees[itemPeriod][item.category]);
     }
     if (!Number.isFinite(price) || price < 0 || price > 1000000) {
       const error = new Error("The configured price for " + item.label + " is invalid.");
@@ -604,6 +625,7 @@ async function prepareRegistration(input) {
   const taxCents = Math.round(subtotalCents * validTaxRate);
   const totalCents = subtotalCents + taxCents;
   const amount = totalCents / 100;
+  period = period || effectiveRegistrationPeriod(content.registrationPeriods);
   data.period = period;
   data.participantCount = participantCount;
   data.category = items.filter((item) => item.category)
@@ -1531,6 +1553,11 @@ app.get("/admin/api/export/:kind", requireAuth, async (req, res) => {
 app.put("/admin/api/content", requireAuth, async (req, res) => {
   const incoming = req.body && req.body.content;
   if (!incoming || typeof incoming !== "object" || Array.isArray(incoming)) return res.status(400).json({ ok: false, error: "Invalid content" });
+  try {
+    validateRegistrationPeriods(incoming.registrationPeriods);
+  } catch (validationError) {
+    return res.status(400).json({ ok: false, error: validationError.message });
+  }
   try {
     const content = mergeDefaults(DEFAULT_CONTENT, incoming);
     await storage.saveContent(content);

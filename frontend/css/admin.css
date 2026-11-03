@@ -135,6 +135,8 @@ table.a-table tr:hover td { background:rgba(59,130,246,.06); }
 .a-period .a-row { align-items:flex-end; }
 .a-date-field { display:block; min-width:170px; color:var(--a-muted); font-size:.78rem; }
 .a-date-field .a-input { display:block; margin-top:.25rem; }
+.a-period-deadlines { padding:.35rem 0 .75rem; }
+.a-period-deadline-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(145px,1fr)); gap:.55rem; margin-top:.45rem; }
 #dates-list .a-row { flex-wrap:nowrap; }
 #dates-list .a-row .a-input { min-width:0; }
 .fees-grid table { min-width:0; text-align:left; }
@@ -147,8 +149,16 @@ table.a-table tr:hover td { background:rgba(59,130,246,.06); }
 .a-coupon { padding:.4rem 0; border-bottom:1px solid var(--a-line); }
 .a-coupon .a-input { min-width:130px; }
 .coupon-table-link { display:flex; align-items:center; gap:.45rem; min-width:220px; }
-.coupon-table-link a { overflow:hidden; max-width:180px; text-overflow:ellipsis; white-space:nowrap; }
-.coupon-actions { display:flex; gap:.4rem; flex-wrap:wrap; }
+.coupon-table-link a { display:block; flex:1 1 150px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.coupon-actions { display:flex; align-items:center; justify-content:flex-end; gap:.3rem; flex-wrap:wrap; }
+#coupons-list .coupon-actions .a-btn { flex:0 0 auto; padding:.35rem .45rem; font-size:.72rem; }
+#coupons-list td { vertical-align:middle; }
+#coupons-list .coupon-table { min-width:900px; table-layout:fixed; }
+#coupons-list .coupon-table th:nth-child(1) { width:105px; }
+#coupons-list .coupon-table th:nth-child(2) { width:100px; }
+#coupons-list .coupon-table th:nth-child(3) { width:32%; }
+#coupons-list .coupon-table th:nth-child(4),#coupons-list .coupon-table th:nth-child(5) { width:85px; }
+#coupons-list .coupon-table th:last-child { width:225px; text-align:right; }
 .a-modal { position:fixed; z-index:100; inset:0; display:none; align-items:center; justify-content:center; padding:1rem; background:rgba(11,18,32,.72); }
 .a-modal[hidden] { display:none !important; }
 .a-modal.open { display:flex; }

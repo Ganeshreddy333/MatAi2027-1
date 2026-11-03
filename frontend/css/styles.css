@@ -755,9 +755,11 @@ ul.ticks li::before { content:"✓"; position:absolute; left:0; color:var(--blue
 .registration-choice > div { display:grid; gap:.2rem; }
 .registration-choice strong,.registration-addon-option strong { color:var(--ink); font-size:.9rem; }
 .registration-choice-price { color:#c95700; font-family:var(--font-head); font-weight:800; }
+.registration-choice-deadline { color:var(--muted); font-size:.72rem; }
 .registration-qty { display:flex; align-items:center; justify-content:center; min-width:36px; color:var(--muted); }
 .registration-qty input[type="radio"] { width:20px; height:20px; margin:0; accent-color:var(--teal-dark); cursor:pointer; }
 .registration-qty-unavailable { color:var(--muted); font-size:.72rem; }
+.registration-plan-deadline { color:var(--muted); font-size:.82rem; }
 .participant-total { display:flex; justify-content:space-between; align-items:center; max-width:320px; margin:0 0 1.2rem auto; padding:.7rem 1rem; background:var(--bg-soft); border-radius:8px; font-weight:700; }
 .participant-stepper { display:inline-flex; align-items:center; gap:.35rem; }
 .participant-stepper button { display:grid; width:30px; height:30px; place-items:center; padding:0; border:1px solid var(--line); border-radius:7px; background:#fff; color:var(--navy); font:700 1.1rem/1 var(--font); cursor:pointer; }

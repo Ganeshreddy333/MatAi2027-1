@@ -62,7 +62,7 @@ final class RegistrationService
         $preferredCurrency = $currency['preferredCurrency'];
 
         $content = $this->withDefaults($this->store->content());
-        $period = $this->effectivePeriod($content['registrationPeriods'] ?? []);
+        $period = null;
         $items = [];
         $grossCents = 0;
         $participantCount = 0;
@@ -82,8 +82,17 @@ final class RegistrationService
             $category = in_array($priceKey, ['Speaker', 'Delegate', 'Poster', 'Student', 'Virtual'], true)
                 ? $priceKey
                 : null;
+            $itemPeriod = $category !== null
+                ? $this->effectivePeriod($content['registrationPeriods'] ?? [], $category)
+                : null;
+            if ($category !== null && $itemPeriod === null) {
+                throw new DomainException('Registration has closed for ' . $label . '.');
+            }
+            if ($itemPeriod !== null && $period === null) {
+                $period = $itemPeriod;
+            }
             $price = $category !== null
-                ? ($content['fees'][$period][$category] ?? null)
+                ? ($content['fees'][$itemPeriod][$category] ?? null)
                 : ($content['registrationPricing']['fixedItems'][$priceKey] ?? null);
             if (!is_numeric($price) || (float) $price < 0 || (float) $price > 1000000) {
                 throw new DomainException('The configured price for ' . $label . ' is invalid.');
@@ -98,6 +107,7 @@ final class RegistrationService
         if ($participantCount < 1 || $grossCents > 99999999) {
             throw new DomainException('Select at least one participant registration category with a valid total.');
         }
+        $period ??= $this->effectivePeriod($content['registrationPeriods'] ?? []);
 
         $accommodation = $this->arrayValue($content['accommodation'] ?? null);
         $type = (string) ($data['accommodationType'] ?? '');
@@ -191,18 +201,35 @@ final class RegistrationService
         );
     }
 
-    public function effectivePeriod(array $periods): string
+    public function effectivePeriod(array $periods, ?string $category = null): ?string
     {
         $index = array_search($periods['active'] ?? '', self::PERIODS, true);
         $index = $index === false ? 0 : $index;
         $today = gmdate('Y-m-d');
         while ($index < count(self::PERIODS) - 1) {
             $current = $periods[self::PERIODS[$index]] ?? [];
-            $deadline = is_array($current) ? ($current['deadline'] ?? '') : '';
+            $categoryDeadlines = is_array($current) && is_array($current['categoryDeadlines'] ?? null)
+                ? $current['categoryDeadlines']
+                : [];
+            $deadline = is_array($current)
+                ? (($category !== null ? ($categoryDeadlines[$category] ?? null) : null) ?? ($current['deadline'] ?? ''))
+                : '';
             if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $deadline) || $deadline >= $today) {
                 break;
             }
             $index++;
+        }
+        if ($index === count(self::PERIODS) - 1) {
+            $current = $periods[self::PERIODS[$index]] ?? [];
+            $categoryDeadlines = is_array($current) && is_array($current['categoryDeadlines'] ?? null)
+                ? $current['categoryDeadlines']
+                : [];
+            $deadline = is_array($current)
+                ? (($category !== null ? ($categoryDeadlines[$category] ?? null) : null) ?? ($current['deadline'] ?? ''))
+                : '';
+            if (preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $deadline) && $deadline < $today) {
+                return null;
+            }
         }
         return self::PERIODS[$index];
     }
@@ -212,9 +239,9 @@ final class RegistrationService
         $defaults = [
             'registrationPeriods' => [
                 'active' => 'Early Bird',
-                'Early Bird' => ['deadline' => 'To Be Announced'],
-                'Mid-Term' => ['deadline' => 'To Be Announced'],
-                'On-Spot' => ['deadline' => 'To Be Announced'],
+                'Early Bird' => ['deadline' => 'To Be Announced', 'categoryDeadlines' => []],
+                'Mid-Term' => ['deadline' => 'To Be Announced', 'categoryDeadlines' => []],
+                'On-Spot' => ['deadline' => 'To Be Announced', 'categoryDeadlines' => []],
             ],
             'fees' => [
                 'Early Bird' => ['Speaker' => 649, 'Delegate' => 749, 'Poster' => 549, 'Student' => 399, 'Virtual' => 299],

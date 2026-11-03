@@ -19,6 +19,13 @@
   // The active registration period and fees are managed in Admin.
   var ACTIVE = "eb";
   var PERIOD_TO_CODE = { "Early Bird": "eb", "Mid-Term": "mt", "On-Spot": "os" };
+  var CATEGORY_BY_QUANTITY = {
+    qty_speaker: "Speaker",
+    qty_delegate: "Delegate",
+    qty_poster: "Poster",
+    qty_student: "Student",
+    qty_virtual: "Virtual"
+  };
   var TAX_RATE = 0.05;
   var DISCOUNT_CODES = {};
 
@@ -257,25 +264,41 @@
     var categories = rows.filter(function (tr) { return !tr.hasAttribute("data-fixed"); });
     target.innerHTML = periods.map(function (period) {
       var config = registrationPeriodConfig[period.name] || {};
-      var active = period.code === ACTIVE;
       var label = config.label || (period.name === "On-Spot" ? "Late Registration" : period.name + " Registration");
       if (period.name === "On-Spot" && label === "On-spot Registration") label = "Late Registration";
-      var deadline = formatDeadline(config.deadline);
-      var deadlinePassed = /^\d{4}-\d{2}-\d{2}$/.test(config.deadline || "") && config.deadline < new Date().toISOString().slice(0, 10);
+      var availableCategories = [];
       var choices = categories.map(function (tr) {
         var item = tr.getAttribute("data-item") || "Registration";
-        var price = Number(tr.getAttribute("data-" + period.code)) || 0;
         var qty = tr.querySelector("input[data-qty]");
-        var control = active && qty
-          ? '<label class="registration-qty"><input type="radio" name="registration-category-choice" value="' + escapeHtml(qty.name) + '"' + (selectedRegistrationCategory === qty.name ? " checked" : "") + ' data-registration-category aria-label="Select ' + escapeHtml(item) + ' registration"></label>'
+        var category = CATEGORY_BY_QUANTITY[qty && qty.name];
+        var categoryDeadline = getCategoryDeadline(config, category);
+        var isAvailable = category && effectiveRegistrationPeriod(registrationPeriodConfig, category) === period.name;
+        if (isAvailable) availableCategories.push(category);
+        var price = Number(tr.getAttribute("data-" + period.code)) || 0;
+        var deadlinePassed = /^\d{4}-\d{2}-\d{2}$/.test(categoryDeadline || "") &&
+          categoryDeadline < new Date().toISOString().slice(0, 10);
+        var control = isAvailable && qty
+          ? '<label class="registration-qty"><input type="radio" name="registration-category-choice" value="' + escapeHtml(qty.name) + '"' + (selectedRegistrationCategory === qty.name ? " checked" : "") + ' data-registration-category data-period-code="' + period.code + '" aria-label="Select ' + escapeHtml(item) + ' registration"></label>'
           : '<span class="registration-qty-unavailable">' + (deadlinePassed ? "Period completed" : "Period not active") + "</span>";
-        return '<div class="registration-choice"><div><strong>' + escapeHtml(item) + '</strong><span class="registration-choice-price">' + fmt(price) + '</span></div>' + control + '</div>';
+        return '<div class="registration-choice"><div><strong>' + escapeHtml(item) + '</strong><span class="registration-choice-price">' + fmt(price) + '</span><span class="registration-choice-deadline">Deadline: ' + escapeHtml(formatDeadline(categoryDeadline)) + '</span></div>' + control + '</div>';
       }).join("");
-      return '<section class="registration-period-card' + (active ? ' active' : '') + '"><header><div><h4>' + escapeHtml(label) + '</h4><p>' + escapeHtml(deadline) + '</p></div>' + (active ? '<span class="period-active">Available</span>' : '') + '</header><div class="registration-choices">' + choices + '</div></section>';
+      var deadlines = categories.map(function (tr) {
+        var qty = tr.querySelector("input[data-qty]");
+        return getCategoryDeadline(config, CATEGORY_BY_QUANTITY[qty && qty.name]) || "";
+      });
+      var sharedDeadline = deadlines.every(function (deadline) { return deadline === deadlines[0]; });
+      var periodDeadline = sharedDeadline ? formatDeadline(deadlines[0]) : "Deadlines vary by category";
+      var active = availableCategories.length > 0;
+      return '<section class="registration-period-card' + (active ? ' active' : '') + '"><header><div><h4>' + escapeHtml(label) + '</h4><p>' + escapeHtml(periodDeadline) + '</p></div>' + (active ? '<span class="period-active">Available</span>' : '') + '</header><div class="registration-choices">' + choices + '</div></section>';
     }).join("");
     target.querySelectorAll("[data-registration-category]").forEach(function (input) {
       input.addEventListener("change", function () {
         selectedRegistrationCategory = input.value;
+        ACTIVE = input.getAttribute("data-period-code") || ACTIVE;
+        var periodInput = id("registration-period");
+        if (periodInput) periodInput.value = Object.keys(PERIOD_TO_CODE).filter(function (periodName) {
+          return PERIOD_TO_CODE[periodName] === ACTIVE;
+        })[0] || periodInput.value;
         categories.forEach(function (tr) {
           var source = tr.querySelector("input[data-qty]");
           if (source) source.value = source.name === selectedRegistrationCategory ? String(participantQuantity) : "0";
@@ -419,19 +442,27 @@
       .toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   }
 
-  function effectiveRegistrationPeriod(periods) {
+  function effectiveRegistrationPeriod(periods, category) {
     var order = ["Early Bird", "Mid-Term", "On-Spot"];
     var index = order.indexOf(periods && periods.active);
     if (index < 0) index = 0;
     var today = new Date().toISOString().slice(0, 10);
     while (index < order.length - 1) {
       var config = periods && periods[order[index]];
-      var deadline = config && config.deadline;
+      var deadline = getCategoryDeadline(config, category);
       // A tier remains active through its deadline date, then advances the next day.
       if (!/^\d{4}-\d{2}-\d{2}$/.test(deadline || "") || deadline >= today) break;
       index += 1;
     }
+    if (index === order.length - 1) {
+      var finalConfig = periods && periods[order[index]];
+      var finalDeadline = getCategoryDeadline(finalConfig, category);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(finalDeadline || "") && finalDeadline < today) return null;
+    }
     return order[index];
+  }
+  function getCategoryDeadline(config, category) {
+    return config && config.categoryDeadlines && config.categoryDeadlines[category] || config && config.deadline || "";
   }
 
   /* ---- Optional admin-managed participation fees ---- */
@@ -459,16 +490,28 @@
   function applyRegistrationPeriods(periods) {
     if (!periods) return;
     registrationPeriodConfig = periods;
-    var effectivePeriod = effectiveRegistrationPeriod(periods);
-    ACTIVE = PERIOD_TO_CODE[effectivePeriod] || ACTIVE;
+    var selectedCategory = CATEGORY_BY_QUANTITY[selectedRegistrationCategory];
+    var effectivePeriod = effectiveRegistrationPeriod(periods, selectedCategory);
+    if (selectedCategory && !effectivePeriod) {
+      var selectedQuantity = sourceQuantity(selectedRegistrationCategory);
+      if (selectedQuantity) selectedQuantity.value = "0";
+      selectedRegistrationCategory = "";
+      selectedCategory = "";
+      effectivePeriod = effectiveRegistrationPeriod(periods);
+    }
+    ACTIVE = PERIOD_TO_CODE[effectivePeriod] || "os";
     var periodInput = id("registration-period");
-    if (periodInput) periodInput.value = effectivePeriod;
+    if (periodInput) periodInput.value = effectivePeriod || "On-Spot";
     var order = ["Early Bird", "Mid-Term", "On-Spot"];
     form.querySelectorAll(".fee-table th.tier-h").forEach(function (th, i) {
       var p = order[i], row = periods[p] || {};
       var label = row.label || p;
       if (p === "On-Spot" && label === "On-spot Registration") label = "Late Registration";
-      var deadline = formatDeadline(row.deadline);
+      var categoryDeadlines = Object.keys(CATEGORY_BY_QUANTITY).map(function (quantityName) {
+        return getCategoryDeadline(row, CATEGORY_BY_QUANTITY[quantityName]) || "";
+      });
+      var deadline = categoryDeadlines.every(function (value) { return value === categoryDeadlines[0]; })
+        ? formatDeadline(categoryDeadlines[0]) : "Deadlines vary by category";
       th.textContent = label;
       var note = document.createElement("small");
       note.textContent = deadline;
@@ -500,7 +543,8 @@
   window.setInterval(function () {
     var today = new Date().toISOString().slice(0, 10);
     var dateChanged = today !== lastRegistrationDate;
-    if (dateChanged || effectiveRegistrationPeriod(registrationPeriodConfig) !== (id("registration-period") && id("registration-period").value)) {
+    var selectedCategory = CATEGORY_BY_QUANTITY[selectedRegistrationCategory];
+    if (dateChanged || (effectiveRegistrationPeriod(registrationPeriodConfig, selectedCategory) || "On-Spot") !== (id("registration-period") && id("registration-period").value)) {
       lastRegistrationDate = today;
       applyRegistrationPeriods(registrationPeriodConfig);
     }
@@ -768,6 +812,7 @@
     if (preferredQty) {
       selectedRegistrationCategory = preferredQty.name;
       preferredQty.value = "1";
+      applyRegistrationPeriods(registrationPeriodConfig);
       renderRegistrationOptions();
     }
   }
