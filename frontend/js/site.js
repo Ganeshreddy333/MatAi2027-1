@@ -164,7 +164,7 @@
             '<strong class="footer-wordmark"><span class="brand-mat">Mat</span><span class="brand-ai">Ai</span> <span class="brand-year">2027</span></strong>' +
             '<p>International Conference on Materials Science, Engineering &amp; Artificial Intelligence.</p>' +
             '<p><strong style="color:#fff">October 13–14, 2027</strong><br>Berlin, Germany</p>' +
-            '<p><a class="footer-nvs-link" href="https://www.nvsinternational.com/" target="_blank" rel="noopener noreferrer">NVS International Services</a></p>' +
+            '<p><a class="footer-nvs-link" href="https://www.nvsinternationalservices.com/">NVS International Services</a></p>' +
           '</div>' +
           '<div>' +
             '<h5>Explore</h5>' +
