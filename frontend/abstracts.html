@@ -52,14 +52,38 @@
             <div class="field full"><label for="abstract-attachment">Abstract Document <span class="req">*</span></label><div class="abstract-upload-zone" data-upload-zone><strong>Drop your files</strong><span>PDF, DOC, or DOCX supported. Each file must be less than 5 MB.</span><input id="abstract-attachment" type="file" name="attachment" accept=".pdf,.doc,.docx" required><small data-file-name aria-live="polite">Choose a document or drop it here.</small><div class="error-msg">Choose a PDF or Word document under 5 MB.</div></div></div>
             <div class="field full captcha-box" data-captcha><label for="abstract-captcha">Captcha Verification <span class="req">*</span></label><div class="captcha-row"><span data-captcha-question aria-label="Math verification question"></span><input id="abstract-captcha" type="text" name="captchaAnswer" inputmode="numeric" autocomplete="off" placeholder="Enter answer" required><button class="human-retry" type="button" data-captcha-reset aria-label="Refresh captcha" title="Refresh captcha">&#8635;</button></div><small data-captcha-status aria-live="polite">Solve the captcha before continuing.</small></div>
           </div>
-          <div class="field full form-consent abstract-guidelines-acknowledgement"><label class="chk" for="abstract-guidelines-acknowledged"><input id="abstract-guidelines-acknowledged" type="checkbox" name="guidelinesAcknowledged" value="accepted" required><span>I have read and agree to the <a class="consent-link" href="general-information.html#abstract-submission-guidelines">Abstract Guidelines</a>.</span></label><div class="error-msg">Please read and agree to the Abstract Guidelines before submitting.</div></div>
+          <div class="field full form-consent abstract-guidelines-acknowledgement"><label class="chk" for="abstract-guidelines-acknowledged"><input id="abstract-guidelines-acknowledged" type="checkbox" name="guidelinesAcknowledged" value="accepted" required><span>I have read and agree to the <a class="consent-link" href="#abstract-guidelines-modal" id="abstract-guidelines-open" aria-haspopup="dialog" aria-controls="abstract-guidelines-modal">Abstract Guidelines</a>.</span></label><div class="error-msg">Please read and agree to the Abstract Guidelines before submitting.</div></div>
           <div class="btn-row mt-2"><button type="submit" class="btn btn-primary">Submit Abstract</button></div>
         </form>
       </div>
     </section>
   </main>
+  <section id="abstract-guidelines" data-abstract-guidelines-source hidden>
+    <div class="container narrow">
+      <h2>Abstract Submission Guidelines</h2>
+      <p>MatAi 2027 welcomes original scientific and technical contributions in materials science, engineering, artificial intelligence, computational research, materials informatics, advanced manufacturing, and related interdisciplinary fields.</p>
+      <h3>Abstract preparation</h3>
+      <p>Prepare your abstract in clear, professional scientific English. It should state the research context, objective, methodology, principal findings where available, and scientific or technical significance.</p>
+      <ul>
+        <li><strong>Title:</strong> Use a concise, informative title.</li>
+        <li><strong>Authors and affiliations:</strong> Provide all author names, institutions, and the presenting author’s details.</li>
+        <li><strong>Keywords:</strong> Include approximately three to six relevant keywords.</li>
+        <li><strong>Originality:</strong> Submit original work and obtain permissions for any third-party material.</li>
+      </ul>
+      <h3>Submission requirements</h3>
+      <ul>
+        <li>Select the presentation category and scientific session that best fit your work.</li>
+        <li>Upload the completed abstract as a PDF, DOC, or DOCX file under 5 MB.</li>
+        <li>Ensure that author details, affiliations, and contact information are accurate.</li>
+        <li>Abstract submission does not guarantee acceptance or a specific presentation category.</li>
+      </ul>
+      <h3>Review and notification</h3>
+      <p>Submissions may be evaluated for relevance, originality, scientific quality, clarity, and methodological soundness. Authors will be notified using the contact details provided in the submission.</p>
+    </div>
+  </section>
   <div id="site-footer"></div>
   <script src="js/site.js?v=20261103-admin-integration"></script>
   <script src="js/forms.js?v=20261101-abstract-content-reinit-1"></script>
+  <script src="js/abstract-guidelines-modal.js?v=20261108-modal"></script>
 </body>
 </html>
