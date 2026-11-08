@@ -116,8 +116,10 @@ final class RegistrationService
                 throw new DomainException('Accommodation is not available.');
             }
             $nights = filter_var($data['accommodationNights'] ?? null, FILTER_VALIDATE_INT);
-            if ($nights === false || $nights < 1 || $nights > 5) {
-                throw new DomainException('Accommodation must be booked for one to five nights.');
+            $maxNights = filter_var($accommodation['maxNights'] ?? 5, FILTER_VALIDATE_INT);
+            $maxNights = $maxNights !== false && $maxNights >= 1 && $maxNights <= 100 ? $maxNights : 5;
+            if ($nights === false || $nights < 1 || $nights > $maxNights) {
+                throw new DomainException('Accommodation must be booked for one to ' . $maxNights . ' nights.');
             }
             $price = $accommodation['pricePerNight'] ?? ($content['registrationPricing']['fixedItems']['addon_accommodation_' . $type] ?? null);
             if (!is_numeric($price) || (float) $price < 0) {
@@ -249,7 +251,7 @@ final class RegistrationService
                 'On-Spot' => ['Speaker' => 849, 'Delegate' => 949, 'Poster' => 749, 'Student' => 599, 'Virtual' => 499],
             ],
             'registrationPricing' => ['fixedItems' => []],
-            'accommodation' => ['enabled' => false, 'pricePerNight' => 0],
+            'accommodation' => ['enabled' => false, 'pricePerNight' => 0, 'maxNights' => 5],
             'coupons' => [],
         ];
         foreach ($defaults as $key => $value) {
@@ -257,6 +259,7 @@ final class RegistrationService
                 $content[$key] = $value;
             }
         }
+        $content['accommodation'] = array_merge($defaults['accommodation'], $this->arrayValue($content['accommodation']));
         foreach ($defaults['fees'] as $period => $categories) {
             $savedFees = $this->arrayValue($content['fees'][$period] ?? null);
             $content['fees'][$period] = array_merge($categories, $savedFees);

@@ -41,16 +41,7 @@
       { name: "Demo Committee Member 07", group: "Scientific Committee", role: "Demo Committee Member", org: "Demo Polytechnic, India", bio: "Demo profile for preview only. Replace with the confirmed committee member's photo, affiliation, and biography before publication." },
       { name: "Demo Committee Member 08", group: "Scientific Committee", role: "Demo Committee Member", org: "Demo Engineering University, Canada", bio: "Demo profile for preview only. Replace with the confirmed committee member's photo, affiliation, and biography before publication." }
     ],
-    speakers: [
-      { name: "Demo Speaker 01", group: "Keynote Speakers", role: "Demo Keynote Speaker", org: "Institution to be confirmed", topic: "Advanced materials research", bio: "Demo profile for layout and scrolling review. Replace with the confirmed speaker biography before publication." },
-      { name: "Demo Speaker 02", group: "Keynote Speakers", role: "Demo Keynote Speaker", org: "Institution to be confirmed", topic: "Artificial intelligence in materials science", bio: "Demo profile for layout and scrolling review. Replace with the confirmed speaker biography before publication." },
-      { name: "Demo Speaker 03", group: "Plenary Speakers", role: "Demo Plenary Speaker", org: "Institution to be confirmed", topic: "Materials engineering and innovation", bio: "Demo profile for layout and scrolling review. Replace with the confirmed speaker biography before publication." },
-      { name: "Demo Speaker 04", group: "Plenary Speakers", role: "Demo Plenary Speaker", org: "Institution to be confirmed", topic: "Computational materials science", bio: "Demo profile for layout and scrolling review. Replace with the confirmed speaker biography before publication." },
-      { name: "Demo Speaker 05", group: "Featured / Invited Speakers", role: "Demo Invited Speaker", org: "Institution to be confirmed", topic: "Machine learning and materials informatics", bio: "Demo profile for layout and scrolling review. Replace with the confirmed speaker biography before publication." },
-      { name: "Demo Speaker 06", group: "Featured / Invited Speakers", role: "Demo Invited Speaker", org: "Institution to be confirmed", topic: "Nanomaterials and nanotechnology", bio: "Demo profile for layout and scrolling review. Replace with the confirmed speaker biography before publication." },
-      { name: "Demo Speaker 07", group: "Featured / Invited Speakers", role: "Demo Invited Speaker", org: "Institution to be confirmed", topic: "AI-driven materials discovery", bio: "Demo profile for layout and scrolling review. Replace with the confirmed speaker biography before publication." },
-      { name: "Demo Speaker 08", group: "Featured / Invited Speakers", role: "Demo Invited Speaker", org: "Institution to be confirmed", topic: "Intelligent manufacturing", bio: "Demo profile for layout and scrolling review. Replace with the confirmed speaker biography before publication." }
-    ]
+    speakers: []
   };
 
   function get(obj, path) {
@@ -250,7 +241,7 @@
       speakerData,
       "Speaker names and profiles will be published in the final scientific program.", "🎤");
     renderPeople("[data-speaker-carousel]", "data-speaker-carousel",
-      speakerData.concat(committeeData),
+      speakerData,
       "Speaker names and profiles will be published in the final scientific program.", "🎤");
 
     updateVenueMap(content);

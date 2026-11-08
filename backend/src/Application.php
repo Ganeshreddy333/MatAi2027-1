@@ -1293,6 +1293,11 @@ final class Application
                 || (float) $accommodation['pricePerNight'] < 0) {
                 throw new DomainException('Accommodation price per night must be a valid monetary amount.');
             }
+            if (isset($accommodation['maxNights'])
+                && (!filter_var($accommodation['maxNights'], FILTER_VALIDATE_INT)
+                    || (int) $accommodation['maxNights'] < 1 || (int) $accommodation['maxNights'] > 100)) {
+                throw new DomainException('Accommodation maximum nights must be a whole number between 1 and 100.');
+            }
             foreach (['availableFrom', 'availableUntil'] as $field) {
                 if (!empty($accommodation[$field]) && !preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $accommodation[$field])) {
                     throw new DomainException('Accommodation availability dates must use YYYY-MM-DD.');

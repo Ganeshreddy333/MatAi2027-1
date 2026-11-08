@@ -227,7 +227,7 @@
           <p class="text-muted">Optional accommodation is charged per night. Choose a room type and enter your stay dates.</p>
           <div class="form-grid">
             <div class="field"><label for="accommodation-type">Room Type</label><select name="accommodationType" id="accommodation-type"><option value="">No accommodation</option><option value="single">Single Occupancy</option><option value="double">Double Occupancy</option></select></div>
-            <div class="field accommodation-stay-field" id="accommodation-nights-field" hidden><label for="accommodation-nights">Number of Nights</label><select name="accommodationNights" id="accommodation-nights"><option value="1">1 night</option><option value="2">2 nights</option><option value="3">3 nights</option><option value="4">4 nights</option><option value="5">5 nights</option></select></div>
+            <div class="field accommodation-stay-field" id="accommodation-nights-field" hidden><label for="accommodation-nights">Number of Nights</label><select name="accommodationNights" id="accommodation-nights" data-default-max-nights="5"></select></div>
             <div class="field accommodation-stay-field" id="accommodation-check-in-field" hidden><label for="check-in-date">Check-in Date</label><input type="date" name="checkInDate" id="check-in-date"></div>
             <div class="field accommodation-stay-field" id="accommodation-check-out-field" hidden><label for="check-out-date">Check-out Date</label><input type="date" name="checkOutDate" id="check-out-date" readonly aria-describedby="accommodation-checkout-help"><span class="hint" id="accommodation-checkout-help">Calculated from your check-in date and number of nights.</span></div>
           </div>

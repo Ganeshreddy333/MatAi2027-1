@@ -46,7 +46,6 @@
       { id: "invited-speaker", label: "Invited Speaker" }
     ],
     "abstracts.html": [
-      { id: "abstract-sessions", label: "Sessions" },
       { id: "abstract-submission", label: "Abstract Submission" }
     ],
     "general-information.html": [
@@ -89,7 +88,14 @@
         { href: "meet-our-experts.html#invited-speaker", label: "Invited Speaker" }
       ]
     },
-    { href: "abstracts.html", label: "Abstracts", drop: pageDrop("abstracts.html") },
+    {
+      href: "abstracts.html",
+      label: "Abstracts",
+      drop: [
+        { href: "sessions.html#scientific-sessions", label: "Sessions" },
+        { href: "abstracts.html#abstract-submission", label: "Abstract Submission" }
+      ]
+    },
     {
       href: "sponsors-exhibition.html",
       label: "Sponsors & Exhibition",
@@ -155,10 +161,10 @@
       '<div class="container">' +
         '<div class="footer-grid">' +
           '<div class="footer-brand">' +
-            '<div class="logo">Ai</div>' +
             '<strong class="footer-wordmark"><span class="brand-mat">Mat</span><span class="brand-ai">Ai</span> <span class="brand-year">2027</span></strong>' +
             '<p>International Conference on Materials Science, Engineering &amp; Artificial Intelligence.</p>' +
             '<p><strong style="color:#fff">October 13–14, 2027</strong><br>Berlin, Germany</p>' +
+            '<p><a class="footer-nvs-link" href="https://www.nvsinternational.com/" target="_blank" rel="noopener noreferrer">NVS International Services</a></p>' +
           '</div>' +
           '<div>' +
             '<h5>Explore</h5>' +
@@ -383,6 +389,7 @@
 
   function initAutoScrollRails() {
     document.querySelectorAll(".partner-rail, .speaker-rail").forEach(function (rail) {
+      if (document.body.classList.contains("home-page") && rail.classList.contains("speaker-rail")) return;
       if (rail.querySelector(".auto-scroll-track")) return;
       var cards = Array.prototype.slice.call(rail.children);
       if (!cards.length) return;

@@ -3,397 +3,63 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Abstracts — MatAi 2027</title>
-  <meta name="description" content="Abstract guidelines, submission, and sessions for MatAi 2027.">
+  <title>Abstract Submission — MatAi 2027</title>
+  <meta name="description" content="Submit an abstract to MatAi 2027.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css?v=20261103-admin-integration">
   <style>
-    .abstract-page .container.narrow { max-width: 980px; }
-    .abstract-intro { margin-bottom: 1.25rem; }
-    .abstract-intro .eyebrow {
-      display:inline-block;
-      margin-bottom:.7rem;
-      color:var(--teal-dark);
-      letter-spacing:.18em;
-      font-size:.78rem;
-      font-weight:700;
-    }
-    .abstract-intro h2 {
-      margin:0;
-      font-size:clamp(2.5rem, 5vw, 4rem);
-      letter-spacing:-.04em;
-      color:#173c53;
-    }
-    .title-accent {
-      width:110px;
-      height:5px;
-      margin: 1rem auto 1.2rem;
-      border-radius:999px;
-      background: linear-gradient(90deg, #1fa0a5 0%, #3db7a6 25%, #d3b245 50%, #d06a3b 75%, #a94727 100%);
-      box-shadow: 0 10px 18px rgba(16, 42, 67, .08);
-    }
-    .abstract-intro .lead {
-      margin:0;
-      font-size:clamp(1.2rem, 2vw, 1.8rem);
-      line-height:1.45;
-      color:#3a536a;
-      font-weight:400;
-    }
-    .abstract-form-card {
-      border-radius: var(--radius);
-      border: 1px solid var(--line);
-      background:#fff;
-      box-shadow: var(--shadow);
-      padding: 2rem;
-    }
-    .abstract-template-download {
-      margin: 0 0 1.5rem;
-      display:flex;
-      justify-content:flex-start;
-    }
-    .abstract-template-download .btn {
-      justify-content:center;
-      border-radius: 10px;
-    }
+    .abstract-page .container.narrow { max-width:980px; }
+    .abstract-intro { margin-bottom:1.25rem; }
+    .abstract-intro .eyebrow { display:inline-block; margin-bottom:.7rem; color:var(--teal-dark); letter-spacing:.18em; font-size:.78rem; font-weight:700; }
+    .abstract-intro h2 { margin:0; font-size:clamp(2.5rem,5vw,4rem); letter-spacing:-.04em; color:#173c53; }
+    .title-accent { width:110px; height:5px; margin:1rem auto 1.2rem; border-radius:999px; background:linear-gradient(90deg,#1fa0a5,#3db7a6,#d3b245,#d06a3b,#a94727); }
+    .abstract-intro .lead { margin:0; font-size:clamp(1.2rem,2vw,1.8rem); line-height:1.45; color:#3a536a; }
+    .abstract-form-card { border:1px solid var(--line); background:#fff; box-shadow:var(--shadow); padding:2rem; }
+    .abstract-template-download { margin:0 0 1.5rem; display:flex; }
     .abstract-submission-grid { grid-template-columns:minmax(130px,.42fr) minmax(0,1.58fr); }
     .abstract-submission-grid .field:nth-child(n+3) { grid-column:1/-1; }
-    .abstract-upload-zone {
-      display:flex;
-      min-height:160px;
-      padding:1.25rem;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:.55rem;
-      border:2px dashed #82aaa9;
-      border-radius:16px;
-      background:#f2f8f8;
-      color:#173c53;
-      text-align:center;
-      transition:background .2s, border-color .2s;
-    }
-    .abstract-upload-zone strong { font-family:var(--font-head); font-size:1.15rem; color:#173c53; }
-    .abstract-upload-zone span { color:#526a7c; font-size:.85rem; }
-    .abstract-upload-zone input[type=file] {
-      display:block;
-      width:min(100%, 440px);
-      margin-top:.35rem;
-      padding:.45rem;
-      border:1px solid #c5d5dc;
-      border-radius:9px;
-      background:#fff;
-      color:#263d51;
-      font-size:.9rem;
-      text-align:left;
-    }
-    .abstract-upload-zone input[type=file]::file-selector-button {
-      margin-right:.7rem;
-      padding:.55rem .85rem;
-      border:0;
-      border-radius:7px;
-      background:#176d72;
-      color:#fff;
-      font:600 .85rem var(--font);
-      cursor:pointer;
-    }
-    .abstract-upload-zone input[type=file]::file-selector-button:hover { background:#11595e; }
-    .abstract-upload-zone[data-dragging="true"] { border-color:var(--teal-dark); background:#e5f3f1; }
-    .abstract-upload-zone [data-file-name] { color:#34566c; font-size:.88rem; font-weight:600; overflow-wrap:anywhere; }
-    .captcha-box {
-      max-width: 520px;
-      margin: 1rem auto 1.25rem;
-      padding: 1rem 1rem .8rem;
-      border: 1px solid #dfeaf0;
-      border-radius: 16px;
-      background: #f7fafb;
-      text-align: left;
-    }
-    .captcha-box label {
-      display: block;
-      margin-bottom: .5rem;
-      font-size: .9rem;
-      font-weight: 700;
-      color: var(--ink);
-    }
+    .abstract-upload-zone { display:flex; min-height:160px; padding:1.25rem; flex-direction:column; align-items:center; justify-content:center; gap:.55rem; border:2px dashed #82aaa9; border-radius:16px; background:#f2f8f8; color:#173c53; text-align:center; }
+    .abstract-upload-zone input[type=file] { width:min(100%,440px); padding:.45rem; border:1px solid #c5d5dc; border-radius:9px; background:#fff; }
+    .captcha-box { max-width:520px; margin:1rem auto 1.25rem; padding:1rem; border:1px solid #dfeaf0; border-radius:16px; background:#f7fafb; }
     .captcha-row { display:flex; align-items:center; gap:.75rem; }
-    .captcha-row span {
-      flex: 0 0 110px;
-      min-width: 110px;
-      min-height: 52px;
-      padding: .85rem .9rem;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: #edf3f6;
-      color: var(--blue);
-      font-family: var(--font-head);
-      font-size: 1.05rem;
-      font-weight: 800;
-      text-align: center;
-    }
-    .captcha-row input {
-      flex: 1;
-      min-height: 52px;
-      border-radius: 10px;
-      font-size: 1rem;
-    }
-    .captcha-box small { display:block; margin-top:.5rem; color:var(--muted); }
-    .captcha-box.captcha-solved small { color:#16834a; font-weight:700; }
-    .abstract-submission-grid .captcha-row .human-retry {
-      position: static;
-      min-width: 42px;
-      min-height: 42px;
-      padding: .35rem;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      background: var(--paper);
-      font-size: 1.1rem;
-      color: var(--blue);
-    }
-    @media(max-width:640px) { .abstract-submission-grid { grid-template-columns:1fr; } .abstract-submission-grid .field { grid-column:1/-1; } .abstract-form-card { padding: 1.2rem 1rem 1rem; } .abstract-template-download { justify-content:center; } .captcha-row { gap:.5rem; } .captcha-row span { flex-basis: 96px; min-width:96px; } }
+    .captcha-row span { flex:0 0 110px; min-height:52px; padding:.85rem .9rem; border:1px solid var(--line); border-radius:10px; background:#edf3f6; color:var(--blue); font-family:var(--font-head); font-weight:800; text-align:center; }
+    .captcha-row input { flex:1; min-height:52px; }
+    @media(max-width:640px) { .abstract-submission-grid { grid-template-columns:1fr; } .abstract-submission-grid .field { grid-column:1/-1; } .abstract-form-card { padding:1.2rem 1rem 1rem; } .abstract-template-download { justify-content:center; } }
   </style>
 </head>
 <body>
   <div id="site-header"></div>
-  <section class="page-hero">
-    <div class="container">
-      <div class="breadcrumb"><a href="index.html">Home</a> / Abstracts</div>
-      <h1>Abstracts</h1>
-    </div>
-  </section>
-  <section class="section" id="abstract-sessions">
-<div class="container narrow reveal">
-<h2>Scientific Sessions</h2>
-<p>International Conference on Materials Science, Engineering &amp; Artificial Intelligence</p>
-<p>October 13&#8211;14, 2027 | Berlin, Germany</p>
-<p>Advancing Materials Innovation through Science, Engineering &amp; Artificial Intelligence</p>
-<h3>Explore the Scientific Scope of MatAi 2027</h3>
-<p>MatAi 2027 welcomes scientific contributions across materials science, engineering, computational research, artificial intelligence, and related interdisciplinary fields. The scientific sessions provide a platform for presenting original research, discussing emerging methodologies, sharing technical developments, and exploring future directions in materials innovation.</p>
-<p>The conference focuses on the convergence of advanced materials research, engineering innovation, computational methodologies, machine learning, materials informatics, and AI-enabled technologies. Contributions may include experimental investigations, theoretical studies, computational analyses, data-driven research, engineering developments, and industrial applications.</p>
-<p>Authors are encouraged to identify the scientific session that best aligns with the objectives, methods, and principal contribution of their work.</p>
-<div class="session-catalog-grid" aria-label="MatAi 2027 scientific sessions">
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 01</span><span class="session-catalog-count">10 topics</span></div><h3>Advanced Materials &amp; Materials Engineering</h3><p class="s-overview">This session focuses on the development, design, processing, characterization, and engineering applications of advanced materials with enhanced mechanical, thermal, electrical, optical, and functional properties. Contributions addressing innovative materials systems and emerging engineering applications are encouraged.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Advanced Structural Materials</li><li>High-Performance Materials</li><li>Materials Design and Engineering</li><li>Structure–Property Relationships</li><li>Materials Synthesis and Processing</li><li>Surface and Interface Engineering</li><li>Materials Optimization</li><li>High-Temperature Materials</li><li>Lightweight Engineering Materials</li><li>Materials Performance and Reliability</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 02</span><span class="session-catalog-count">10 topics</span></div><h3>Nanomaterials &amp; Nanotechnology</h3><p class="s-overview">This session addresses research in nanoscale materials, structures, and technologies, covering synthesis, processing, characterization, modelling, and applications. Particular interest is given to advanced nanomaterials and AI-assisted approaches for nanoscale materials discovery and design.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Nanomaterials Synthesis</li><li>Nanostructured Materials</li><li>Nanocomposites</li><li>Two-Dimensional Materials</li><li>Carbon Nanomaterials</li><li>Quantum Nanostructures</li><li>Nanoelectronics</li><li>Nanophotonics</li><li>Nanoscale Characterization</li><li>AI-Assisted Nanomaterial Design</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 03</span><span class="session-catalog-count">10 topics</span></div><h3>Polymers &amp; Advanced Polymer Materials</h3><p class="s-overview">This session explores emerging polymeric materials and engineering strategies for improving performance, functionality, processability, and sustainability. Research covering advanced polymer architectures, functional systems, composites, and data-driven polymer design is welcomed.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Functional Polymers</li><li>High-Performance Polymers</li><li>Polymer Blends</li><li>Polymer Nanocomposites</li><li>Smart Polymers</li><li>Sustainable Polymers</li><li>Bio-Based Polymers</li><li>Polymer Processing</li><li>Polymer Characterization</li><li>Computational Polymer Science</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 04</span><span class="session-catalog-count">10 topics</span></div><h3>Composite Materials &amp; Hybrid Structures</h3><p class="s-overview">This session focuses on advanced composite and hybrid materials designed to achieve improved strength, stiffness, durability, lightweight performance, and multifunctionality. Contributions may address material design, manufacturing, characterization, modelling, and engineering applications.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Fiber-Reinforced Composites</li><li>Polymer Matrix Composites</li><li>Metal Matrix Composites</li><li>Ceramic Matrix Composites</li><li>Hybrid Composites</li><li>Nanocomposites</li><li>Lightweight Composite Structures</li><li>Composite Manufacturing</li><li>Damage and Failure Analysis</li><li>AI-Assisted Composite Design</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 05</span><span class="session-catalog-count">10 topics</span></div><h3>Metals, Alloys &amp; Metallurgical Engineering</h3><p class="s-overview">This session covers advances in metallic materials, alloy development, microstructure engineering, processing technologies, and performance optimization. Emphasis is placed on emerging alloys and computational or AI-enabled approaches to metallic materials design.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Advanced Metallic Materials</li><li>High-Entropy Alloys</li><li>Lightweight Alloys</li><li>Alloy Design</li><li>Microstructure Engineering</li><li>Metal Processing</li><li>Heat Treatment</li><li>Additive Manufacturing of Metals</li><li>Mechanical Performance</li><li>AI-Assisted Alloy Design</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 06</span><span class="session-catalog-count">10 topics</span></div><h3>Advanced Ceramics &amp; Functional Ceramics</h3><p class="s-overview">This session examines advanced ceramic materials with structural, electrical, thermal, optical, magnetic, and biomedical functionality. Research covering processing, microstructure, characterization, modelling, and technological applications is included.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Structural Ceramics</li><li>Functional Ceramics</li><li>Ceramic Composites</li><li>Electroceramics</li><li>Bioceramics</li><li>Dielectric Materials</li><li>Ceramic Processing</li><li>Ceramic Coatings</li><li>High-Temperature Ceramics</li><li>Computational Ceramic Materials</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 07</span><span class="session-catalog-count">10 topics</span></div><h3>Smart &amp; Multifunctional Materials</h3><p class="s-overview">This session explores materials capable of responding to external stimuli or performing multiple functions within advanced engineering systems. Research on adaptive, responsive, self-healing, and intelligent material systems is particularly relevant.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Smart Materials</li><li>Multifunctional Materials</li><li>Stimuli-Responsive Materials</li><li>Shape-Memory Materials</li><li>Self-Healing Materials</li><li>Adaptive Materials</li><li>Functional Surfaces</li><li>Responsive Polymers</li><li>Intelligent Material Systems</li><li>Smart Structures</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 08</span><span class="session-catalog-count">10 topics</span></div><h3>Sustainable Materials &amp; Green Engineering</h3><p class="s-overview">This session addresses materials research supporting resource efficiency, circularity, reduced environmental impact, and sustainable engineering. Contributions may focus on sustainable material development, processing, recycling, and life-cycle assessment.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Sustainable Materials</li><li>Green Materials Processing</li><li>Circular Materials Economy</li><li>Recyclable Materials</li><li>Bio-Based Materials</li><li>Low-Carbon Materials</li><li>Sustainable Manufacturing</li><li>Materials Recycling</li><li>Life-Cycle Assessment</li><li>AI for Sustainable Materials Design</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 09</span><span class="session-catalog-count">10 topics</span></div><h3>Energy Storage Materials</h3><p class="s-overview">This session focuses on materials and technologies for efficient energy storage, including emerging battery chemistries and electrochemical storage systems. Both experimental and computational approaches to improving energy density, stability, safety, and lifetime are welcomed.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Lithium-Ion Battery Materials</li><li>Sodium-Ion Batteries</li><li>Solid-State Batteries</li><li>Battery Electrodes</li><li>Electrolyte Materials</li><li>Supercapacitor Materials</li><li>Energy Storage Interfaces</li><li>Battery Degradation</li><li>Computational Battery Materials</li><li>AI for Energy Materials Discovery</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 10</span><span class="session-catalog-count">10 topics</span></div><h3>Energy Conversion &amp; Renewable Energy Materials</h3><p class="s-overview">This session examines materials enabling efficient energy conversion and renewable energy technologies. Research on photovoltaic, hydrogen, fuel-cell, catalytic, thermoelectric, and related functional materials is included.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Photovoltaic Materials</li><li>Solar Cell Materials</li><li>Fuel Cell Materials</li><li>Hydrogen Materials</li><li>Hydrogen Storage</li><li>Thermoelectric Materials</li><li>Catalytic Materials</li><li>Energy Conversion Materials</li><li>Photocatalytic Materials</li><li>AI-Driven Energy Materials Discovery</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 11</span><span class="session-catalog-count">10 topics</span></div><h3>Biomaterials &amp; Biomedical Materials</h3><p class="s-overview">This session covers materials designed for biomedical, healthcare, and biological applications, with emphasis on biocompatibility, functionality, therapeutic performance, and advanced fabrication. Contributions combining biomaterials research with computational and AI methods are encouraged.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Biomaterials</li><li>Biomedical Materials</li><li>Biocompatible Materials</li><li>Bioactive Materials</li><li>Tissue Engineering</li><li>Implant Materials</li><li>Drug Delivery Materials</li><li>Nanobiomaterials</li><li>Biofabrication</li><li>AI in Biomedical Materials</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 12</span><span class="session-catalog-count">10 topics</span></div><h3>Electronic, Semiconductor &amp; Photonic Materials</h3><p class="s-overview">This session focuses on materials enabling next-generation electronic, semiconductor, optical, and photonic technologies. Research addressing materials design, processing, characterization, and device-related performance is welcomed.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Semiconductor Materials</li><li>Electronic Materials</li><li>Dielectric Materials</li><li>Photonic Materials</li><li>Optoelectronic Materials</li><li>Magnetic Materials</li><li>Thin-Film Materials</li><li>Electronic Interfaces</li><li>Functional Electronic Materials</li><li>AI for Electronic Materials</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 13</span><span class="session-catalog-count">10 topics</span></div><h3>Quantum Materials &amp; Emerging Functional Materials</h3><p class="s-overview">This session explores emerging materials with unusual electronic, magnetic, optical, and quantum properties. Research on quantum phenomena, advanced functional materials, computational approaches, and potential technological applications is encouraged.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Quantum Materials</li><li>Topological Materials</li><li>Superconducting Materials</li><li>Spintronic Materials</li><li>Magnetic Materials</li><li>Quantum Nanostructures</li><li>Correlated Materials</li><li>Quantum Devices</li><li>Computational Quantum Materials</li><li>AI-Assisted Quantum Materials Design</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 14</span><span class="session-catalog-count">10 topics</span></div><h3>Artificial Intelligence in Materials Science</h3><p class="s-overview">This session examines how artificial intelligence is transforming materials research through data-driven modelling, prediction, experimentation, and optimization. Contributions demonstrating practical applications of AI across the materials research workflow are particularly relevant.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Artificial Intelligence for Materials Science</li><li>Machine Learning</li><li>Deep Learning</li><li>Generative AI</li><li>AI-Based Materials Modelling</li><li>Materials Property Prediction</li><li>AI-Assisted Experimentation</li><li>Automated Materials Research</li><li>Explainable AI</li><li>AI-Based Materials Optimization</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 15</span><span class="session-catalog-count">10 topics</span></div><h3>Machine Learning &amp; Materials Informatics</h3><p class="s-overview">This session focuses on the integration of materials science, data science, and machine learning to extract knowledge from complex materials datasets and accelerate materials development.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Materials Informatics</li><li>Materials Databases</li><li>Materials Data Science</li><li>Machine Learning Algorithms</li><li>Structure–Property Prediction</li><li>Property–Performance Prediction</li><li>Feature Engineering</li><li>Graph Neural Networks</li><li>Physics-Informed Machine Learning</li><li>High-Throughput Materials Screening</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 16</span><span class="session-catalog-count">10 topics</span></div><h3>AI-Driven Materials Discovery &amp; Design</h3><p class="s-overview">This session focuses on AI-enabled strategies for discovering, designing, and optimizing materials with targeted properties. Research combining computational prediction, generative approaches, and experimental validation is particularly relevant.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>AI-Driven Materials Discovery</li><li>Inverse Materials Design</li><li>Generative Materials Design</li><li>Materials Property Prediction</li><li>Materials Optimization</li><li>Machine Learning-Guided Synthesis</li><li>AI-Based Screening</li><li>Autonomous Materials Discovery</li><li>Closed-Loop Materials Design</li><li>Experimental Validation</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 17</span><span class="session-catalog-count">10 topics</span></div><h3>Computational Materials Science</h3><p class="s-overview">This session covers computational approaches used to understand materials structure, properties, behaviour, and performance across different length and time scales.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Density Functional Theory</li><li>Molecular Dynamics</li><li>Monte Carlo Methods</li><li>Phase-Field Modelling</li><li>Atomistic Modelling</li><li>Computational Thermodynamics</li><li>Electronic Structure Calculations</li><li>Computational Materials Design</li><li>Simulation-Based Materials Research</li><li>AI-Enhanced Computational Modelling</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 18</span><span class="session-catalog-count">10 topics</span></div><h3>Multiscale Modelling &amp; Predictive Materials Engineering</h3><p class="s-overview">This session addresses predictive modelling approaches that connect atomic, microstructural, component, and system-level behaviour. Contributions integrating simulation, experimental data, and machine learning are encouraged.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Multiscale Materials Modelling</li><li>Computational Mechanics</li><li>Predictive Modelling</li><li>Finite Element Analysis</li><li>Process–Structure–Property Relationships</li><li>Materials Behaviour Prediction</li><li>Microstructure Modelling</li><li>Mechanical Modelling</li><li>Uncertainty Quantification</li><li>AI-Enhanced Multiscale Simulation</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 19</span><span class="session-catalog-count">10 topics</span></div><h3>AI-Assisted Materials Characterization</h3><p class="s-overview">This session explores the use of AI, computer vision, and machine learning to automate and enhance materials characterization and interpretation of experimental data.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>AI-Based Microscopy</li><li>Computer Vision</li><li>Automated Image Analysis</li><li>Microstructure Recognition</li><li>Spectroscopy Data Analysis</li><li>Automated Characterization</li><li>Defect Detection</li><li>Materials Image Segmentation</li><li>Machine Learning for Microscopy</li><li>AI-Based Materials Analysis</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 20</span><span class="session-catalog-count">10 topics</span></div><h3>Advanced Materials Characterization &amp; Analytical Techniques</h3><p class="s-overview">This session focuses on advanced experimental methods for investigating material structure, composition, interfaces, defects, and properties from nanoscale to macroscopic dimensions.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Electron Microscopy</li><li>Scanning Electron Microscopy</li><li>Transmission Electron Microscopy</li><li>X-Ray Diffraction</li><li>Atomic Force Microscopy</li><li>Spectroscopy</li><li>Surface Characterization</li><li>Microstructural Analysis</li><li>In-Situ Characterization</li><li>Operando Materials Characterization</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 21</span><span class="session-catalog-count">10 topics</span></div><h3>Additive Manufacturing &amp; 3D-Printed Materials</h3><p class="s-overview">This session examines additive manufacturing technologies and their role in producing complex, customized, and high-performance materials and components. Research combining advanced materials with AI-based process optimization is encouraged.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Metal Additive Manufacturing</li><li>Polymer 3D Printing</li><li>Ceramic Additive Manufacturing</li><li>Powder Bed Fusion</li><li>Directed Energy Deposition</li><li>Material Extrusion</li><li>Process Monitoring</li><li>Additive Manufacturing Defects</li><li>AI-Based Process Optimization</li><li>3D-Printed Functional Materials</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 22</span><span class="session-catalog-count">10 topics</span></div><h3>Intelligent Manufacturing &amp; Smart Processing</h3><p class="s-overview">This session explores the integration of AI, automation, sensing, and data analytics into materials processing and manufacturing systems to improve productivity, quality, efficiency, and adaptability.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>AI in Manufacturing</li><li>Intelligent Materials Processing</li><li>Smart Manufacturing</li><li>Process Optimization</li><li>Autonomous Manufacturing</li><li>Robotics and Automation</li><li>Process Monitoring</li><li>Predictive Maintenance</li><li>AI-Based Quality Control</li><li>Human–Machine Collaboration</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 23</span><span class="session-catalog-count">10 topics</span></div><h3>Digital Twins &amp; Digital Materials Engineering</h3><p class="s-overview">This session focuses on digital representations of materials, processes, and engineering systems that enable simulation, monitoring, prediction, and optimization throughout the materials lifecycle.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Digital Twins</li><li>Digital Materials Design</li><li>Digital Engineering</li><li>Virtual Materials Testing</li><li>Process Simulation</li><li>Real-Time Materials Monitoring</li><li>Predictive Digital Models</li><li>Data Integration</li><li>AI-Enabled Digital Twins</li><li>Digital Lifecycle Management</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 24</span><span class="session-catalog-count">10 topics</span></div><h3>Materials Processing &amp; Manufacturing Technologies</h3><p class="s-overview">This session addresses advanced processing and manufacturing methods used to control material structure, properties, quality, and performance. Both conventional and emerging processing technologies are considered.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Advanced Materials Processing</li><li>Casting and Forming</li><li>Welding and Joining</li><li>Heat Treatment</li><li>Powder Processing</li><li>Surface Treatment</li><li>Materials Processing Simulation</li><li>Microstructure Control</li><li>Process–Property Relationships</li><li>Advanced Manufacturing Technologies</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 25</span><span class="session-catalog-count">10 topics</span></div><h3>Surface Engineering, Coatings &amp; Interfaces</h3><p class="s-overview">This session focuses on engineered surfaces, coatings, thin films, and interfaces designed to improve materials performance, durability, corrosion resistance, wear resistance, and functionality.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Functional Coatings</li><li>Protective Coatings</li><li>Thin Films</li><li>Surface Modification</li><li>Interface Engineering</li><li>Corrosion-Resistant Materials</li><li>Wear-Resistant Coatings</li><li>Surface Characterization</li><li>Advanced Deposition Technologies</li><li>AI for Surface Engineering</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 26</span><span class="session-catalog-count">10 topics</span></div><h3>Materials for Environmental &amp; Climate Technologies</h3><p class="s-overview">This session explores materials designed to address environmental challenges and support climate-related technologies. Research spanning environmental remediation, resource recovery, carbon management, and sustainable materials is included.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Environmental Materials</li><li>Carbon Capture Materials</li><li>Water Purification Materials</li><li>Photocatalytic Materials</li><li>Waste-Derived Materials</li><li>Climate-Resilient Materials</li><li>Environmental Catalysts</li><li>Resource Recovery</li><li>Sustainable Environmental Technologies</li><li>AI for Environmental Materials</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 27</span><span class="session-catalog-count">10 topics</span></div><h3>Materials for Aerospace, Automotive &amp; Advanced Engineering</h3><p class="s-overview">This session addresses advanced materials developed for demanding engineering environments, including aerospace, automotive, transportation, and next-generation mobility applications.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Aerospace Materials</li><li>Lightweight Automotive Materials</li><li>High-Temperature Materials</li><li>Structural Composites</li><li>Materials for Electric Vehicles</li><li>Battery Materials for Mobility</li><li>Advanced Transportation Materials</li><li>High-Performance Alloys</li><li>Materials for Extreme Environments</li><li>AI-Assisted Engineering Materials Design</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 28</span><span class="session-catalog-count">10 topics</span></div><h3>Reliability, Degradation, Failure &amp; Materials Performance</h3><p class="s-overview">This session examines mechanisms governing materials degradation, damage, failure, durability, and long-term performance. Predictive and data-driven approaches to reliability assessment are also encouraged.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Materials Failure Analysis</li><li>Fatigue and Fracture</li><li>Corrosion</li><li>Wear and Tribology</li><li>Degradation Mechanisms</li><li>Damage Mechanics</li><li>Reliability Engineering</li><li>Lifetime Prediction</li><li>Predictive Materials Performance</li><li>AI for Failure Prediction</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 29</span><span class="session-catalog-count">10 topics</span></div><h3>Autonomous Laboratories &amp; AI-Enabled Experimental Research</h3><p class="s-overview">This emerging session focuses on the integration of AI, robotics, automation, and experimental science to create accelerated and increasingly autonomous materials research workflows.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Self-Driving Laboratories</li><li>Autonomous Materials Synthesis</li><li>Robotic Experimentation</li><li>Closed-Loop Materials Research</li><li>AI-Guided Experimental Design</li><li>Automated Materials Screening</li><li>Robotic Materials Processing</li><li>Autonomous Characterization</li><li>Human–AI Research Collaboration</li><li>AI-Enabled Scientific Discovery</li></ul></details></article>
-
-<article class="session-card session-catalog-card"><div class="session-catalog-meta"><span class="num">SESSION 30</span><span class="session-catalog-count">10 topics</span></div><h3>Future Directions in Materials Science, Engineering &amp; AI</h3><p class="s-overview">This forward-looking session brings together emerging concepts at the convergence of materials science, engineering, computation, and artificial intelligence. It provides a platform for discussing transformative research directions and technologies shaping the next generation of materials innovation.</p><details class="session-topic-details"><summary>Explore key topics</summary><ul><li>Next-Generation Materials</li><li>AI–Materials Convergence</li><li>Generative AI in Materials Science</li><li>Autonomous Materials Research</li><li>Intelligent Materials Systems</li><li>Emerging Materials Technologies</li><li>Future Manufacturing Technologies</li><li>Digital Materials Innovation</li><li>Sustainable Materials Development</li><li>Future Research Directions</li></ul></details></article>
-</div>
-<h3>Cross-Cutting Research Areas</h3>
-<p>The scientific program connects four broad research pillars:</p>
-<p><strong>Materials Science:</strong> Advanced materials, nanomaterials, polymers, composites, metals, alloys, ceramics, biomaterials, energy materials, and smart materials.</p>
-<p><strong>Artificial Intelligence:</strong> Machine learning, deep learning, generative AI, materials informatics, computer vision, physics-informed AI, and autonomous research.</p>
-<p><strong>Engineering:</strong> Materials engineering, advanced manufacturing, additive manufacturing, digital engineering, intelligent manufacturing, surface engineering, and reliability engineering.</p>
-<p><strong>Computational Science:</strong> Computational materials science, multiscale modelling, molecular dynamics, density functional theory, predictive modelling, digital twins, and simulation-driven design.</p>
-<h3>Types of Research Contributions</h3>
-<p>MatAi 2027 welcomes experimental research, theoretical research, computational studies, data-driven research, AI and machine learning applications, engineering developments, industrial research, and interdisciplinary studies relevant to the conference scope.</p>
-<p>Contributions should clearly communicate their research objectives, methodologies, findings or technical insights, and scientific or engineering significance.</p>
-<h3>Presentation Categories</h3>
-<p>Scientific contributions may be considered for oral presentations, poster presentations, invited presentations, and other formats arranged within the conference program. Keynote and plenary lectures are coordinated by the organizers with confirmed speakers.</p>
-<p>Authors may indicate their preferred presentation category during abstract submission. Final session assignments and presentation formats are subject to scientific review and program availability.</p>
-<h3>Submit Your Abstract</h3>
-<p>Researchers, scientists, academicians, engineers, students, and industry professionals are invited to submit original research relevant to one of the scientific sessions.</p>
-<p>Please select the session that best represents your research contribution. Interdisciplinary submissions are welcome.</p>
-<p>MatAi 2027</p>
-<p>October 13&#8211;14, 2027 | Berlin, Germany</p>
-<div class="btn-row mt-2">
-  <a class="btn btn-primary" href="#abstract-submission">SUBMIT ABSTRACT</a>
-  <a class="btn btn-outline" href="index.html#home-dates">VIEW IMPORTANT DATES</a>
-</div>
-</div>
-  </section>
-  <section class="section" id="abstract-guidelines" data-abstract-guidelines-source hidden>
-    <div class="container narrow reveal">
-      <h2>Call for Abstracts &mdash; MatAi 2027</h2>
-      <p><strong>International Conference on Materials Science, Engineering &amp; Artificial Intelligence</strong><br>October 13&ndash;14, 2027 | Berlin, Germany<br>Advancing Materials Innovation through Science, Engineering &amp; Artificial Intelligence</p>
-      <h3>Share Your Research with the International Scientific Community</h3>
-      <p>MatAi 2027 invites researchers, scientists, engineers, academicians, research scholars, PhD scholars, postdoctoral researchers, and industry professionals to submit abstracts presenting original research and technical contributions in materials science, engineering, artificial intelligence, and related interdisciplinary fields.</p>
-      <p>The conference aims to provide an international platform for presenting scientific findings, exchanging knowledge, discussing emerging methodologies, and exploring innovative developments at the intersection of advanced materials, computational research, engineering innovation, and artificial intelligence.</p>
-      <p>We welcome experimental, theoretical, computational, methodological, data-driven, and applied research that contributes to scientific understanding and technological advancement. Particular interest is given to research involving materials discovery, design, modelling, characterization, processing, manufacturing, machine learning, materials informatics, and sustainable engineering technologies.</p>
-
-      <h3>Conference Focus</h3>
-      <p>Abstract submissions are welcome across the scientific areas covered by MatAi 2027, including advanced materials and materials engineering, nanomaterials and nanotechnology, polymers and composite materials, metals and alloys, advanced ceramics, smart and functional materials, energy and sustainable materials, biomaterials, semiconductor technologies, computational materials science, and AI-enabled engineering.</p>
-      <p>Researchers working on machine learning, predictive modelling, AI-driven materials discovery, intelligent manufacturing, digital twins, advanced characterization, and autonomous experimental research are also encouraged to contribute.</p>
-      <p>Please visit the <a href="index.html#home-sessions">Scientific Sessions</a> page to identify the topic most relevant to your research.</p>
-
-      <h3>Who Can Submit?</h3>
-      <p>MatAi 2027 welcomes abstract submissions from:</p>
-      <ul>
-        <li>University professors, lecturers, and academic professionals</li>
-        <li>Materials scientists and engineering researchers</li>
-        <li>Research scientists and research institution representatives</li>
-        <li>Artificial intelligence and machine learning specialists</li>
-        <li>Computational materials science researchers</li>
-        <li>PhD scholars and postgraduate students</li>
-        <li>Postdoctoral researchers and early-career scientists</li>
-        <li>Industry professionals and research and development teams</li>
-        <li>Technology developers and interdisciplinary research groups</li>
-      </ul>
-      <p>Submissions should demonstrate relevance to the conference scope and provide a clear description of the research or technical contribution.</p>
-
-      <h3>Presentation Categories</h3>
-      <h4>Oral Presentation</h4>
-      <p>Authors may submit original research for consideration as an oral presentation. Selected contributors will present their research to conference participants and engage in scientific discussion. Acceptance and presentation scheduling are subject to scientific review and program availability.</p>
-      <h4>Poster Presentation</h4>
-      <p>Poster presentations provide an opportunity to communicate research objectives, methodologies, findings, and conclusions in a visual format. This category encourages focused scientific discussion and interaction between authors and interested participants.</p>
-      <h4>Invited Presentations</h4>
-      <p>Invited presentations are coordinated by the conference organizers for selected contributors participating in relevant scientific sessions.</p>
-      <h4>Keynote and Plenary Lectures</h4>
-      <p>Keynote and plenary contributions are arranged by the conference organizers with confirmed speakers. Authors wishing to present original research should follow the standard abstract submission procedure and select an available presentation category.</p>
-
-      <h3>Abstract Preparation Guidelines</h3>
-      <p>Authors should prepare abstracts in clear, professional scientific English. Each submission should communicate the research objective, methodology, principal findings where available, and scientific or technical significance.</p>
-      <ul>
-        <li><strong>Title:</strong> Provide a concise, informative title that accurately represents the research.</li>
-        <li><strong>Authors and Affiliations:</strong> Include the full names of all authors, institutional affiliations, and the presenting author's details. Provide corresponding author information where requested.</li>
-        <li><strong>Background and Research Context:</strong> Briefly describe the research problem, scientific background, or motivation for the study.</li>
-        <li><strong>Objectives:</strong> State the primary objective, research question, or hypothesis.</li>
-        <li><strong>Methodology:</strong> Summarize the experimental, theoretical, computational, analytical, or data-driven methods used.</li>
-        <li><strong>Results and Findings:</strong> Present the principal observations, results, or scientific findings where applicable.</li>
-        <li><strong>Conclusion and Significance:</strong> Explain the main conclusions and the relevance of the research to materials science, engineering, artificial intelligence, or related fields.</li>
-        <li><strong>Keywords:</strong> Provide approximately three to six relevant scientific keywords.</li>
-      </ul>
-
-      <h3>Submission Requirements</h3>
-      <p>Before submitting an abstract, authors should ensure that:</p>
-      <ul>
-        <li>The work is original and relevant to the conference scope.</li>
-        <li>The title accurately represents the research.</li>
-        <li>All author names and institutional affiliations are correct.</li>
-        <li>The presenting author is clearly identified.</li>
-        <li>The abstract is scientifically clear, coherent, and professionally written.</li>
-        <li>References and acknowledgements are included where appropriate.</li>
-        <li>Tables, figures, equations, and special formatting comply with the official submission instructions.</li>
-        <li>The submission does not contain plagiarized, fabricated, or misleading content.</li>
-        <li>The preferred presentation category and relevant scientific session are selected where requested.</li>
-        <li>All required fields in the official submission system are completed.</li>
-      </ul>
-
-      <h3>Abstract Submission and Review Process</h3>
-      <ol>
-        <li><strong>Prepare Your Abstract:</strong> Develop your abstract according to the recommended structure and official submission requirements.</li>
-        <li><strong>Select a Scientific Session:</strong> Choose the session that most closely matches the principal focus of your research.</li>
-        <li><strong>Complete the Submission Form:</strong> Provide the required author details, affiliations, abstract text, keywords, and presentation preference.</li>
-        <li><strong>Submit Online:</strong> Upload or enter the abstract through the official MatAi 2027 submission system.</li>
-        <li><strong>Scientific Review:</strong> Submitted abstracts may be evaluated for scientific quality, originality, relevance, clarity, methodological soundness, and potential contribution to the field.</li>
-        <li><strong>Receive the Decision:</strong> Authors will be notified of the review outcome using the contact details provided during submission.</li>
-        <li><strong>Complete Registration:</strong> Authors whose abstracts are accepted should follow the instructions in their acceptance notification and complete the applicable registration requirements within the specified timeframe.</li>
-      </ol>
-      <p>The organizers may accept an abstract, request clarification or revision, recommend an alternative presentation category, or decline a submission that does not meet the conference requirements. Abstract submission does not guarantee acceptance or a particular presentation category.</p>
-
-      <h3>Important Dates</h3>
-      <p>Abstract submission opening date, submission deadline, acceptance notification dates, and registration deadlines will be announced on the official MatAi 2027 website once confirmed.</p>
-      <p>Please check the <a href="index.html#home-dates">Important Dates</a> page regularly for updates.</p>
-
-      <h3>Important Information for Authors</h3>
-      <p>Authors are responsible for the accuracy of their submissions and for obtaining any necessary permissions for research data, figures, and third-party materials. Accepted authors should monitor their email for acceptance notifications, registration instructions, presentation requirements, and program updates.</p>
-      <p>Abstract acceptance does not guarantee journal publication. Any publication or proceedings arrangements will be communicated separately and will remain subject to the applicable editorial and publication requirements.</p>
-      <p>Specific word limits, file formats, formatting specifications, and submission deadlines should follow the official instructions published by the conference organizers.</p>
-
-      <h3>Submit Your Research</h3>
-      <p>We invite researchers, scientists, academicians, engineers, students, and industry professionals to share their work and contribute to scientific discussions at MatAi 2027.</p>
-      <p>Join the international scientific community in Berlin, Germany, on October 13&ndash;14, 2027, to exchange knowledge and explore emerging developments in materials science, engineering, and artificial intelligence.</p>
-      <div class="btn-row mt-2">
-        <a class="btn btn-primary" href="#abstract-submission">Submit Abstract</a>
-        <a class="btn btn-outline" href="index.html#home-sessions">View Scientific Sessions</a>
-        <a class="btn btn-outline" href="index.html#home-dates">View Important Dates</a>
-      </div>
-    </div>
-  </section>
-  <section class="section alt abstract-page" id="abstract-submission">
-    <div class="container narrow reveal">
-      <div class="center abstract-intro">
-        <span class="eyebrow">MatAi 2027</span>
-        <h2>Abstract Submission</h2>
-        <div class="title-accent" aria-hidden="true"></div>
-        <p class="lead">Complete the form below and upload your abstract document.</p>
-      </div>
-      <form class="form-card abstract-form-card mt-2" data-form="abstract">
-        <div class="form-status" aria-live="polite"></div>
-        <div class="abstract-template-download"><a class="btn btn-outline" href="assets/abstract-template.docx" download>Download Abstract Template</a></div>
-        <div class="form-grid abstract-submission-grid">
-          <div class="field"><label for="abstract-title">Title <span class="req">*</span></label><select id="abstract-title" name="title" required><option value="">Select title</option><option>Dr.</option><option>Prof.</option><option>Mr.</option><option>Ms.</option><option>Mrs.</option><option>Mx.</option></select><div class="error-msg">Please select a title.</div></div>
-          <div class="field"><label for="abstract-name">Name <span class="req">*</span></label><input id="abstract-name" type="text" name="authorName" autocomplete="name" required><div class="error-msg">Required</div></div>
-          <div class="field"><label for="abstract-email">Email <span class="req">*</span></label><input id="abstract-email" type="email" name="email" autocomplete="email" required><div class="error-msg">Valid email required</div></div>
-          <div class="field"><label for="abstract-phone">Mobile Number <span class="req">*</span></label><input id="abstract-phone" type="tel" name="phone" inputmode="tel" pattern="\+?[0-9\s\x28\x29.\x2D]{7,25}" minlength="7" maxlength="25" autocomplete="tel" required><div class="error-msg">Enter a valid mobile number, including your country code if needed.</div></div>
-          <div class="field full"><label for="abstract-organization">Organization <span class="req">*</span></label><input id="abstract-organization" type="text" name="institution" autocomplete="organization" required><div class="error-msg">Required</div></div>
-          <div class="field full"><label for="abstract-country">Country <span class="req">*</span></label><select id="abstract-country" name="country" data-country-select required><option value="">Select country</option><option>Australia</option><option>Brazil</option><option>Canada</option><option>China</option><option>France</option><option>Germany</option><option>India</option><option>Italy</option><option>Japan</option><option>Netherlands</option><option>Singapore</option><option>South Africa</option><option>Spain</option><option>United Arab Emirates</option><option>United Kingdom</option><option>United States</option><option>Other</option></select><div class="error-msg">Please select your country.</div></div>
-          <div class="field full" data-country-other hidden><label for="abstract-country-other">Country Name <span class="req">*</span></label><input id="abstract-country-other" type="text" name="countryOther" autocomplete="country-name" placeholder="Enter your country"><div class="error-msg">Please enter your country name.</div></div>
-          <div class="field full"><label for="abstract-category">Presentation Category <span class="req">*</span></label><select id="abstract-category" name="category" required><option value="">Select category</option><option>Oral Presentation</option><option>Poster Presentation</option><option>Video presentation</option><option>Keynote presentation</option><option>Invited speaker presentation</option><option>Young researcher presentation</option></select><div class="error-msg">Please select a presentation category.</div></div>
-          <div class="field full"><label for="abstract-session">Session <span class="req">*</span></label><select id="abstract-session" name="session" required><option value="">Select session</option><option>Advanced Materials &amp; Materials Engineering</option><option>Nanomaterials &amp; Nanotechnology</option><option>Polymers &amp; Advanced Polymer Materials</option><option>Composite Materials &amp; Hybrid Structures</option><option>Metals, Alloys &amp; Metallurgical Engineering</option><option>Advanced Ceramics &amp; Functional Ceramics</option><option>Smart &amp; Multifunctional Materials</option><option>Sustainable Materials &amp; Green Engineering</option><option>Energy Storage Materials</option><option>Energy Conversion &amp; Renewable Energy Materials</option><option>Biomaterials &amp; Biomedical Materials</option><option>Electronic, Semiconductor &amp; Photonic Materials</option><option>Quantum Materials &amp; Emerging Functional Materials</option><option>Artificial Intelligence in Materials Science</option><option>Machine Learning &amp; Materials Informatics</option><option>AI-Driven Materials Discovery &amp; Design</option><option>Computational Materials Science</option><option>Multiscale Modelling &amp; Predictive Materials Engineering</option><option>AI-Assisted Materials Characterization</option><option>Advanced Materials Characterization &amp; Analytical Techniques</option><option>Additive Manufacturing &amp; 3D-Printed Materials</option><option>Intelligent Manufacturing &amp; Smart Processing</option><option>Digital Twins &amp; Digital Materials Engineering</option><option>Materials Processing &amp; Manufacturing Technologies</option><option>Surface Engineering, Coatings &amp; Interfaces</option><option>Materials for Environmental &amp; Climate Technologies</option><option>Materials for Aerospace, Automotive &amp; Advanced Engineering</option><option>Reliability, Degradation, Failure &amp; Materials Performance</option><option>Autonomous Laboratories &amp; AI-Enabled Experimental Research</option><option>Future Directions in Materials Science, Engineering &amp; AI</option></select><div class="error-msg">Please select a scientific session.</div></div>
-          <input type="hidden" name="abstract" value="Abstract details are provided in the uploaded document.">
-          <div class="field full"><label for="abstract-attachment">Abstract Document <span class="req">*</span></label><div class="abstract-upload-zone" data-upload-zone><strong>Drop your files</strong><span>PDF, DOC, or DOCX supported. Each file must be less than 5 MB.</span><input id="abstract-attachment" type="file" name="attachment" accept=".pdf,.doc,.docx" required><small data-file-name aria-live="polite">Choose a document or drop it here.</small><div class="error-msg">Choose a PDF or Word document under 5 MB.</div></div></div>
-          <div class="field full captcha-box" data-captcha>
-            <label for="abstract-captcha">Captcha Verification <span class="req">*</span></label>
-            <div class="captcha-row"><span data-captcha-question aria-label="Math verification question"></span><input id="abstract-captcha" type="text" name="captchaAnswer" inputmode="numeric" autocomplete="off" placeholder="Enter answer" required><button class="human-retry" type="button" data-captcha-reset aria-label="Refresh captcha" title="Refresh captcha">&#8635;</button></div>
-            <small data-captcha-status aria-live="polite">Solve the captcha before continuing.</small>
+  <main>
+    <section class="section alt abstract-page" id="abstract-submission">
+      <div class="container narrow reveal">
+        <div class="center abstract-intro"><span class="eyebrow">MatAi 2027</span><h1>Abstract Submission</h1><div class="title-accent" aria-hidden="true"></div><p class="lead">Complete the form below and upload your abstract document.</p></div>
+        <form class="form-card abstract-form-card mt-2" data-form="abstract">
+          <div class="form-status" aria-live="polite"></div>
+          <div class="abstract-template-download"><a class="btn btn-outline" href="assets/abstract-template.docx" download>Download Abstract Template</a></div>
+          <div class="form-grid abstract-submission-grid">
+            <div class="field"><label for="abstract-title">Title <span class="req">*</span></label><select id="abstract-title" name="title" required><option value="">Select title</option><option>Dr.</option><option>Prof.</option><option>Mr.</option><option>Ms.</option><option>Mrs.</option><option>Mx.</option></select><div class="error-msg">Please select a title.</div></div>
+            <div class="field"><label for="abstract-name">Name <span class="req">*</span></label><input id="abstract-name" type="text" name="authorName" autocomplete="name" required><div class="error-msg">Required</div></div>
+            <div class="field"><label for="abstract-email">Email <span class="req">*</span></label><input id="abstract-email" type="email" name="email" autocomplete="email" required><div class="error-msg">Valid email required</div></div>
+            <div class="field"><label for="abstract-phone">Mobile Number <span class="req">*</span></label><input id="abstract-phone" type="tel" name="phone" inputmode="tel" pattern="\+?[0-9\s\x28\x29.\x2D]{7,25}" minlength="7" maxlength="25" autocomplete="tel" required><div class="error-msg">Enter a valid mobile number, including your country code if needed.</div></div>
+            <div class="field full"><label for="abstract-organization">Organization <span class="req">*</span></label><input id="abstract-organization" type="text" name="institution" autocomplete="organization" required><div class="error-msg">Required</div></div>
+            <div class="field full"><label for="abstract-country">Country <span class="req">*</span></label><select id="abstract-country" name="country" data-country-select required><option value="">Select country</option><option>Australia</option><option>Brazil</option><option>Canada</option><option>China</option><option>France</option><option>Germany</option><option>India</option><option>Italy</option><option>Japan</option><option>Netherlands</option><option>Singapore</option><option>South Africa</option><option>Spain</option><option>United Arab Emirates</option><option>United Kingdom</option><option>United States</option><option>Other</option></select><div class="error-msg">Please select your country.</div></div>
+            <div class="field full" data-country-other hidden><label for="abstract-country-other">Country Name <span class="req">*</span></label><input id="abstract-country-other" type="text" name="countryOther" autocomplete="country-name" placeholder="Enter your country"><div class="error-msg">Please enter your country name.</div></div>
+            <div class="field full"><label for="abstract-category">Presentation Category <span class="req">*</span></label><select id="abstract-category" name="category" required><option value="">Select category</option><option>Oral Presentation</option><option>Poster Presentation</option><option>Video presentation</option><option>Keynote presentation</option><option>Invited speaker presentation</option><option>Young researcher presentation</option></select><div class="error-msg">Please select a presentation category.</div></div>
+            <div class="field full"><label for="abstract-session">Session <span class="req">*</span></label><select id="abstract-session" name="session" required><option value="">Select session</option><option>Advanced Materials &amp; Materials Engineering</option><option>Nanomaterials &amp; Nanotechnology</option><option>Polymers &amp; Advanced Polymer Materials</option><option>Composite Materials &amp; Hybrid Structures</option><option>Metals, Alloys &amp; Metallurgical Engineering</option><option>Advanced Ceramics &amp; Functional Ceramics</option><option>Smart &amp; Multifunctional Materials</option><option>Sustainable Materials &amp; Green Engineering</option><option>Energy Storage Materials</option><option>Energy Conversion &amp; Renewable Energy Materials</option><option>Biomaterials &amp; Biomedical Materials</option><option>Electronic, Semiconductor &amp; Photonic Materials</option><option>Quantum Materials &amp; Emerging Functional Materials</option><option>Artificial Intelligence in Materials Science</option><option>Machine Learning &amp; Materials Informatics</option><option>AI-Driven Materials Discovery &amp; Design</option><option>Computational Materials Science</option><option>Multiscale Modelling &amp; Predictive Materials Engineering</option><option>AI-Assisted Materials Characterization</option><option>Advanced Materials Characterization &amp; Analytical Techniques</option><option>Additive Manufacturing &amp; 3D-Printed Materials</option><option>Intelligent Manufacturing &amp; Smart Processing</option><option>Digital Twins &amp; Digital Materials Engineering</option><option>Materials Processing &amp; Manufacturing Technologies</option><option>Surface Engineering, Coatings &amp; Interfaces</option><option>Materials for Environmental &amp; Climate Technologies</option><option>Materials for Aerospace, Automotive &amp; Advanced Engineering</option><option>Reliability, Degradation, Failure &amp; Materials Performance</option><option>Autonomous Laboratories &amp; AI-Enabled Experimental Research</option><option>Future Directions in Materials Science, Engineering &amp; AI</option></select><div class="error-msg">Please select a scientific session.</div></div>
+            <input type="hidden" name="abstract" value="Abstract details are provided in the uploaded document.">
+            <div class="field full"><label for="abstract-attachment">Abstract Document <span class="req">*</span></label><div class="abstract-upload-zone" data-upload-zone><strong>Drop your files</strong><span>PDF, DOC, or DOCX supported. Each file must be less than 5 MB.</span><input id="abstract-attachment" type="file" name="attachment" accept=".pdf,.doc,.docx" required><small data-file-name aria-live="polite">Choose a document or drop it here.</small><div class="error-msg">Choose a PDF or Word document under 5 MB.</div></div></div>
+            <div class="field full captcha-box" data-captcha><label for="abstract-captcha">Captcha Verification <span class="req">*</span></label><div class="captcha-row"><span data-captcha-question aria-label="Math verification question"></span><input id="abstract-captcha" type="text" name="captchaAnswer" inputmode="numeric" autocomplete="off" placeholder="Enter answer" required><button class="human-retry" type="button" data-captcha-reset aria-label="Refresh captcha" title="Refresh captcha">&#8635;</button></div><small data-captcha-status aria-live="polite">Solve the captcha before continuing.</small></div>
           </div>
-        </div>
-        <div class="field full form-consent abstract-guidelines-acknowledgement">
-          <label class="chk" for="abstract-guidelines-acknowledged"><input id="abstract-guidelines-acknowledged" type="checkbox" name="guidelinesAcknowledged" value="accepted" required><span>I have read and agree to the <a class="consent-link" href="#abstract-guidelines-modal" id="abstract-guidelines-open" aria-haspopup="dialog" aria-controls="abstract-guidelines-modal">Abstract Guidelines</a>.</span></label>
-          <div class="error-msg">Please read and agree to the Abstract Guidelines before submitting.</div>
-        </div>
-        <div class="btn-row mt-2"><button type="submit" class="btn btn-primary">Submit Abstract</button></div>
-      </form>
-    </div>
-  </section>
+          <div class="field full form-consent abstract-guidelines-acknowledgement"><label class="chk" for="abstract-guidelines-acknowledged"><input id="abstract-guidelines-acknowledged" type="checkbox" name="guidelinesAcknowledged" value="accepted" required><span>I confirm that this submission follows the Abstract Guidelines.</span></label><div class="error-msg">Please confirm that your submission follows the Abstract Guidelines.</div></div>
+          <div class="btn-row mt-2"><button type="submit" class="btn btn-primary">Submit Abstract</button></div>
+        </form>
+      </div>
+    </section>
+  </main>
   <div id="site-footer"></div>
   <script src="js/site.js?v=20261103-admin-integration"></script>
   <script src="js/forms.js?v=20261101-abstract-content-reinit-1"></script>
-  <script src="js/abstract-guidelines-modal.js?v=20261101-guidelines-delegated-modal-1"></script>
 </body>
 </html>

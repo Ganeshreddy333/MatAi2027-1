@@ -590,6 +590,7 @@
     var accommodation = c.accommodation || {};
     el("accommodation-enabled").checked = accommodation.enabled === true;
     el("accommodation-price").value = accommodation.pricePerNight != null ? accommodation.pricePerNight : 0;
+    el("accommodation-max-nights").value = accommodation.maxNights != null ? accommodation.maxNights : 5;
     el("accommodation-from").value = accommodation.availableFrom || "";
     el("accommodation-until").value = accommodation.availableUntil || "";
     el("accommodation-description").value = accommodation.description || "";
@@ -1284,7 +1285,7 @@
       registrationPricing: {
         fixedItems: fixedItems
       },
-      accommodation: { enabled: el("accommodation-enabled").checked, pricePerNight: Number(el("accommodation-price").value) || 0, availableFrom: el("accommodation-from").value, availableUntil: el("accommodation-until").value, description: el("accommodation-description").value.trim(), terms: el("accommodation-terms").value.trim() },
+      accommodation: { enabled: el("accommodation-enabled").checked, pricePerNight: Number(el("accommodation-price").value) || 0, maxNights: Number(el("accommodation-max-nights").value) || 5, availableFrom: el("accommodation-from").value, availableUntil: el("accommodation-until").value, description: el("accommodation-description").value.trim(), terms: el("accommodation-terms").value.trim() },
       coupons: readCoupons(), pages: pages, committee: committee, speakers: speakers
     };
     api("/admin/api/content", {

@@ -77,7 +77,10 @@ final class Store
         }
         $path = $this->dataDirectory . '/content.json';
         if (!is_file($path)) {
-            throw new RuntimeException('Website content file is missing.');
+            // A fresh JSON-backed deployment has no editable-content file yet.
+            // Return an empty document so public/admin clients can apply their
+            // own defaults; the first admin save creates the file atomically.
+            return [];
         }
         $content = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
         return is_array($content) ? $content : [];

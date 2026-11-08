@@ -270,6 +270,7 @@ const DEFAULT_CONTENT = {
       addon_accommodation_double: 195
     }
   },
+  accommodation: { enabled: false, pricePerNight: 0, maxNights: 5 },
   coupons: [],
   pages: {},
   committee: [],
@@ -555,6 +556,8 @@ async function prepareRegistration(input) {
   let grossCents = 0;
   let participantCount = 0;
   for (const item of REGISTRATION_ITEMS) {
+    // Accommodation nights are calculated from the dedicated booking controls below.
+    if (item.fixed === "addon_accommodation_single" || item.fixed === "addon_accommodation_double") continue;
     const rawQuantity = data[item.field] == null || data[item.field] === "" ? "0" : String(data[item.field]);
     if (!/^\d+$/.test(rawQuantity) || Number(rawQuantity) > 100) {
       const error = new Error("Invalid quantity for " + item.label + ".");
@@ -592,6 +595,40 @@ async function prepareRegistration(input) {
     const error = new Error("Select at least one registration item.");
     error.statusCode = 400;
     throw error;
+  }
+
+  const accommodation = content.accommodation && typeof content.accommodation === "object" ? content.accommodation : {};
+  const accommodationType = String(data.accommodationType || "");
+  if (accommodationType) {
+    if (!["single", "double"].includes(accommodationType) || accommodation.enabled !== true) {
+      const error = new Error("Accommodation is not available.");
+      error.statusCode = 400;
+      throw error;
+    }
+    const maxNights = Number.isInteger(Number(accommodation.maxNights)) && Number(accommodation.maxNights) >= 1 && Number(accommodation.maxNights) <= 100 ? Number(accommodation.maxNights) : 5;
+    const nights = Number(data.accommodationNights);
+    if (!Number.isInteger(nights) || nights < 1 || nights > maxNights) {
+      const error = new Error("Accommodation must be booked for one to " + maxNights + " nights.");
+      error.statusCode = 400;
+      throw error;
+    }
+    const price = Number(accommodation.pricePerNight != null ? accommodation.pricePerNight : content.registrationPricing && content.registrationPricing.fixedItems && content.registrationPricing.fixedItems["addon_accommodation_" + accommodationType]);
+    if (!Number.isFinite(price) || price < 0 || price > 1000000) {
+      const error = new Error("The configured accommodation price is invalid.");
+      error.statusCode = 500;
+      throw error;
+    }
+    const checkIn = String(data.checkInDate || "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(checkIn) || (accommodation.availableFrom && checkIn < accommodation.availableFrom) || (accommodation.availableUntil && checkIn > accommodation.availableUntil)) {
+      const error = new Error("Select a valid available accommodation check-in date.");
+      error.statusCode = 400;
+      throw error;
+    }
+    const unitUSDCents = Math.round(price * 100);
+    const unitCents = Math.round(unitUSDCents * exchangeRates.rates.EUR);
+    grossCents += unitCents * nights;
+    items.push({ name: "Accommodation — " + accommodationType.charAt(0).toUpperCase() + accommodationType.slice(1) + " occupancy", category: "", quantity: nights, unitCents, unitBaseUSDCents: unitUSDCents });
+    data.accommodationNights = nights;
   }
   if (grossCents <= 0 || grossCents > 99999999) {
     const error = new Error("The converted registration total must be greater than zero and below €1,000,000.");
@@ -1555,6 +1592,10 @@ app.put("/admin/api/content", requireAuth, async (req, res) => {
   if (!incoming || typeof incoming !== "object" || Array.isArray(incoming)) return res.status(400).json({ ok: false, error: "Invalid content" });
   try {
     validateRegistrationPeriods(incoming.registrationPeriods);
+    const accommodation = incoming.accommodation;
+    if (accommodation && (!Number.isInteger(Number(accommodation.maxNights)) || Number(accommodation.maxNights) < 1 || Number(accommodation.maxNights) > 100)) {
+      throw new Error("Accommodation maximum nights must be a whole number between 1 and 100.");
+    }
   } catch (validationError) {
     return res.status(400).json({ ok: false, error: validationError.message });
   }

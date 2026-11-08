@@ -140,6 +140,26 @@
     "On-Spot": { label: "Late Registration", deadline: "To Be Announced" }
   };
   var lastRegistrationDate = new Date().toISOString().slice(0, 10);
+  var accommodationMaxNights = 5;
+
+  function applyAccommodationSettings(accommodation) {
+    accommodation = accommodation || {};
+    var configured = parseInt(accommodation.maxNights, 10);
+    accommodationMaxNights = configured >= 1 && configured <= 100 ? configured : 5;
+    var nights = id("accommodation-nights");
+    if (!nights) return;
+    var previous = parseInt(nights.value, 10) || 1;
+    nights.innerHTML = "";
+    for (var count = 1; count <= accommodationMaxNights; count += 1) {
+      var option = document.createElement("option");
+      option.value = String(count);
+      option.textContent = count + (count === 1 ? " night" : " nights");
+      nights.appendChild(option);
+    }
+    nights.value = String(Math.min(previous, accommodationMaxNights));
+    syncSelectionInputs();
+    recalc();
+  }
 
   function resetCurrencyFallback() {
     if (transactionCurrencyInput) transactionCurrencyInput.value = "USD";
@@ -378,7 +398,7 @@
       if (checkIn) checkIn.value = "";
       if (checkOut) checkOut.value = "";
     }
-    var nightCount = Math.max(1, Math.min(5, parseInt(nights && nights.value, 10) || 1));
+    var nightCount = Math.max(1, Math.min(accommodationMaxNights, parseInt(nights && nights.value, 10) || 1));
     if (hasAccommodation && checkIn && checkOut && checkIn.value) {
       var checkoutDate = new Date(checkIn.value + "T00:00:00Z");
       if (!isNaN(checkoutDate.getTime())) {
@@ -531,12 +551,14 @@
   if (window.MATAI_CONTENT) applyFees(window.MATAI_CONTENT.fees);
   if (window.MATAI_CONTENT) applyRegistrationPeriods(window.MATAI_CONTENT.registrationPeriods);
   if (window.MATAI_CONTENT) applyRegistrationPricing(window.MATAI_CONTENT.registrationPricing);
+  if (window.MATAI_CONTENT) applyAccommodationSettings(window.MATAI_CONTENT.accommodation);
   if (window.MATAI_CONTENT) applyCoupons(window.MATAI_CONTENT.coupons);
   document.addEventListener("matai:content", function (e) {
     if (form !== document.querySelector('form[data-form="register"]')) return;
     applyFees(e.detail && e.detail.fees);
     applyRegistrationPeriods(e.detail && e.detail.registrationPeriods);
     applyRegistrationPricing(e.detail && e.detail.registrationPricing);
+    applyAccommodationSettings(e.detail && e.detail.accommodation);
     applyCoupons(e.detail && e.detail.coupons);
   });
   // Recheck date boundaries while the registration page remains open.

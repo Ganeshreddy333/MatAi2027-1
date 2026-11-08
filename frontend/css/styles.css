@@ -321,6 +321,10 @@ table.tbl .no { color:#cbd5e1; }
 .speaker-rail .person { margin:0; }
 .speaker-rail .placeholder-note { flex:0 0 100%; text-align:left; }
 
+/* Homepage speakers are deliberately stationary: visitors scroll this compact rail themselves. */
+.home-page .speaker-rail { display:flex; gap:1rem; overflow-x:auto; overflow-y:hidden; padding:.25rem .1rem 1rem; scroll-snap-type:x mandatory; overscroll-behavior-x:contain; scrollbar-color:#c9bda9 transparent; }
+.home-page .speaker-rail .person { flex:0 0 min(78vw,280px); min-width:0; margin:0; scroll-snap-align:start; }
+
 /* Meet Our Experts uses a static portrait grid instead of the homepage-style marquee. */
 .experts-page .speaker-rail { overflow:visible; padding:.25rem 0 1rem; }
 .experts-page .speaker-rail .auto-scroll-track { display:block; width:100%; animation:none; will-change:auto; }
@@ -539,6 +543,8 @@ table.tbl .no { color:#cbd5e1; }
 .footer-wordmark .brand-mat,.footer-wordmark .brand-year { color:#fff; }
 .footer-wordmark .brand-ai { color:#55d7ec; }
 .footer-brand p { font-size:.9rem; color:#9fb0d6; }
+.site-footer .footer-nvs-link { color:var(--accent-light); font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+.site-footer .footer-nvs-link:hover { color:#f0d27e; }
 .footer-bottom { border-top:1px solid rgba(255,255,255,.12); margin-top:2.5rem; padding:1.5rem 0; font-size:.83rem; color:#8497c4; display:flex; flex-wrap:wrap; gap:1rem; justify-content:space-between; }
 
 /* Reveal animation */
