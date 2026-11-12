@@ -75,6 +75,11 @@ final class Application
 
     private function dispatch(string $method, string $path): never
     {
+        if ($method === 'GET' && $path === '/sitemap.xml') {
+            header('Content-Type: application/xml; charset=utf-8');
+            echo Seo::sitemapXml();
+            exit;
+        }
         if ($method === 'GET' && $path === '/api/sponsors-brochure-file') {
             $file = $this->root . '/uploads/Sponsors & Exhibition5.docx';
             if (!is_file($file) || !is_readable($file)) {

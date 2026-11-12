@@ -1,6 +1,15 @@
 Options -Indexes
 RewriteEngine On
 
+# Canonical HTTPS host. Keep this before the internal frontend rewrite.
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP:X-Forwarded-Proto} !https [NC]
+RewriteRule ^ https://matai2027.com%{REQUEST_URI} [R=301,L,NE]
+RewriteCond %{HTTP_HOST} !^matai2027\.com$ [NC]
+RewriteRule ^ https://matai2027.com%{REQUEST_URI} [R=301,L,NE]
+RewriteRule ^index\.html$ https://matai2027.com/ [R=301,L,NE]
+RewriteRule ^sitemap\.xml$ frontend/api.php [QSA,L]
+
 # Never expose source, private data, dependency metadata, or local configuration
 # if the repository root is accidentally selected as the web document root.
 RewriteRule ^(?:backend|vendor|node_modules|tests|\.github)(?:/|$) - [F,L,NC]

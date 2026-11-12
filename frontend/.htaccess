@@ -13,6 +13,17 @@ ErrorDocument 500 /500.html
     Header always set Strict-Transport-Security "max-age=31536000" env=HTTPS
 </IfModule>
 
+# Canonicalize protocol and host when this directory is the document root.
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP:X-Forwarded-Proto} !https [NC]
+RewriteRule ^ https://matai2027.com%{REQUEST_URI} [R=301,L,NE]
+RewriteCond %{HTTP_HOST} !^matai2027\.com$ [NC]
+RewriteRule ^ https://matai2027.com%{REQUEST_URI} [R=301,L,NE]
+RewriteRule ^index\.html$ https://matai2027.com/ [R=301,L,NE]
+
+# Generate the sitemap through the private PHP application.
+RewriteRule ^sitemap\.xml$ api.php [QSA,L]
+
 # Keep the existing static site as the public document root while routing API
 # requests into the PHP application outside the web root.
 RewriteRule ^(?:api|admin|uploads)(?:/.*)?$ api.php [QSA,L]

@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /admin/
+Disallow: /api/
+Disallow: /uploads/
+
+Sitemap: https://matai2027.com/sitemap.xml

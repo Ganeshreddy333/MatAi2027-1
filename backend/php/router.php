@@ -7,6 +7,11 @@ $path = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/
 $frontend = realpath($root . '/frontend');
 $publicFile = $root . '/frontend' . $path;
 
+if ($path === '/sitemap.xml') {
+    require $root . '/frontend/api.php';
+    return true;
+}
+
 if (str_starts_with($path, '/api/') || str_starts_with($path, '/admin/') || str_starts_with($path, '/uploads/')) {
     require $root . '/frontend/api.php';
     return true;
