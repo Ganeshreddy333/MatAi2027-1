@@ -16,6 +16,7 @@ final class Application
     private readonly Security $security;
     private readonly RegistrationService $registrations;
     private readonly NotificationService $notifications;
+    private readonly ?PaymentVerificationService $paymentVerifications;
     private readonly ?PDO $pdo;
     private readonly string $root;
     private readonly string $uploadDirectory;
@@ -31,6 +32,7 @@ final class Application
         $this->security = new Security($config, $this->pdo);
         $this->registrations = new RegistrationService($this->store);
         $this->notifications = new NotificationService($config);
+        $this->paymentVerifications = $this->pdo === null ? null : new PaymentVerificationService($this->pdo);
     }
 
     public function run(): never
@@ -196,6 +198,12 @@ final class Application
         if ($method === 'POST' && $path === '/api/checkout/razorpay/cancel') {
             $this->cancelRazorpayOrder($this->body());
         }
+        if ($method === 'GET' && preg_match('#^/api/registrations/([A-Za-z0-9-]+)/payment-status$#', $path, $match)) {
+            $this->registrationPaymentStatus($match[1]);
+        }
+        if ($method === 'GET' && preg_match('#^/api/registrations/([A-Za-z0-9-]+)/receipt$#', $path, $match)) {
+            $this->downloadReceipt($match[1]);
+        }
         if ($method === 'POST' && preg_match('#^/api/(register|abstract|contact|brochure)$#', $path, $match)) {
             $this->createSubmission($match[1]);
         }
@@ -322,6 +330,15 @@ final class Application
     private function adminApi(string $method, string $path): never
     {
         $this->security->requireAdmin();
+        if ($method === 'GET' && preg_match('#^/admin/api/registrations/([A-Za-z0-9-]+)/payment$#', $path, $match)) {
+            if ($this->paymentVerifications === null) {
+                Security::json(['ok' => false, 'error' => 'Payment verification requires MySQL.'], 503);
+            }
+            Security::json(['ok' => true, 'payment' => $this->paymentVerifications->adminDetails($match[1])]);
+        }
+        if ($method === 'GET' && preg_match('#^/admin/api/registrations/([A-Za-z0-9-]+)/receipt$#', $path, $match)) {
+            $this->downloadAdminReceipt($match[1]);
+        }
         if ($method === 'GET' && $path === '/admin/api/ops-status') {
             $this->operationalStatus();
         }
@@ -923,6 +940,16 @@ final class Application
         }
         $reference = $this->newReference();
         $this->saveRegistration($reference, $registration, []);
+        $accessToken = bin2hex(random_bytes(32));
+        if ($this->paymentVerifications === null) {
+            throw new RuntimeException('Verified Razorpay receipts require MySQL persistence.');
+        }
+        $this->paymentVerifications->initiate(
+            $reference,
+            $registration['totalCents'],
+            $registration['transactionCurrency'],
+            $accessToken
+        );
         $order = $this->razorpayRequest('orders', [
             'amount' => $amount, 'currency' => $currency, 'receipt' => $reference,
             'notes' => ['reference' => $reference, 'registration' => 'MatAi 2027'],
@@ -935,11 +962,13 @@ final class Application
         )) {
             throw new RuntimeException('Razorpay order details did not match the requested amount.');
         }
+        $this->paymentVerifications->attachOrder($reference, (string) $order['id']);
         $this->updateRegistrationFields($reference, ['razorpayOrderId' => $order['id'], 'razorpayCurrency' => $currency]);
         Security::json([
             'ok' => true, 'reference' => $reference, 'orderId' => $order['id'], 'keyId' => $key,
             'amount' => $amount, 'currency' => $registration['transactionCurrency'],
             'displayAmount' => $registration['amount'],
+            'receiptAccessToken' => $accessToken,
         ], 201);
     }
 
@@ -958,42 +987,54 @@ final class Application
             OperationalLogger::event('warning', 'razorpay_payment_signature_invalid');
             Security::json(['ok' => false, 'error' => 'Razorpay payment signature verification failed.'], 400);
         }
+        if ($this->paymentVerifications === null) {
+            Security::json(['ok' => false, 'error' => 'Verified payment receipts require MySQL persistence.'], 503);
+        }
         $record = $this->findBy('', 'razorpayOrderId', $orderId);
         if ($record === null) {
             Security::json(['ok' => false, 'error' => 'Registration not found for this Razorpay order.'], 404);
         }
-        if (($record['paymentStatus'] ?? '') === 'Paid') {
-            Security::json([
-                'ok' => true, 'paid' => true, 'reference' => $record['reference'],
-                'amount' => $record['amount'],
-                'currency' => $record['transactionCurrency'] ?? $record['razorpayCurrency'] ?? $record['amountCurrency'] ?? CurrencyPolicy::BASE_CURRENCY,
-            ]);
+        $accessToken = (string) ($_SERVER['HTTP_X_REGISTRATION_ACCESS'] ?? '');
+        if ($accessToken === '') {
+            Security::json(['ok' => false, 'error' => 'Registration access could not be verified.'], 403);
         }
         $payment = $this->razorpayRequest('payments/' . rawurlencode($paymentId));
+        $providerOrder = $this->razorpayRequest('orders/' . rawurlencode($orderId));
         $expectedCurrency = $record['transactionCurrency'] ?? $record['razorpayCurrency'] ?? $record['amountCurrency'] ?? CurrencyPolicy::BASE_CURRENCY;
-        if (($payment['order_id'] ?? '') !== $orderId
+        if (($payment['id'] ?? '') !== $paymentId || ($payment['order_id'] ?? '') !== $orderId
             || !CurrencyPolicy::paymentMatchesMinorUnits(
                 $this->amountMinorUnits($record),
                 $expectedCurrency,
                 $payment['amount'] ?? null,
                 (string) ($payment['currency'] ?? '')
             )
-            || !in_array($payment['status'] ?? '', ['authorized', 'captured'], true)) {
+            || !CurrencyPolicy::paymentMatchesMinorUnits(
+                $this->amountMinorUnits($record),
+                $expectedCurrency,
+                $providerOrder['amount'] ?? null,
+                (string) ($providerOrder['currency'] ?? '')
+            )) {
             OperationalLogger::event('error', 'razorpay_payment_mismatch');
             Security::json(['ok' => false, 'error' => 'Razorpay payment details did not match this registration.'], 400);
         }
-        if ($payment['status'] === 'captured') {
-            $this->setPayment($record['reference'], 'Paid', ['razorpayPaymentId' => $paymentId]);
+        if (($payment['status'] ?? '') !== 'captured') {
             Security::json([
-                'ok' => true, 'paid' => true, 'reference' => $record['reference'],
-                'amount' => $record['amount'], 'currency' => $expectedCurrency,
-            ]);
+                'ok' => true,
+                'paid' => false,
+                'verificationStatus' => 'PAYMENT_PROCESSING',
+                'message' => 'Razorpay has not yet confirmed capture. Keep this page open while verification continues.',
+            ], 202);
         }
-        OperationalLogger::event('warning', 'razorpay_payment_not_captured');
-        Security::json([
-            'ok' => true, 'paid' => false, 'reference' => $record['reference'],
-            'amount' => $record['amount'], 'currency' => $expectedCurrency,
-        ]);
+        $verified = $this->paymentVerifications->recordVerifiedSignal(
+            (string) $record['reference'],
+            $orderId,
+            $paymentId,
+            'checkout',
+            $providerOrder,
+            $payment,
+            $accessToken
+        );
+        Security::json(['ok' => true] + $verified, $verified['receiptReady'] ? 200 : 202);
     }
 
     private function cancelRazorpayOrder(array $body): never
@@ -1004,10 +1045,14 @@ final class Application
             Security::json(['ok' => false, 'error' => 'Invalid Razorpay order.'], 400);
         }
         $record = $this->findBy('', 'razorpayOrderId', $orderId);
-        if ($record !== null && ($record['paymentStatus'] ?? '') === 'Pending') {
-            $this->setPayment($record['reference'], 'Cancelled');
+        if ($record === null) {
+            Security::json(['ok' => false, 'error' => 'Razorpay order was not found.'], 404);
         }
-        Security::json(['ok' => true]);
+        Security::json([
+            'ok' => true,
+            'paymentStatus' => 'Pending',
+            'message' => 'Checkout dismissal is not proof of failure; payment status remains pending verification.',
+        ], 202);
     }
 
     private function webhook(string $path): never
@@ -1127,42 +1172,105 @@ final class Application
         if ($eventId === '' || strlen($eventId) > 128) {
             Security::json(['ok' => false, 'error' => 'Invalid Razorpay event identifier.'], 400);
         }
-        if ($this->webhookEventSeen('razorpay', $eventId)) {
-            Security::json(['received' => true, 'duplicate' => true]);
+        if ($this->paymentVerifications === null) {
+            Security::json(['ok' => false, 'error' => 'Verified payment receipts require MySQL persistence.'], 503);
         }
         $payment = $event['payload']['payment']['entity'] ?? [];
         $orderId = (string) ($payment['order_id'] ?? '');
-        if (($event['event'] ?? '') === 'payment.captured' && $orderId !== ''
-            && ($payment['status'] ?? '') === 'captured') {
-            $record = $this->findBy('', 'razorpayOrderId', $orderId);
-            if ($record === null) {
-                OperationalLogger::event('error', 'razorpay_webhook_registration_unmatched');
-            } elseif (CurrencyPolicy::paymentMatchesMinorUnits(
-                $this->amountMinorUnits($record),
-                $record['transactionCurrency'] ?? $record['razorpayCurrency'] ?? $record['amountCurrency'] ?? CurrencyPolicy::BASE_CURRENCY,
-                $payment['amount'] ?? null,
-                (string) ($payment['currency'] ?? '')
-            )) {
-                $this->setPayment($record['reference'], 'Paid', ['razorpayPaymentId' => $payment['id'] ?? '']);
-            } else {
-                OperationalLogger::event('error', 'razorpay_webhook_payment_mismatch');
+        $eventType = (string) ($event['event'] ?? '');
+        if (!in_array($eventType, ['payment.captured', 'payment.failed'], true)) {
+            if ($this->webhookEventSeen('razorpay', $eventId)) {
+                Security::json(['received' => true, 'duplicate' => true]);
             }
-        } elseif (($event['event'] ?? '') === 'payment.failed' && $orderId !== '') {
-            OperationalLogger::event('warning', 'razorpay_payment_failed');
-            $record = $this->findBy('', 'razorpayOrderId', $orderId);
-            if ($record !== null && ($record['paymentStatus'] ?? '') === 'Pending') {
-                $this->setPayment($record['reference'], 'Failed');
-            }
+            $this->recordWebhookEvent('razorpay', $eventId, $eventType, (string) ($payment['id'] ?? ''), '');
+            Security::json(['received' => true]);
         }
-        $record = $orderId === '' ? null : $this->findBy('', 'razorpayOrderId', $orderId);
-        $this->recordWebhookEvent(
-            'razorpay',
-            $eventId,
-            (string) ($event['event'] ?? ''),
-            (string) ($payment['id'] ?? ''),
-            (string) ($record['reference'] ?? '')
+        $paymentId = (string) ($payment['id'] ?? '');
+        $reference = $orderId === '' ? null : $this->paymentVerifications->referenceForOrder($orderId);
+        if ($reference === null || !preg_match('/^pay_[A-Za-z0-9]+$/', $paymentId)) {
+            OperationalLogger::event('error', 'razorpay_webhook_registration_unmatched', ['order_id' => $orderId]);
+            Security::json(['ok' => false, 'error' => 'Payment event did not match a registration order.'], 404);
+        }
+        $providerPayment = $this->razorpayRequest('payments/' . rawurlencode($paymentId));
+        $providerOrder = $this->razorpayRequest('orders/' . rawurlencode($orderId));
+        if ($eventType === 'payment.captured') {
+            if (($providerPayment['status'] ?? '') !== 'captured') {
+                Security::json(['ok' => false, 'error' => 'Razorpay has not confirmed payment capture.'], 409);
+            }
+            $result = $this->paymentVerifications->recordVerifiedSignal(
+                $reference,
+                $orderId,
+                $paymentId,
+                'webhook',
+                $providerOrder,
+                $providerPayment,
+                null,
+                ['id' => $eventId, 'type' => $eventType]
+            );
+            Security::json(['received' => true, 'verificationStatus' => $result['verificationStatus']]);
+        }
+        $result = $this->paymentVerifications->recordWebhookFailure(
+            $reference,
+            $orderId,
+            $paymentId,
+            ['id' => $eventId, 'event' => $eventType],
+            $providerOrder,
+            $providerPayment
         );
-        Security::json(['received' => true]);
+        Security::json(['received' => true, 'verificationStatus' => $result['verificationStatus']]);
+    }
+
+    private function registrationPaymentStatus(string $reference): never
+    {
+        if ($this->paymentVerifications === null) {
+            Security::json(['ok' => false, 'error' => 'Payment verification requires MySQL.'], 503);
+        }
+        try {
+            $status = $this->paymentVerifications->status(
+                $reference,
+                (string) ($_SERVER['HTTP_X_REGISTRATION_ACCESS'] ?? '')
+            );
+        } catch (\UnexpectedValueException) {
+            Security::json(['ok' => false, 'error' => 'Registration access could not be verified.'], 403);
+        }
+        Security::json(['ok' => true] + $status);
+    }
+
+    private function downloadReceipt(string $reference): never
+    {
+        if ($this->paymentVerifications === null) {
+            Security::json(['ok' => false, 'error' => 'Payment verification requires MySQL.'], 503);
+        }
+        $receipt = $this->paymentVerifications->receipt(
+            $reference,
+            (string) ($_SERVER['HTTP_X_REGISTRATION_ACCESS'] ?? '')
+        );
+        if ($receipt === null) {
+            Security::json(['ok' => false, 'error' => 'A verified receipt is not available for this registration.'], 404);
+        }
+        $this->sendReceipt($receipt);
+    }
+
+    private function downloadAdminReceipt(string $reference): never
+    {
+        if ($this->paymentVerifications === null) {
+            Security::json(['ok' => false, 'error' => 'Payment verification requires MySQL.'], 503);
+        }
+        $receipt = $this->paymentVerifications->receipt($reference, null, true);
+        if ($receipt === null) {
+            Security::json(['ok' => false, 'error' => 'A verified receipt is not available for this registration.'], 404);
+        }
+        $this->sendReceipt($receipt);
+    }
+
+    private function sendReceipt(array $receipt): never
+    {
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="' . preg_replace('/[^A-Za-z0-9_-]/', '', $receipt['number']) . '.pdf"');
+        header('Content-Length: ' . strlen($receipt['pdf']));
+        header('Cache-Control: private, no-store, max-age=0');
+        echo $receipt['pdf'];
+        exit;
     }
 
     private function paypalWebhook(string $raw): never

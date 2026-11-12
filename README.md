@@ -68,13 +68,14 @@ Configure `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION` (`tls` or `ssl`), `SMTP_US
 
 ## Payments
 
-Configure provider credentials in `.env`; do not put secrets in browser code. Keep Stripe test keys, PayPal sandbox mode, and Razorpay test keys active until checkout and webhook verification are tested end-to-end. Registration pricing, taxes, and coupons are recalculated server-side from saved content. A paid state is set only after provider-side verification or a valid provider webhook.
+Configure provider credentials in `.env`; do not put secrets in browser code. Keep Stripe test keys, PayPal sandbox mode, and Razorpay test keys active until checkout and webhook verification are tested end-to-end. Registration pricing, taxes, and coupons are recalculated server-side from saved content. Razorpay registration status is marked Paid and its receipt becomes available only after the checkout callback, signed webhook, current Razorpay API status, exact financial reconciliation, and database checks all pass.
 
 - Online provider checkout and its webhooks are disabled unless the PHP application has a live MySQL PDO connection. JSON mode remains for local/non-payment workflows only; it is not an online-payment persistence mode.
 - `POST /api/checkout/quote` validates the complete submitted selection and returns an authoritative itemized server quote. The Stripe, PayPal, and Razorpay creation routes recalculate again before making provider requests.
 - An internal pending registration and pricing snapshot are persisted before calling a payment provider. Provider IDs are attached afterward. If provider creation times out, the record intentionally remains pending and needs operational reconciliation before another attempt.
 - Stripe webhook: `POST /api/stripe/webhook`; subscribe to `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`, and `checkout.session.async_payment_failed`.
 - Razorpay webhook: `POST /api/razorpay/webhook`; subscribe to `payment.captured` and `payment.failed`.
+- Razorpay receipt verification and deployment details, including the registration status/receipt and admin endpoints, are documented in [docs/VERIFIED_PAYMENT_RECEIPTS.md](docs/VERIFIED_PAYMENT_RECEIPTS.md). Apply migration `004_verified_receipts.sql` before enabling the updated Razorpay flow.
 - PayPal webhook: `POST /api/paypal/webhook`; configure the webhook ID and server-side verification endpoint. Subscribe to `PAYMENT.CAPTURE.COMPLETED`; only completed captures matching the internal order, configured merchant, amount, and currency are marked paid.
 - PayPal checkout requires `PAYPAL_MERCHANT_ID` and `PAYPAL_WEBHOOK_ID` in addition to the client credentials and verification flag.
 - Set the webhook secrets in `.env`; never expose them to the browser.

@@ -10,6 +10,14 @@
   var params = new URLSearchParams(location.search);
   var configs = { stripe: false, paypal: false, razorpay: false };
   var razorpayScriptPromise;
+  var verificationPanel = document.getElementById("payment-verification");
+  var verificationTitle = document.getElementById("payment-verification-title");
+  var verificationMessage = document.getElementById("payment-verification-message");
+  var receiptButton = document.getElementById("download-receipt");
+  var retryButton = document.getElementById("retry-registration");
+  var verificationTimer = null;
+  var verificationAttempts = 0;
+  var RECEIPT_SESSION_KEY = "matai-razorpay-verification";
 
   function option(value) {
     var choices = form.querySelectorAll('input[name="paymentGatewayChoice"]');
@@ -42,13 +50,17 @@
     status.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
-  function request(url, body) {
+  function request(url, body, accessToken) {
     return fetch("/api/csrf").then(function (response) {
       return response.json().then(function (csrf) {
         if (!response.ok || !csrf.token) throw new Error("Could not initialize request security.");
         return fetch(url, {
           method: "POST",
-          headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf.token },
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": csrf.token,
+            ...(accessToken ? { "X-Registration-Access": accessToken } : {})
+          },
           body: JSON.stringify(body)
         });
       });
@@ -161,6 +173,166 @@
     return razorpayScriptPromise;
   }
 
+  function showVerification(title, message, kind) {
+    if (!verificationPanel) return;
+    var shouldScroll = verificationPanel.hidden || verificationTitle.textContent !== title;
+    verificationPanel.hidden = false;
+    verificationPanel.className = "payment-verification form-status " + (kind || "info");
+    verificationTitle.textContent = title;
+    verificationMessage.textContent = message;
+    receiptButton.hidden = true;
+    retryButton.hidden = true;
+    if (shouldScroll) verificationPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function readVerification() {
+    try {
+      var value = sessionStorage.getItem(RECEIPT_SESSION_KEY);
+      return value ? JSON.parse(value) : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function saveVerification(context) {
+    try {
+      sessionStorage.setItem(RECEIPT_SESSION_KEY, JSON.stringify(context));
+      history.replaceState(null, "", "?payment=razorpay&registration=" + encodeURIComponent(context.reference));
+      return true;
+    } catch (_) {
+      showVerification(
+        "Payment verification is in progress.",
+        "Keep this page open while the server confirms the transaction. Do not make another payment until the existing transaction is checked.",
+        "info"
+      );
+      return false;
+    }
+  }
+
+  function downloadVerifiedReceipt(context) {
+    fetch("/api/registrations/" + encodeURIComponent(context.reference) + "/receipt", {
+      headers: { "X-Registration-Access": context.accessToken },
+      credentials: "same-origin"
+    }).then(function (response) {
+      if (!response.ok) return response.json().then(function (result) {
+        throw new Error(result.error || "The verified receipt is not available yet.");
+      });
+      return response.blob();
+    }).then(function (blob) {
+      var url = URL.createObjectURL(blob);
+      var link = document.createElement("a");
+      link.href = url;
+      link.download = "MatAI-2027-Receipt-" + context.reference + ".pdf";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }).catch(function (error) {
+      showVerification("Receipt download unavailable.", error.message, "err");
+    });
+  }
+
+  function displayVerificationStatus(context, result) {
+    if (result.receiptReady === true && result.paid === true) {
+      if (verificationTimer) window.clearTimeout(verificationTimer);
+      showVerification(
+        "✓ Payment Successful!",
+        "Your MatAI 2027 registration is confirmed. Receipt number: " + result.receiptNumber + ".",
+        "ok"
+      );
+      receiptButton.hidden = false;
+      receiptButton.onclick = function () { downloadVerifiedReceipt(context); };
+      return true;
+    }
+    if (result.verificationStatus === "FAILED") {
+      var submit = form.querySelector('[type="submit"]');
+      if (submit) { submit.disabled = false; submit.textContent = "Continue to payment"; }
+      showVerification("Payment Failed.", "Razorpay reported that this payment failed. You may return to registration and try again.", "err");
+      retryButton.hidden = false;
+      retryButton.onclick = function () {
+        if (verificationTimer) window.clearTimeout(verificationTimer);
+        try { sessionStorage.removeItem(RECEIPT_SESSION_KEY); } catch (_) {}
+        history.replaceState(null, "", location.pathname);
+        verificationPanel.hidden = true;
+        form.scrollIntoView({ behavior: "smooth", block: "start" });
+      };
+      return false;
+    }
+    var pending = ["INITIATED", "WEBHOOK_VERIFIED", "CALLBACK_VERIFIED", "CHECKOUT_COMPLETED",
+      "RAZORPAY_PAYMENT_VERIFIED", "FINANCIAL_RECONCILED", "DATABASE_VALIDATED", "FULLY_VERIFIED"].indexOf(
+      result.verificationStatus
+    ) > -1;
+    showVerification(
+      pending ? "Payment confirmation is pending." : "Your payment is being verified.",
+      "We are checking your payment with Razorpay and matching it to your registration. Please do not make another payment until the existing transaction is checked.",
+      "info"
+    );
+    return false;
+  }
+
+  function startPaymentVerification(context) {
+    if (!context || !context.reference || !context.accessToken) return;
+    if (verificationTimer) window.clearTimeout(verificationTimer);
+    verificationAttempts = 0;
+    var lastVerificationStatus = "";
+    var submit = form.querySelector('[type="submit"]');
+    if (submit) { submit.disabled = true; submit.textContent = "Checking payment..."; }
+    showVerification(
+      "Verifying your payment and registration...",
+      "Please wait while we confirm payment with Razorpay and our registration records.",
+      "info"
+    );
+    function check() {
+      verificationAttempts += 1;
+      fetch("/api/registrations/" + encodeURIComponent(context.reference) + "/payment-status", {
+        headers: { "X-Registration-Access": context.accessToken },
+        credentials: "same-origin"
+      }).then(function (response) {
+        return response.json().then(function (result) {
+          if (!response.ok) throw new Error(result.error || "Payment status could not be verified.");
+          return result;
+        });
+      }).then(function (result) {
+        lastVerificationStatus = result.verificationStatus || "";
+        if (displayVerificationStatus(context, result)) return true;
+        if (context.payment && result.verificationStatus !== "FAILED") {
+          return request("/api/checkout/razorpay/verify", context.payment, context.accessToken)
+            .then(function (verifyResult) {
+              lastVerificationStatus = verifyResult.verificationStatus || "";
+              if (displayVerificationStatus(context, verifyResult)) return true;
+            })
+            .catch(function () {
+              return false;
+            });
+        }
+      }).then(function (finished) {
+        if (finished === true) return;
+        if (verificationAttempts >= 60) {
+          if (lastVerificationStatus === "FAILED") {
+            displayVerificationStatus(context, { verificationStatus: "FAILED" });
+            return;
+          }
+          showVerification(
+            "Payment confirmation is pending.",
+            "This transaction is still being checked. Do not make another payment; contact the organizers if this message remains.",
+            "info"
+          );
+          return;
+        }
+        verificationTimer = window.setTimeout(check, 3000);
+      }).catch(function (error) {
+        showVerification(
+          "Payment confirmation is pending.",
+          (error.message || "We could not retrieve the latest status.") +
+            " Do not make another payment until the existing transaction is checked.",
+          "info"
+        );
+        if (verificationAttempts < 60) verificationTimer = window.setTimeout(check, 5000);
+      });
+    }
+    check();
+  }
+
   function startRazorpay(data, button, oldText) {
     verifyServerQuote(data).then(function (quote) {
       return request("/api/checkout/razorpay/order", data).then(function (order) {
@@ -171,6 +343,15 @@
       var order = result.order;
       if (!checkoutMatchesQuote(order, quote, true)) {
         throw new Error("Razorpay order amount or currency did not match the authoritative server quote.");
+      }
+      var context = {
+        reference: order.reference,
+        orderId: order.orderId,
+        accessToken: order.receiptAccessToken,
+        payment: null
+      };
+      if (!saveVerification(context)) {
+        throw new Error("Secure payment recovery could not be saved in this browser session. No checkout was opened.");
       }
       return loadRazorpayScript().then(function () {
         var checkout = new window.Razorpay({
@@ -184,30 +365,30 @@
           notes: { reference: order.reference },
           theme: { color: "#1f4d3a" },
           handler: function (payment) {
-            request("/api/checkout/razorpay/verify", payment).then(function (result) {
-              if (result.paid) {
-                form.reset();
-                showStatus("ok", paymentMessage(result, "Payment received."));
-              } else {
-                showStatus("info", paymentMessage(result, "Razorpay authorized the payment; confirmation is pending.") +
-                  " The organizers will confirm once capture completes.");
-              }
-            }).catch(function (error) {
-              showStatus("err", error.message || "Payment verification is pending. Contact the organizers if you were charged.");
-            }).finally(function () {
-              if (button) { button.disabled = false; button.textContent = oldText; }
-            });
+            context.payment = payment;
+            saveVerification(context);
+            startPaymentVerification(context);
           },
           modal: {
             ondismiss: function () {
-              request("/api/checkout/razorpay/cancel", { orderId: order.orderId }).catch(function () {});
-              showStatus("err", "Razorpay checkout was closed. No payment was confirmed; you may try again.");
+              showVerification(
+                "Payment confirmation is pending.",
+                "Checkout was closed. A payment may still be processing; do not make another payment until the existing transaction is checked.",
+                "info"
+              );
+              startPaymentVerification(context);
               if (button) { button.disabled = false; button.textContent = oldText; }
             }
           }
         });
         checkout.on("payment.failed", function (response) {
-          showStatus("err", response.error && response.error.description || "Razorpay could not complete the payment.");
+          showVerification(
+            "Payment confirmation is pending.",
+            (response.error && response.error.description || "Razorpay could not complete the payment.") +
+              " We are checking the final transaction status. Do not make another payment until it is confirmed.",
+            "info"
+          );
+          startPaymentVerification(context);
           if (button) { button.disabled = false; button.textContent = oldText; }
         });
         checkout.open();
@@ -337,5 +518,12 @@
     }).catch(function (error) {
       showStatus("err", error.message || "We could not confirm PayPal payment. Contact the organizers if you were charged.");
     });
+  } else if (params.get("payment") === "razorpay") {
+    var savedVerification = readVerification();
+    if (savedVerification && savedVerification.reference === params.get("registration")) {
+      startPaymentVerification(savedVerification);
+    } else {
+      showStatus("err", "Payment verification access is unavailable in this browser session. Contact the organizers before attempting another payment.");
+    }
   }
 })();

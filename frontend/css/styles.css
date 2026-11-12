@@ -1695,6 +1695,8 @@ table.tbl tbody tr:hover { background:#fff0e3; }
 .field input:focus, .field select:focus, .field textarea:focus { border-color:var(--teal); box-shadow:0 0 0 4px rgba(19,132,126,.14); }
 .form-status.ok { background:#e9f7ef; border-color:#b9e3c8; color:#17683c; }
 .form-status.err { background:#fff0ed; border-color:#f2c0b5; color:#9b2f20; }
+.payment-verification[hidden] { display:none; }
+.payment-verification p { margin:.5rem 0 1rem; }
 .form-status.info { background:#edf5fb; border-color:#c5d9ed; color:#244f78; }
 .general-information-page .page-section-picker .grid {
   grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));

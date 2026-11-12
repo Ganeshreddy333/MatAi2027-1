@@ -46,6 +46,12 @@
 
       <form id="register-form" class="form-card reveal mt-2" data-form="register">
         <div class="form-status"></div>
+        <div id="payment-verification" class="payment-verification form-status info" role="status" aria-live="polite" hidden>
+          <strong id="payment-verification-title">Verifying your payment and registration...</strong>
+          <p id="payment-verification-message">Please wait while we confirm payment with Razorpay and our registration records.</p>
+          <button type="button" class="btn btn-primary" id="download-receipt" hidden>Download Receipt</button>
+          <button type="button" class="btn btn-secondary" id="retry-registration" hidden>Return to registration</button>
+        </div>
 
         <!-- Participant details -->
         <h3 class="fm-head">Registration Form</h3>

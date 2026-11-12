@@ -9,7 +9,7 @@
 - PDO MySQL persistence with a private JSON mode for development/non-payment flows.
 - A separate legacy Express implementation exists in `backend/server.js`; only the PHP API should be exposed as the production payment API.
 - Registration pricing and validation are in `backend/src/RegistrationService.php`; provider enablement is in `backend/src/PaymentConfiguration.php`.
-- Existing migrations are additive and include a unique provider/event key table, but there is no dedicated order/payment/refund ledger.
+- Existing migrations are additive. Migration `004_verified_receipts.sql` adds a Razorpay verification and receipt ledger with unique order, payment, and receipt references; other providers still do not use a normalized payment/refund ledger.
 
 ## Findings and status
 
@@ -21,10 +21,10 @@
 | MySQL-only online payments | IMPLEMENTED — NOT YET VERIFIED | Provider availability is false without PDO; create/capture/verify/status/webhook operations fail closed in JSON mode. | Verify production MySQL health, migrations, backup and restore. |
 | Stripe | PARTIALLY IMPLEMENTED | Server-side session and status verification, amount/currency matching, signed webhook, event-ID persistence. | No provider sandbox test; refund, reconciliation, internal idempotency and durable transaction records remain absent. |
 | PayPal | PARTIALLY IMPLEMENTED | Server-side Orders API/capture; configured merchant check; official webhook verification endpoint; event-ID persistence. | No sandbox verification. Pending/denied/refund handling, reconciliation, idempotent internal checkout and transaction ledger remain absent. |
-| Razorpay | PARTIALLY IMPLEMENTED | Server-side order, HMAC callback verification, fetched payment details, raw-body webhook signature verification and event-ID persistence. | No test-mode verification. Refund/reconciliation, full event-state handling and idempotent internal checkout remain absent. |
+| Razorpay | IMPLEMENTED IN SOURCE — NOT YET VERIFIED | Central verification ledger requires both HMAC-verified checkout callback and raw-body signed webhook, fetches current order/payment from Razorpay, reconciles captured amount/currency against the saved quote, and generates a protected receipt only after all gates pass. | No MySQL integration, concurrency/rollback, browser, or provider sandbox tests were run. Refund/dispute lifecycle, automated reconciliation, and idempotent order creation remain absent. |
 | Event deduplication | PARTIALLY IMPLEMENTED | Signed event IDs are checked and recorded in `matai_payment_events`; payment state mutation is repeat-safe. | Recording and state update are not one atomic operation; test duplicate/concurrent delivery and retry behavior. |
 | Payment state transitions | PARTIALLY IMPLEMENTED | `setPayment` prevents delayed failed/cancelled events from overwriting paid status. | No formal state table, refund transitions or provider-independent reconciliation. |
-| Checkout UX | PARTIALLY IMPLEMENTED | Existing JS recalculates locally; Stripe/PayPal/Razorpay now request and compare the server quote before provider initiation. | Browser/E2E responsive and accessibility testing is unavailable here; quote mismatch requires user resubmission. |
+| Checkout UX | PARTIALLY IMPLEMENTED | Checkout compares the server quote; Razorpay displays backend-polled status and only exposes a download action after the API confirms receipt generation. | Browser/E2E responsive and accessibility testing is unavailable here; Stripe/PayPal receipts are outside this Razorpay implementation. |
 | Production configuration | BLOCKED | No host/database/provider configuration was inspected. | Staging tests, merchant configuration, HTTPS, monitoring, restore test and explicit business approval. |
 
 ## Architectural and business-rule risks
@@ -46,3 +46,5 @@
 - Validated calendar dates and derived accommodation checkout date server-side.
 - Added PayPal merchant and webhook configuration requirements, signature verification using PayPal's verification API, and verified-capture checks.
 - Added provider event-ID lookup/storage using the existing unique event table and protected paid state from late failure/cancellation.
+- Added the Razorpay verification/receipt ledger, callback-plus-webhook verification gate, provider API reconciliation, protected status/download endpoints, and admin transaction details/receipt download.
+- Added a server-generated PDF receipt and browser-session polling; no client redirect, callback, or individual webhook can independently expose a receipt.

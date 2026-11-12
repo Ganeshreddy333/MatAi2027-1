@@ -484,6 +484,9 @@
       }
       ctrls += field("Payment amount (" + esc(rec.amountCurrency || rec.transactionCurrency || "EUR") + ")",
         "<div class='a-readonly'>" + esc(money(rec.amount, rec.amountCurrency || rec.transactionCurrency || "EUR")) + "</div>");
+      if (rec.razorpayOrderId || data.paymentGateway === "Razorpay") {
+        ctrls += field("Razorpay verification", "<div class='a-readonly' id='d-payment-details'>Loading verified transaction details...</div>");
+      }
     }
     ctrls += field("Review status", selectHtml("d-status", STATUS, rec.status || "New"));
     ctrls += field("Admin notes", "<textarea class='a-input' id='d-notes'>" + esc(rec.adminNotes || "") + "</textarea>");
@@ -496,6 +499,34 @@
     el("drawer-bg").classList.add("open");
     el("d-save").addEventListener("click", saveDrawer);
     el("d-del").addEventListener("click", deleteDrawer);
+    if (rec.razorpayOrderId || data.paymentGateway === "Razorpay") {
+      api("/admin/api/registrations/" + encodeURIComponent(ref) + "/payment").then(function (result) {
+        if (drawerRef !== ref) return;
+        var payment = result.payment || {};
+        var details = "<strong>Status:</strong> " + esc(payment.verificationStatus || "NOT_FOUND") +
+          "<br><strong>Order ID:</strong> " + esc(payment.orderId || "—") +
+          "<br><strong>Payment ID:</strong> " + esc(payment.paymentId || "—") +
+          "<br><strong>Payment method:</strong> " + esc(payment.paymentMethod || "—") +
+          "<br><strong>Transaction time:</strong> " + esc(payment.paidAt ? fmt(payment.paidAt) : "—") +
+          "<br><strong>Verified amount:</strong> " + esc(money((Number(payment.amountMinor) || 0) / 100, payment.currency || rec.transactionCurrency || "EUR")) +
+          "<br><strong>Checks:</strong> checkout " + (payment.checkoutVerified ? "passed" : "pending") +
+          ", webhook " + (payment.webhookVerified ? "passed" : "pending") +
+          ", Razorpay " + (payment.razorpayVerified ? "passed" : "pending") +
+          ", financial " + (payment.financialReconciled ? "passed" : "pending") +
+          ", database " + (payment.databaseValidated ? "passed" : "pending");
+        if (payment.receiptNumber) {
+          details += "<br><strong>Receipt:</strong> " + esc(payment.receiptNumber) +
+            (payment.receiptGeneratedAt ? " · " + esc(fmt(payment.receiptGeneratedAt)) : "") +
+            "<br><a class='a-btn sm' href='/admin/api/registrations/" + encodeURIComponent(ref) +
+            "/receipt'>Download verified receipt</a>";
+        }
+        var holder = el("d-payment-details");
+        if (holder) holder.innerHTML = details;
+      }).catch(function () {
+        var holder = el("d-payment-details");
+        if (holder && drawerRef === ref) holder.textContent = "Verified payment details could not be loaded.";
+      });
+    }
   }
 
   function field(label, inner) { return "<div class='a-field'><label>" + label + "</label>" + inner + "</div>"; }
