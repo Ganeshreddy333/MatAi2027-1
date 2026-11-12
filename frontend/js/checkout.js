@@ -69,31 +69,30 @@
     return data;
   }
 
-  function checkoutMatchesQuote(order, data, minorUnits) {
-    if (!order || order.currency !== data.currency) return false;
-    var quotedAmount = Number(data.totalPrice);
+  function checkoutMatchesQuote(order, quote, minorUnits) {
+    if (!order || !quote || order.currency !== quote.currency) return false;
+    var quotedAmount = Number(quote.totalMinor);
     var orderAmount = Number(order.amount);
-    if (!Number.isFinite(quotedAmount) || !Number.isFinite(orderAmount)) return false;
+    if (!Number.isSafeInteger(quotedAmount) || !Number.isFinite(orderAmount)) return false;
     var returnedCents = minorUnits ? Math.round(orderAmount) : Math.round(orderAmount * 100);
-    return returnedCents === Math.round(quotedAmount * 100);
+    return returnedCents === quotedAmount;
   }
 
   function verifyServerQuote(data) {
     return request("/api/checkout/quote", data).then(function (quote) {
       var quotedCents = Number(quote.totalMinor);
       var submittedCents = Math.round(Number(data.totalPrice) * 100);
-      if (quote.currency !== data.currency || !Number.isSafeInteger(quotedCents) || quotedCents !== submittedCents) {
-        var amount = Number.isSafeInteger(quotedCents) ? (quotedCents / 100).toFixed(2) : "unavailable";
-        var lines = Array.isArray(quote.items) ? quote.items.map(function (item) {
-          return item.name + " x" + item.quantity + ": " + quote.currency + " " +
-            (Number(item.lineTotalMinor) / 100).toFixed(2);
-        }) : [];
-        lines.push("Subtotal " + quote.currency + " " + (Number(quote.subtotalMinor) / 100).toFixed(2));
-        lines.push("Discount " + quote.currency + " " + (Number(quote.discountMinor) / 100).toFixed(2));
-        lines.push("Tax " + quote.currency + " " + (Number(quote.taxMinor) / 100).toFixed(2));
-        lines.push("Total " + quote.currency + " " + amount);
-        throw new Error("The server quote differs from the displayed amount. " + lines.join(" · ") +
-          ". Review the server-calculated total before paying.");
+      if (!Number.isSafeInteger(quotedCents) || !Number.isSafeInteger(submittedCents) ||
+          quote.currency !== data.currency || !Array.isArray(quote.items) ||
+          !Number.isSafeInteger(Number(quote.subtotalMinor)) ||
+          !Number.isSafeInteger(Number(quote.discountMinor)) ||
+          !Number.isSafeInteger(Number(quote.taxMinor))) {
+        throw new Error("The server returned an invalid checkout quote. No payment was started.");
+      }
+      if (window.MATAI_SERVER_QUOTE) window.MATAI_SERVER_QUOTE.apply(quote);
+      if (quotedCents !== submittedCents &&
+          (!window.MATAI_SERVER_QUOTE || !window.MATAI_SERVER_QUOTE.confirm(quote, submittedCents))) {
+        throw new Error("Checkout was cancelled because the server-calculated amount differs from the previously displayed total.");
       }
       return quote;
     });
@@ -163,11 +162,15 @@
   }
 
   function startRazorpay(data, button, oldText) {
-    verifyServerQuote(data).then(function () {
-      return request("/api/checkout/razorpay/order", data);
-    }).then(function (order) {
-      if (!checkoutMatchesQuote(order, data, true)) {
-        throw new Error("Razorpay checkout amount or currency did not match your confirmed registration summary.");
+    verifyServerQuote(data).then(function (quote) {
+      return request("/api/checkout/razorpay/order", data).then(function (order) {
+        return { quote: quote, order: order };
+      });
+    }).then(function (result) {
+      var quote = result.quote;
+      var order = result.order;
+      if (!checkoutMatchesQuote(order, quote, true)) {
+        throw new Error("Razorpay order amount or currency did not match the authoritative server quote.");
       }
       return loadRazorpayScript().then(function () {
         var checkout = new window.Razorpay({
@@ -233,11 +236,15 @@
     if (button) { button.disabled = true; button.textContent = "Starting secure checkout…"; }
     var data = formData();
     if (gateway === "PayPal") {
-      verifyServerQuote(data).then(function () {
-        return request("/api/checkout/paypal/order", data);
-      }).then(function (order) {
-        if (!checkoutMatchesQuote(order, data, false)) {
-          throw new Error("PayPal checkout amount or currency did not match your confirmed registration summary.");
+      verifyServerQuote(data).then(function (quote) {
+        return request("/api/checkout/paypal/order", data).then(function (order) {
+          return { quote: quote, order: order };
+        });
+      }).then(function (result) {
+        var quote = result.quote;
+        var order = result.order;
+        if (!checkoutMatchesQuote(order, quote, false)) {
+          throw new Error("PayPal order amount or currency did not match the authoritative server quote.");
         }
         var approvalUrl = new URL(order.approvalUrl);
         if (approvalUrl.protocol !== "https:" || !/(^|\.)paypal\.com$/i.test(approvalUrl.hostname)) {

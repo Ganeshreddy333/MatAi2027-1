@@ -11,7 +11,7 @@
 
 ## Added but not executed
 
-- `RegistrationServiceTest`: checkout-date derivation and invalid calendar date cases.
+- `RegistrationServiceTest`: checkout-date derivation, invalid calendar date, occupancy-specific accommodation rate precedence, shared-rate fallback, no accommodation, multi-night stays, and a 12% discount followed by 5% tax.
 - `CurrencyPolicyTest`: exact decimal and provider-minor-unit amount matching cases.
 - `PaymentConfigurationTest`: PayPal enablement requires merchant and webhook IDs.
 

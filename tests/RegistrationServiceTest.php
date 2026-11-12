@@ -78,6 +78,74 @@ final class RegistrationServiceTest extends TestCase
         self::assertSame(4025, $registration['items'][1]['unitCents']);
     }
 
+    public function testVirtualRegistrationWithoutAccommodationUsesServerPriceAndTax(): void
+    {
+        $this->saveCheckoutPricing(['addon_accommodation_double' => 435], []);
+        $input = $this->virtualInput();
+
+        $registration = $this->service->prepare($input);
+
+        self::assertSame(65400, $registration['grossCents']);
+        self::assertSame(0, $registration['discountCents']);
+        self::assertSame(3270, $registration['taxCents']);
+        self::assertSame(68670, $registration['totalCents']);
+        self::assertCount(1, $registration['items']);
+    }
+
+    public function testDoubleOccupancyUsesItsSavedNightlyRateAndAppliesPercentDiscountBeforeTax(): void
+    {
+        $this->saveCheckoutPricing(
+            ['addon_accommodation_double' => 435],
+            [['code' => 'SAVE12', 'discountType' => 'percentage', 'discountPercentage' => 12, 'enabled' => true]]
+        );
+        $input = $this->virtualInput();
+        $input['accommodationType'] = 'double';
+        $input['accommodationNights'] = '1';
+        $input['checkInDate'] = '2027-10-12';
+        $input['couponCode'] = 'SAVE12';
+
+        $registration = $this->service->prepare($input);
+
+        self::assertSame(108900, $registration['grossCents']);
+        self::assertSame(43500, $registration['items'][1]['unitCents']);
+        self::assertSame(1, $registration['items'][1]['quantity']);
+        self::assertSame(13068, $registration['discountCents']);
+        self::assertSame(4792, $registration['taxCents']);
+        self::assertSame(100624, $registration['totalCents']);
+    }
+
+    public function testAccommodationDurationIsChargedPerNight(): void
+    {
+        $this->saveCheckoutPricing(['addon_accommodation_double' => 435], []);
+        $input = $this->virtualInput();
+        $input['accommodationType'] = 'double';
+        $input['accommodationNights'] = '2';
+        $input['checkInDate'] = '2027-10-12';
+
+        $twoNights = $this->service->prepare($input);
+        $input['accommodationNights'] = '3';
+        $threeNights = $this->service->prepare($input);
+
+        self::assertSame(2, $twoNights['items'][1]['quantity']);
+        self::assertSame(160020, $twoNights['totalCents']);
+        self::assertSame(3, $threeNights['items'][1]['quantity']);
+        self::assertSame(205695, $threeNights['totalCents']);
+    }
+
+    public function testLegacySharedAccommodationPriceIsUsedWhenOccupancyRateIsAbsent(): void
+    {
+        $this->saveCheckoutPricing([], [], 435);
+        $input = $this->virtualInput();
+        $input['accommodationType'] = 'double';
+        $input['accommodationNights'] = '1';
+        $input['checkInDate'] = '2027-10-12';
+
+        $registration = $this->service->prepare($input);
+
+        self::assertSame(43500, $registration['items'][1]['unitCents']);
+        self::assertSame(114345, $registration['totalCents']);
+    }
+
     public function testInvalidCalendarDateIsRejected(): void
     {
         $content = [
@@ -192,5 +260,29 @@ final class RegistrationServiceTest extends TestCase
             'currencyFallbackConfirmed' => 'false',
             'qty_speaker' => '1',
         ];
+    }
+
+    private function virtualInput(): array
+    {
+        $input = $this->validInput();
+        $input['qty_speaker'] = '0';
+        $input['qty_virtual'] = '1';
+        return $input;
+    }
+
+    private function saveCheckoutPricing(array $fixedItems, array $coupons, int|float|string $legacyNightlyPrice = 999): void
+    {
+        $content = [
+            'fees' => ['Early Bird' => ['Virtual' => 654]],
+            'registrationPeriods' => ['active' => 'Early Bird'],
+            'registrationPricing' => ['fixedItems' => $fixedItems],
+            'accommodation' => [
+                'enabled' => true,
+                'pricePerNight' => $legacyNightlyPrice,
+                'maxNights' => 5,
+            ],
+            'coupons' => $coupons,
+        ];
+        file_put_contents($this->dataDirectory . '/content.json', json_encode($content, JSON_THROW_ON_ERROR));
     }
 }

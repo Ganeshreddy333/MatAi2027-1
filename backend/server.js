@@ -618,7 +618,11 @@ async function prepareRegistration(input) {
       error.statusCode = 400;
       throw error;
     }
-    const price = Number(accommodation.pricePerNight != null ? accommodation.pricePerNight : content.registrationPricing && content.registrationPricing.fixedItems && content.registrationPricing.fixedItems["addon_accommodation_" + accommodationType]);
+    const fixedItems = content.registrationPricing && content.registrationPricing.fixedItems;
+    const occupancyPriceKey = "addon_accommodation_" + accommodationType;
+    const price = Number(fixedItems && Object.prototype.hasOwnProperty.call(fixedItems, occupancyPriceKey)
+      ? fixedItems[occupancyPriceKey]
+      : accommodation.pricePerNight);
     if (!Number.isFinite(price) || price < 0 || price > 1000000) {
       const error = new Error("The configured accommodation price is invalid.");
       error.statusCode = 500;

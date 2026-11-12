@@ -146,6 +146,19 @@
     accommodation = accommodation || {};
     var configured = parseInt(accommodation.maxNights, 10);
     accommodationMaxNights = configured >= 1 && configured <= 100 ? configured : 5;
+    var fixedItems = window.MATAI_CONTENT && window.MATAI_CONTENT.registrationPricing &&
+      window.MATAI_CONTENT.registrationPricing.fixedItems || {};
+    ["single", "double"].forEach(function (type) {
+      var key = "addon_accommodation_" + type;
+      if (Object.prototype.hasOwnProperty.call(fixedItems, key) || accommodation.pricePerNight == null) return;
+      var price = Number(accommodation.pricePerNight);
+      if (!Number.isFinite(price) || price < 0) return;
+      var row = rows.find(function (item) { return item.getAttribute("data-price-key") === key; });
+      if (!row) return;
+      row.setAttribute("data-price", String(price));
+      var cell = row.querySelector(".fp[data-base]");
+      if (cell) cell.setAttribute("data-base", String(price));
+    });
     var nights = id("accommodation-nights");
     if (!nights) return;
     var previous = parseInt(nights.value, 10) || 1;
@@ -160,6 +173,88 @@
     syncSelectionInputs();
     recalc();
   }
+
+  function applyServerQuote(quote) {
+    if (!quote || !Number.isSafeInteger(Number(quote.totalMinor)) ||
+        !Array.isArray(quote.items) || !quote.currency) return;
+    var totalMinor = Number(quote.totalMinor);
+    var format = function (minor) {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: quote.currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(Number(minor) / 100);
+    };
+    var escape = function (value) {
+      return String(value == null ? "" : value).replace(/[&<>"']/g, function (character) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[character];
+      });
+    };
+    var body = id("sum-body");
+    if (body) {
+      body.innerHTML = quote.items.length ? quote.items.map(function (item) {
+        return "<tr><td>" + escape(item.name) + "</td><td class=\"c\">" +
+          Number(item.quantity) + "</td><td class=\"r\">" + format(item.unitAmountMinor) +
+          "</td><td class=\"r\">" + format(item.lineTotalMinor) + "</td></tr>";
+      }).join("") : '<tr class="sum-empty"><td colspan="4">No items selected.</td></tr>';
+    }
+    if (sumTotal) sumTotal.textContent = format(totalMinor);
+    if (totalCur) totalCur.textContent = CUR[quote.currency] ? CUR[quote.currency].sym : quote.currency;
+    if (totalInput) totalInput.value = (totalMinor / 100).toFixed(2);
+    if (totalDisplay) totalDisplay.value = (totalMinor / 100).toFixed(2);
+    if (totalEur) totalEur.value = (totalMinor / 100).toFixed(2);
+    if (summarySubtotal) summarySubtotal.textContent = format(quote.subtotalMinor);
+    if (summaryDiscount) summaryDiscount.textContent = "-" + format(quote.discountMinor);
+    if (summaryTax) summaryTax.textContent = format(quote.taxMinor);
+    if (summaryRegistrationPrice) {
+      var registrationMinor = quote.items.reduce(function (sum, item) {
+        return sum + (item.category ? Number(item.lineTotalMinor) : 0);
+      }, 0);
+      summaryRegistrationPrice.textContent = format(registrationMinor);
+    }
+    if (summaryParticipants) summaryParticipants.textContent = String(quote.participantCount || 0);
+    if (summaryAccommodation) {
+      var accommodationMinor = quote.items.reduce(function (sum, item) {
+        return sum + (/^Accommodation/.test(item.name) ? Number(item.lineTotalMinor) : 0);
+      }, 0);
+      summaryAccommodation.textContent = format(accommodationMinor);
+    }
+    if (summaryNights) summaryNights.textContent = quote.accommodation && quote.accommodation.nights
+      ? String(quote.accommodation.nights) : "—";
+    if (summaryCheckIn) summaryCheckIn.textContent = quote.accommodation && quote.accommodation.checkInDate || "—";
+    if (summaryCheckOut) summaryCheckOut.textContent = quote.accommodation && quote.accommodation.checkOutDate || "—";
+    if (selItems) selItems.value = quote.items.map(function (item) {
+      return item.name + " ×" + item.quantity;
+    }).join("; ");
+  }
+
+  function confirmServerQuote(quote, displayedMinor) {
+    var lines = quote.items.map(function (item) {
+      return item.name + " x" + item.quantity + ": " +
+        new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: quote.currency,
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(Number(item.lineTotalMinor) / 100);
+    });
+    lines.push("Subtotal " + quote.currency + " " + (Number(quote.subtotalMinor) / 100).toFixed(2));
+    lines.push("Discount -" + quote.currency + " " + (Number(quote.discountMinor) / 100).toFixed(2));
+    lines.push("Tax " + quote.currency + " " + (Number(quote.taxMinor) / 100).toFixed(2));
+    lines.push("Total " + quote.currency + " " + (Number(quote.totalMinor) / 100).toFixed(2));
+    return window.confirm(
+      "The server-calculated total differs from the amount previously shown (" +
+      quote.currency + " " + (Number(displayedMinor) / 100).toFixed(2) +
+      "). Review the authoritative server quote below. Continue to payment at this total?\n\n" +
+      lines.join("\n")
+    );
+  }
+
+  window.MATAI_SERVER_QUOTE = {
+    apply: applyServerQuote,
+    confirm: confirmServerQuote
+  };
 
   function resetCurrencyFallback() {
     if (transactionCurrencyInput) transactionCurrencyInput.value = "USD";
@@ -752,6 +847,7 @@
       var oldText = submitButton ? submitButton.textContent : "";
       if (submitButton) { submitButton.disabled = true; submitButton.textContent = "Starting secure checkout…"; }
       var csrfToken = "";
+      var serverQuote = null;
       fetch("/api/csrf").then(function (csrfResponse) {
         return csrfResponse.json().then(function (csrf) {
           if (!csrfResponse.ok || !csrf.token) throw new Error("Could not initialize request security.");
@@ -765,14 +861,20 @@
       }).then(function (quoteResponse) {
         return quoteResponse.json().then(function (quote) {
           if (!quoteResponse.ok) throw new Error(quote.error || "Could not verify the checkout amount.");
-          if (quote.currency !== payload.currency ||
-              Number(quote.totalMinor) !== Math.round(Number(payload.totalPrice) * 100)) {
-            var serverTotal = Number(quote.totalMinor) / 100;
-            throw new Error("The server quote is " + quote.currency + " " + serverTotal.toFixed(2) +
-              " (subtotal " + (Number(quote.subtotalMinor) / 100).toFixed(2) +
-              ", discount " + (Number(quote.discountMinor) / 100).toFixed(2) +
-              ", tax " + (Number(quote.taxMinor) / 100).toFixed(2) +
-              "). Review the updated registration summary before paying.");
+          var totalMinor = Number(quote.totalMinor);
+          var displayedMinor = Math.round(Number(payload.totalPrice) * 100);
+          if (!Number.isSafeInteger(totalMinor) || !Number.isSafeInteger(displayedMinor) ||
+              quote.currency !== payload.currency || !Array.isArray(quote.items) ||
+              !Number.isSafeInteger(Number(quote.subtotalMinor)) ||
+              !Number.isSafeInteger(Number(quote.discountMinor)) ||
+              !Number.isSafeInteger(Number(quote.taxMinor))) {
+            throw new Error("The server returned an invalid checkout quote. No payment was started.");
+          }
+          serverQuote = quote;
+          if (window.MATAI_SERVER_QUOTE) window.MATAI_SERVER_QUOTE.apply(quote);
+          if (totalMinor !== displayedMinor &&
+              (!window.MATAI_SERVER_QUOTE || !window.MATAI_SERVER_QUOTE.confirm(quote, displayedMinor))) {
+            throw new Error("Checkout was cancelled because the server-calculated amount differs from the previously displayed total.");
           }
           return fetch("/api/checkout/stripe", {
             method: "POST",
@@ -787,8 +889,8 @@
         });
       }).then(function (result) {
         if (result.currency !== payload.currency ||
-            Math.round(Number(result.amount) * 100) !== Math.round(Number(payload.totalPrice) * 100)) {
-          throw new Error("The confirmed checkout amount or currency did not match your registration summary.");
+            !serverQuote || Math.round(Number(result.amount) * 100) !== Number(serverQuote.totalMinor)) {
+          throw new Error("Stripe checkout amount or currency did not match the authoritative server quote.");
         }
         var checkoutUrl = new URL(result.url, location.href);
         if (checkoutUrl.origin !== "https://checkout.stripe.com") throw new Error("Stripe returned an invalid checkout URL.");

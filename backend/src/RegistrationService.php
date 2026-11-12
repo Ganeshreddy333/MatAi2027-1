@@ -122,7 +122,11 @@ final class RegistrationService
             if ($nights === false || $nights < 1 || $nights > $maxNights) {
                 throw new DomainException('Accommodation must be booked for one to ' . $maxNights . ' nights.');
             }
-            $price = $accommodation['pricePerNight'] ?? ($content['registrationPricing']['fixedItems']['addon_accommodation_' . $type] ?? null);
+            $fixedItems = $content['registrationPricing']['fixedItems'] ?? [];
+            $occupancyPriceKey = 'addon_accommodation_' . $type;
+            $price = is_array($fixedItems) && array_key_exists($occupancyPriceKey, $fixedItems)
+                ? $fixedItems[$occupancyPriceKey]
+                : ($accommodation['pricePerNight'] ?? null);
             $unitCents = $this->moneyToMinorUnits($price);
             if ($unitCents === null) {
                 throw new DomainException('The configured accommodation price is invalid.');
