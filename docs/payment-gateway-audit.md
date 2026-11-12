@@ -1,5 +1,7 @@
 # MatAi 2027 payment gateway audit
 
+> Historical audit note: this report predates the subsequent checkout/order/webhook changes. Use [PAYMENT_PRODUCTION_AUDIT.md](./PAYMENT_PRODUCTION_AUDIT.md), [PAYMENT_IMPLEMENTATION_REPORT.md](./PAYMENT_IMPLEMENTATION_REPORT.md), and [PRODUCTION_GO_LIVE_CHECKLIST.md](./PRODUCTION_GO_LIVE_CHECKLIST.md) for current status. Historical EUR references below are not current configuration; USD is the current canonical transaction currency.
+
 ## Scope and evidence
 
 This audit traced the documented PHP/PDO application from the registration form through server-side pricing, provider checkout creation, callback/status verification, webhook updates, persistence, notifications, and the admin API. The separate legacy Express implementation was also checked for payment-flow differences. No `.env` values were disclosed, and no provider API calls, charges, or refunds were performed. The 2026-10-28 local follow-up applied the additive currency audit migration on the approved non-production database and used temporary rows for persistence checks; those rows were removed.

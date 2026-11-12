@@ -10,6 +10,7 @@ final class RegistrationService
 {
     private const REQUIRED = ['fullName', 'email', 'period', 'institution', 'country'];
     private const PERIODS = ['Early Bird', 'Mid-Term', 'On-Spot'];
+    public const TAX_RATE_BASIS_POINTS = 500;
     private const ITEMS = [
         ['qty_speaker', 'Speaker Registration', 'Speaker'],
         ['qty_delegate', 'Delegate Registration', 'Delegate'],
@@ -94,10 +95,10 @@ final class RegistrationService
             $price = $category !== null
                 ? ($content['fees'][$itemPeriod][$category] ?? null)
                 : ($content['registrationPricing']['fixedItems'][$priceKey] ?? null);
-            if (!is_numeric($price) || (float) $price < 0 || (float) $price > 1000000) {
+            $unitCents = $this->moneyToMinorUnits($price);
+            if ($unitCents === null || $unitCents > 100000000) {
                 throw new DomainException('The configured price for ' . $label . ' is invalid.');
             }
-            $unitCents = (int) round((float) $price * 100);
             $grossCents += $unitCents * $quantity;
             if ($category !== null) {
                 $participantCount += $quantity;
@@ -122,22 +123,27 @@ final class RegistrationService
                 throw new DomainException('Accommodation must be booked for one to ' . $maxNights . ' nights.');
             }
             $price = $accommodation['pricePerNight'] ?? ($content['registrationPricing']['fixedItems']['addon_accommodation_' . $type] ?? null);
-            if (!is_numeric($price) || (float) $price < 0) {
+            $unitCents = $this->moneyToMinorUnits($price);
+            if ($unitCents === null) {
                 throw new DomainException('The configured accommodation price is invalid.');
             }
             $checkIn = (string) ($data['checkInDate'] ?? '');
-            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkIn)) {
+            $checkInDate = \DateTimeImmutable::createFromFormat('!Y-m-d', $checkIn);
+            $dateErrors = \DateTimeImmutable::getLastErrors();
+            if ($checkInDate === false || $checkInDate->format('Y-m-d') !== $checkIn
+                || ($dateErrors !== false && ($dateErrors['warning_count'] > 0 || $dateErrors['error_count'] > 0))) {
                 throw new DomainException('Select a valid accommodation check-in date.');
             }
+            $checkOutDate = $checkInDate->modify('+' . $nights . ' days');
             $availableFrom = (string) ($accommodation['availableFrom'] ?? '');
             $availableUntil = (string) ($accommodation['availableUntil'] ?? '');
             if (($availableFrom !== '' && $checkIn < $availableFrom) || ($availableUntil !== '' && $checkIn > $availableUntil)) {
                 throw new DomainException('The selected accommodation date is unavailable.');
             }
-            $unitCents = (int) round((float) $price * 100);
             $grossCents += $unitCents * $nights;
             $items[] = ['name' => 'Accommodation — ' . ucfirst($type) . ' occupancy', 'category' => '', 'quantity' => $nights, 'unitCents' => $unitCents];
             $data['accommodationNights'] = $nights;
+            $data['checkOutDate'] = $checkOutDate->format('Y-m-d');
         }
 
         $discountCents = 0;
@@ -162,21 +168,26 @@ final class RegistrationService
             }
             $type = strtolower((string) ($coupon['discountType'] ?? 'percentage'));
             if ($type === 'fixed') {
-                $fixed = $coupon['fixedAmount'] ?? null;
-                if (!is_numeric($fixed) || (float) $fixed <= 0) {
+                $fixedCents = $this->moneyToMinorUnits($coupon['fixedAmount'] ?? null);
+                if ($fixedCents === null || $fixedCents <= 0) {
                     throw new DomainException('The coupon code is invalid or expired.');
                 }
-                $discountCents = min($grossCents, (int) round((float) $fixed * 100));
+                $discountCents = min($grossCents, $fixedCents);
             } else {
-                $percent = $coupon['discountPercentage'] ?? $coupon['percent'] ?? null;
-                if (!is_numeric($percent) || (float) $percent <= 0 || (float) $percent > 100) {
+                $percentBasisPoints = $this->percentToBasisPoints(
+                    $coupon['discountPercentage'] ?? $coupon['percent'] ?? null
+                );
+                if ($percentBasisPoints === null || $percentBasisPoints <= 0 || $percentBasisPoints > 10000) {
                     throw new DomainException('The coupon code is invalid or expired.');
                 }
-                $discountCents = (int) round($grossCents * ((float) $percent / 100));
+                $discountCents = intdiv($grossCents * $percentBasisPoints + 5000, 10000);
             }
         }
         $subtotalCents = max(0, $grossCents - $discountCents);
-        $taxCents = (int) round($subtotalCents * 0.05);
+        $taxCents = intdiv(
+            $subtotalCents * self::TAX_RATE_BASIS_POINTS + 5000,
+            10000
+        );
         $totalCents = $subtotalCents + $taxCents;
         $amount = $totalCents / 100;
         $data['period'] = $period;
@@ -189,7 +200,7 @@ final class RegistrationService
         ));
         $data['totalPrice'] = number_format($amount, 2, '.', '');
         $data['totalPriceEUR'] = $data['totalPrice'];
-        $data['taxRate'] = 0.05;
+        $data['taxRate'] = self::TAX_RATE_BASIS_POINTS / 10000;
         $data['taxAmount'] = number_format($taxCents / 100, 2, '.', '');
         $data['paymentMethod'] = $gateway;
         $data['currency'] = $transactionCurrency;
@@ -279,6 +290,31 @@ final class RegistrationService
     private function arrayValue(mixed $value): array
     {
         return is_array($value) ? $value : [];
+    }
+
+    private function moneyToMinorUnits(mixed $value): ?int
+    {
+        if (!is_string($value) && !is_int($value) && !is_float($value)) {
+            return null;
+        }
+        $amount = trim((string) $value);
+        if (!preg_match('/^(\d{1,7})(?:\.(\d{1,2}))?$/', $amount, $matches)) {
+            return null;
+        }
+        $fraction = str_pad($matches[2] ?? '', 2, '0');
+        return ((int) $matches[1] * 100) + (int) $fraction;
+    }
+
+    private function percentToBasisPoints(mixed $value): ?int
+    {
+        if (!is_string($value) && !is_int($value) && !is_float($value)) {
+            return null;
+        }
+        $percent = trim((string) $value);
+        if (!preg_match('/^(\d{1,3})(?:\.(\d{1,2}))?$/', $percent, $matches)) {
+            return null;
+        }
+        return ((int) $matches[1] * 100) + (int) str_pad($matches[2] ?? '', 2, '0');
     }
 
     private function couponUses(string $couponCode): int

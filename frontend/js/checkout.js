@@ -78,6 +78,27 @@
     return returnedCents === Math.round(quotedAmount * 100);
   }
 
+  function verifyServerQuote(data) {
+    return request("/api/checkout/quote", data).then(function (quote) {
+      var quotedCents = Number(quote.totalMinor);
+      var submittedCents = Math.round(Number(data.totalPrice) * 100);
+      if (quote.currency !== data.currency || !Number.isSafeInteger(quotedCents) || quotedCents !== submittedCents) {
+        var amount = Number.isSafeInteger(quotedCents) ? (quotedCents / 100).toFixed(2) : "unavailable";
+        var lines = Array.isArray(quote.items) ? quote.items.map(function (item) {
+          return item.name + " x" + item.quantity + ": " + quote.currency + " " +
+            (Number(item.lineTotalMinor) / 100).toFixed(2);
+        }) : [];
+        lines.push("Subtotal " + quote.currency + " " + (Number(quote.subtotalMinor) / 100).toFixed(2));
+        lines.push("Discount " + quote.currency + " " + (Number(quote.discountMinor) / 100).toFixed(2));
+        lines.push("Tax " + quote.currency + " " + (Number(quote.taxMinor) / 100).toFixed(2));
+        lines.push("Total " + quote.currency + " " + amount);
+        throw new Error("The server quote differs from the displayed amount. " + lines.join(" · ") +
+          ". Review the server-calculated total before paying.");
+      }
+      return quote;
+    });
+  }
+
   function paymentMessage(result, prefix) {
     var amount = Number(result.amount);
     var displayAmount = "";
@@ -142,7 +163,9 @@
   }
 
   function startRazorpay(data, button, oldText) {
-    request("/api/checkout/razorpay/order", data).then(function (order) {
+    verifyServerQuote(data).then(function () {
+      return request("/api/checkout/razorpay/order", data);
+    }).then(function (order) {
       if (!checkoutMatchesQuote(order, data, true)) {
         throw new Error("Razorpay checkout amount or currency did not match your confirmed registration summary.");
       }
@@ -210,7 +233,9 @@
     if (button) { button.disabled = true; button.textContent = "Starting secure checkout…"; }
     var data = formData();
     if (gateway === "PayPal") {
-      request("/api/checkout/paypal/order", data).then(function (order) {
+      verifyServerQuote(data).then(function () {
+        return request("/api/checkout/paypal/order", data);
+      }).then(function (order) {
         if (!checkoutMatchesQuote(order, data, false)) {
           throw new Error("PayPal checkout amount or currency did not match your confirmed registration summary.");
         }

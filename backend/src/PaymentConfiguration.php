@@ -11,9 +11,15 @@ final class PaymentConfiguration
         return $secret !== '' && strtolower(trim($usdCheckoutVerified)) === 'true';
     }
 
-    public static function paypalEnabled(string $clientId, string $clientSecret, string $usdCheckoutVerified): bool
-    {
-        return $clientId !== '' && $clientSecret !== '' && strtolower(trim($usdCheckoutVerified)) === 'true';
+    public static function paypalEnabled(
+        string $clientId,
+        string $clientSecret,
+        string $usdCheckoutVerified,
+        string $merchantId = '',
+        string $webhookId = ''
+    ): bool {
+        return $clientId !== '' && $clientSecret !== '' && $merchantId !== '' && $webhookId !== ''
+            && strtolower(trim($usdCheckoutVerified)) === 'true';
     }
 
     public static function razorpayEnabled(
@@ -22,7 +28,8 @@ final class PaymentConfiguration
         string $currency,
         string $usdCheckoutVerified = ''
     ): bool {
-        return $keyId !== '' && $keySecret !== '' && $currency === 'USD'
+        $normalizedCurrency = strtoupper(trim($currency));
+        return $keyId !== '' && $keySecret !== '' && $normalizedCurrency === 'USD'
             && strtolower(trim($usdCheckoutVerified)) === 'true';
     }
 }

@@ -46,7 +46,7 @@ final class Application
             $this->security->startSession();
             $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
             $path = parse_url((string) ($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
-            if ($path === '/api/stripe/webhook' || $path === '/api/razorpay/webhook') {
+            if (in_array($path, ['/api/stripe/webhook', '/api/razorpay/webhook', '/api/paypal/webhook'], true)) {
                 $this->webhook($path);
             }
             if ($method !== 'GET' && $method !== 'HEAD') {
@@ -102,16 +102,18 @@ final class Application
             Security::json(['ok' => true, 'content' => $this->store->content()]);
         }
         if ($method === 'GET' && $path === '/api/checkout/config') {
-            $stripeEnabled = PaymentConfiguration::stripeEnabled(
+            $stripeEnabled = $this->pdo !== null && PaymentConfiguration::stripeEnabled(
                 $this->config->get('STRIPE_SECRET_KEY'),
                 $this->config->get('STRIPE_USD_CHECKOUT_VERIFIED')
             );
-            $paypalEnabled = PaymentConfiguration::paypalEnabled(
+            $paypalEnabled = $this->pdo !== null && PaymentConfiguration::paypalEnabled(
                 $this->config->get('PAYPAL_CLIENT_ID'),
                 $this->config->get('PAYPAL_CLIENT_SECRET'),
-                $this->config->get('PAYPAL_USD_CHECKOUT_VERIFIED')
+                $this->config->get('PAYPAL_USD_CHECKOUT_VERIFIED'),
+                $this->config->get('PAYPAL_MERCHANT_ID'),
+                $this->config->get('PAYPAL_WEBHOOK_ID')
             );
-            $razorpayEnabled = PaymentConfiguration::razorpayEnabled(
+            $razorpayEnabled = $this->pdo !== null && PaymentConfiguration::razorpayEnabled(
                 $this->config->get('RAZORPAY_KEY_ID'),
                 $this->config->get('RAZORPAY_KEY_SECRET'),
                 $this->config->get('RAZORPAY_CURRENCY', 'USD'),
@@ -119,6 +121,7 @@ final class Application
             );
             Security::json([
                 'ok' => true,
+                'taxRateBasisPoints' => RegistrationService::TAX_RATE_BASIS_POINTS,
                 'stripe' => [
                     'enabled' => $stripeEnabled,
                     'currency' => $stripeEnabled ? 'USD' : null,
@@ -162,7 +165,7 @@ final class Application
             $this->stripeStatus($match[1]);
         }
         if ($method === 'GET' && $path === '/api/checkout/stripe/config') {
-            $enabled = PaymentConfiguration::stripeEnabled(
+            $enabled = $this->pdo !== null && PaymentConfiguration::stripeEnabled(
                 $this->config->get('STRIPE_SECRET_KEY'),
                 $this->config->get('STRIPE_USD_CHECKOUT_VERIFIED')
             );
@@ -174,6 +177,9 @@ final class Application
         }
         if ($method === 'POST' && $path === '/api/checkout/stripe') {
             $this->createStripeCheckout($this->body());
+        }
+        if ($method === 'POST' && $path === '/api/checkout/quote') {
+            $this->checkoutQuote($this->body());
         }
         if ($method === 'POST' && $path === '/api/checkout/paypal/order') {
             $this->createPayPalOrder($this->body());
@@ -636,6 +642,7 @@ final class Application
 
     private function stripeStatus(string $sessionId): never
     {
+        $this->requirePaymentPersistence();
         if ($this->config->get('STRIPE_SECRET_KEY') === '') {
             Security::json(['ok' => false, 'error' => 'Stripe checkout is not configured.'], 503);
         }
@@ -651,10 +658,10 @@ final class Application
         }
         $paid = ($session['payment_status'] ?? '') === 'paid';
         $expectedCurrency = $record['transactionCurrency'] ?? $record['amountCurrency'] ?? CurrencyPolicy::BASE_CURRENCY;
-        if ($paid && !CurrencyPolicy::paymentMatches(
-            $record['amount'] ?? null,
+        if ($paid && !CurrencyPolicy::paymentMatchesMinorUnits(
+            $this->amountMinorUnits($record),
             $expectedCurrency,
-            (int) ($session['amount_total'] ?? -1) / 100,
+            $session['amount_total'] ?? null,
             (string) ($session['currency'] ?? '')
         )) {
             OperationalLogger::event('error', 'stripe_payment_amount_or_currency_mismatch');
@@ -677,10 +684,12 @@ final class Application
 
     private function createStripeCheckout(array $body): never
     {
+        $this->requirePaymentPersistence();
         $secret = $this->config->get('STRIPE_SECRET_KEY');
         if (!PaymentConfiguration::stripeEnabled($secret, $this->config->get('STRIPE_USD_CHECKOUT_VERIFIED'))) {
             Security::json(['ok' => false, 'error' => 'Stripe checkout is not enabled. The merchant must verify USD checkout before it can be used.'], 503);
         }
+
         $registration = $this->registrations->prepare($body);
         if (($registration['data']['paymentGateway'] ?? '') !== 'Stripe / Card Payment') {
             Security::json(['ok' => false, 'error' => 'Select Stripe / Card Payment to continue to checkout.'], 400);
@@ -690,6 +699,7 @@ final class Application
             Security::json(['ok' => false, 'error' => 'Live Stripe checkout requires HTTPS.'], 400);
         }
         $reference = $this->newReference();
+        $this->saveRegistration($reference, $registration, []);
         $description = implode(', ', array_map(
             static fn (array $item): string => $item['name'] . ' x' . $item['quantity'],
             $registration['items']
@@ -711,29 +721,66 @@ final class Application
         $session = $this->httpJson('https://api.stripe.com/v1/checkout/sessions', 'POST', [
             'Authorization: Bearer ' . $secret,
             'Content-Type: application/x-www-form-urlencoded',
+            'Idempotency-Key: ' . $reference,
         ], http_build_query($params));
         if (empty($session['id']) || empty($session['url'])
-            || !CurrencyPolicy::paymentMatches(
-                $registration['amount'],
+            || !CurrencyPolicy::paymentMatchesMinorUnits(
+                $registration['totalCents'],
                 $registration['transactionCurrency'],
-                (int) ($session['amount_total'] ?? -1) / 100,
+                $session['amount_total'] ?? null,
                 (string) ($session['currency'] ?? '')
             )) {
             throw new RuntimeException('Stripe checkout amount or currency did not match the confirmed registration.');
         }
-        $this->saveRegistration($reference, $registration, ['stripeCheckoutSessionId' => $session['id']]);
+        $this->updateRegistrationFields($reference, ['stripeCheckoutSessionId' => $session['id']]);
         Security::json([
             'ok' => true, 'reference' => $reference, 'url' => $session['url'],
             'amount' => $registration['amount'], 'currency' => $registration['transactionCurrency'],
         ], 201);
     }
 
+    private function checkoutQuote(array $body): never
+    {
+        $registration = $this->registrations->prepare($body);
+        $items = array_map(static function (array $item): array {
+            return [
+                'name' => $item['name'],
+                'category' => $item['category'],
+                'quantity' => $item['quantity'],
+                'unitAmountMinor' => $item['unitCents'],
+                'lineTotalMinor' => $item['unitCents'] * $item['quantity'],
+            ];
+        }, $registration['items']);
+        Security::json([
+            'ok' => true,
+            'items' => $items,
+            'currency' => $registration['transactionCurrency'],
+            'participantCount' => $registration['data']['participantCount'],
+            'period' => $registration['period'],
+            'subtotalMinor' => $registration['grossCents'],
+            'discountMinor' => $registration['discountCents'],
+            'taxMinor' => $registration['taxCents'],
+            'taxRateBasisPoints' => RegistrationService::TAX_RATE_BASIS_POINTS,
+            'totalMinor' => $registration['totalCents'],
+            'amount' => $registration['amount'],
+            'accommodation' => [
+                'type' => $registration['data']['accommodationType'] ?? '',
+                'nights' => $registration['data']['accommodationNights'] ?? 0,
+                'checkInDate' => $registration['data']['checkInDate'] ?? '',
+                'checkOutDate' => $registration['data']['checkOutDate'] ?? '',
+            ],
+        ]);
+    }
+
     private function createPayPalOrder(array $body): never
     {
+        $this->requirePaymentPersistence();
         if (!PaymentConfiguration::paypalEnabled(
             $this->config->get('PAYPAL_CLIENT_ID'),
             $this->config->get('PAYPAL_CLIENT_SECRET'),
-            $this->config->get('PAYPAL_USD_CHECKOUT_VERIFIED')
+            $this->config->get('PAYPAL_USD_CHECKOUT_VERIFIED'),
+            $this->config->get('PAYPAL_MERCHANT_ID'),
+            $this->config->get('PAYPAL_WEBHOOK_ID')
         )) {
             Security::json(['ok' => false, 'error' => 'PayPal checkout is not enabled. The merchant must verify USD checkout before it can be used.'], 503);
         }
@@ -742,12 +789,14 @@ final class Application
             Security::json(['ok' => false, 'error' => 'Select PayPal to continue.'], 400);
         }
         $reference = $this->newReference();
+        $this->saveRegistration($reference, $registration, []);
         $order = $this->paypalRequest('/v2/checkout/orders', [
             'intent' => 'CAPTURE',
             'purchase_units' => [[
                 'reference_id' => $reference,
                 'custom_id' => $reference,
                 'description' => mb_substr($registration['data']['selectedItems'], 0, 120),
+                'payee' => ['merchant_id' => $this->config->get('PAYPAL_MERCHANT_ID')],
                 'amount' => [
                     'currency_code' => $registration['transactionCurrency'],
                     'value' => number_format($registration['amount'], 2, '.', ''),
@@ -759,7 +808,7 @@ final class Application
                 'return_url' => $this->baseUrl() . '/registration.html?checkout=paypal-return',
                 'cancel_url' => $this->baseUrl() . '/registration.html?checkout=paypal-cancelled',
             ]]],
-        ]);
+        ], $reference);
         $approval = '';
         foreach ($order['links'] ?? [] as $link) {
             if (in_array($link['rel'] ?? '', ['payer-action', 'approve'], true)) {
@@ -769,15 +818,16 @@ final class Application
         }
         $purchase = $this->paypalPurchase($order, $reference);
         if (empty($order['id']) || !$this->isPaypalUrl($approval) || $purchase === null
+            || ($purchase['payee']['merchant_id'] ?? '') !== $this->config->get('PAYPAL_MERCHANT_ID')
             || !CurrencyPolicy::paymentMatches(
-                $registration['amount'],
+                CurrencyPolicy::formatMinorUnits($registration['totalCents']),
                 $registration['transactionCurrency'],
                 $purchase['amount']['value'] ?? null,
                 $purchase['amount']['currency_code'] ?? ''
             )) {
             throw new RuntimeException('PayPal order amount or currency did not match the confirmed registration.');
         }
-        $this->saveRegistration($reference, $registration, ['paypalOrderId' => $order['id']]);
+        $this->updateRegistrationFields($reference, ['paypalOrderId' => $order['id']]);
         Security::json([
             'ok' => true, 'reference' => $reference, 'orderId' => $order['id'],
             'approvalUrl' => $approval, 'amount' => $registration['amount'],
@@ -787,6 +837,7 @@ final class Application
 
     private function capturePayPalOrder(array $body): never
     {
+        $this->requirePaymentPersistence();
         $orderId = (string) ($body['orderId'] ?? '');
         if (!preg_match('/^[-A-Za-z0-9]+$/', $orderId)) {
             Security::json(['ok' => false, 'error' => 'Invalid PayPal order.'], 400);
@@ -805,7 +856,7 @@ final class Application
         $purchase = $this->paypalPurchase($order, $record['reference']);
         $expectedCurrency = $record['transactionCurrency'] ?? $record['amountCurrency'] ?? CurrencyPolicy::BASE_CURRENCY;
         if ($purchase === null || !CurrencyPolicy::paymentMatches(
-            $record['amount'] ?? null,
+            $this->amountDecimal($record),
             $expectedCurrency,
             $purchase['amount']['value'] ?? null,
             $purchase['amount']['currency_code'] ?? ''
@@ -813,16 +864,25 @@ final class Application
             OperationalLogger::event('error', 'paypal_payment_mismatch');
             Security::json(['ok' => false, 'error' => 'PayPal order amount or registration reference did not match.'], 400);
         }
+        if (($purchase['payee']['merchant_id'] ?? '') !== $this->config->get('PAYPAL_MERCHANT_ID')) {
+            OperationalLogger::event('error', 'paypal_payee_mismatch');
+            Security::json(['ok' => false, 'error' => 'The PayPal order belongs to a different merchant.'], 400);
+        }
         $captured = $order;
         if (($order['status'] ?? '') !== 'COMPLETED') {
-            $captured = $this->paypalRequest('/v2/checkout/orders/' . rawurlencode($orderId) . '/capture', []);
+            $captured = $this->paypalRequest(
+                '/v2/checkout/orders/' . rawurlencode($orderId) . '/capture',
+                [],
+                $orderId . '-capture'
+            );
         }
         $purchase = $this->paypalPurchase($captured, $record['reference']);
-        $captures = $purchase['payments']['captures'] ?? [];
+        $captures = is_array($purchase) ? ($purchase['payments']['captures'] ?? []) : [];
         foreach ($captures as $capture) {
             if (($capture['status'] ?? '') === 'COMPLETED'
+                && ($purchase['payee']['merchant_id'] ?? '') === $this->config->get('PAYPAL_MERCHANT_ID')
                 && CurrencyPolicy::paymentMatches(
-                    $record['amount'] ?? null,
+                    $this->amountDecimal($record),
                     $expectedCurrency,
                     $capture['amount']['value'] ?? null,
                     $capture['amount']['currency_code'] ?? ''
@@ -844,6 +904,7 @@ final class Application
 
     private function createRazorpayOrder(array $body): never
     {
+        $this->requirePaymentPersistence();
         $key = $this->config->get('RAZORPAY_KEY_ID');
         $secret = $this->config->get('RAZORPAY_KEY_SECRET');
         $currency = $this->config->get('RAZORPAY_CURRENCY', 'USD');
@@ -856,24 +917,25 @@ final class Application
         if (($registration['data']['paymentGateway'] ?? '') !== 'Razorpay') {
             Security::json(['ok' => false, 'error' => 'Select Razorpay to continue.'], 400);
         }
-        $amount = (int) round($registration['amount'] * 100);
+        $amount = $registration['totalCents'];
         if ($amount <= 0) {
             Security::json(['ok' => false, 'error' => 'Razorpay order amount is invalid.'], 400);
         }
         $reference = $this->newReference();
+        $this->saveRegistration($reference, $registration, []);
         $order = $this->razorpayRequest('orders', [
             'amount' => $amount, 'currency' => $currency, 'receipt' => $reference,
             'notes' => ['reference' => $reference, 'registration' => 'MatAi 2027'],
         ], 'POST');
-        if (empty($order['id']) || !CurrencyPolicy::paymentMatches(
-            $registration['amount'],
+        if (empty($order['id']) || !CurrencyPolicy::paymentMatchesMinorUnits(
+            $registration['totalCents'],
             $registration['transactionCurrency'],
-            (int) ($order['amount'] ?? -1) / 100,
+            $order['amount'] ?? null,
             (string) ($order['currency'] ?? '')
         )) {
             throw new RuntimeException('Razorpay order details did not match the requested amount.');
         }
-        $this->saveRegistration($reference, $registration, ['razorpayOrderId' => $order['id'], 'razorpayCurrency' => $currency]);
+        $this->updateRegistrationFields($reference, ['razorpayOrderId' => $order['id'], 'razorpayCurrency' => $currency]);
         Security::json([
             'ok' => true, 'reference' => $reference, 'orderId' => $order['id'], 'keyId' => $key,
             'amount' => $amount, 'currency' => $registration['transactionCurrency'],
@@ -883,6 +945,7 @@ final class Application
 
     private function verifyRazorpayPayment(array $body): never
     {
+        $this->requirePaymentPersistence();
         $orderId = (string) ($body['razorpay_order_id'] ?? '');
         $paymentId = (string) ($body['razorpay_payment_id'] ?? '');
         $signature = (string) ($body['razorpay_signature'] ?? '');
@@ -909,10 +972,10 @@ final class Application
         $payment = $this->razorpayRequest('payments/' . rawurlencode($paymentId));
         $expectedCurrency = $record['transactionCurrency'] ?? $record['razorpayCurrency'] ?? $record['amountCurrency'] ?? CurrencyPolicy::BASE_CURRENCY;
         if (($payment['order_id'] ?? '') !== $orderId
-            || !CurrencyPolicy::paymentMatches(
-                $record['amount'] ?? null,
+            || !CurrencyPolicy::paymentMatchesMinorUnits(
+                $this->amountMinorUnits($record),
                 $expectedCurrency,
-                (int) ($payment['amount'] ?? -1) / 100,
+                $payment['amount'] ?? null,
                 (string) ($payment['currency'] ?? '')
             )
             || !in_array($payment['status'] ?? '', ['authorized', 'captured'], true)) {
@@ -935,6 +998,7 @@ final class Application
 
     private function cancelRazorpayOrder(array $body): never
     {
+        $this->requirePaymentPersistence();
         $orderId = (string) ($body['orderId'] ?? '');
         if (!preg_match('/^order_[A-Za-z0-9]+$/', $orderId)) {
             Security::json(['ok' => false, 'error' => 'Invalid Razorpay order.'], 400);
@@ -948,6 +1012,7 @@ final class Application
 
     private function webhook(string $path): never
     {
+        $this->requirePaymentPersistence();
         $input = fopen('php://input', 'rb');
         if ($input === false) {
             throw new RuntimeException('Could not read the webhook body.');
@@ -959,6 +1024,9 @@ final class Application
         }
         if ($path === '/api/stripe/webhook') {
             $this->stripeWebhook($raw);
+        }
+        if ($path === '/api/paypal/webhook') {
+            $this->paypalWebhook($raw);
         }
         $this->razorpayWebhook($raw);
     }
@@ -996,6 +1064,13 @@ final class Application
             OperationalLogger::event('warning', 'stripe_webhook_payload_invalid');
             Security::json(['ok' => false, 'error' => 'Invalid Stripe event.'], 400);
         }
+        $eventId = (string) ($event['id'] ?? '');
+        if ($eventId === '' || strlen($eventId) > 128) {
+            Security::json(['ok' => false, 'error' => 'Invalid Stripe event identifier.'], 400);
+        }
+        if ($this->webhookEventSeen('stripe', $eventId)) {
+            Security::json(['received' => true, 'duplicate' => true]);
+        }
         $session = $event['data']['object'] ?? [];
         $eventType = $event['type'] ?? '';
         if (in_array($eventType, ['checkout.session.completed', 'checkout.session.async_payment_succeeded'], true)
@@ -1006,11 +1081,11 @@ final class Application
                 OperationalLogger::event('error', 'stripe_webhook_registration_unmatched');
             } else {
                 $expectedCurrency = $record['transactionCurrency'] ?? $record['amountCurrency'] ?? CurrencyPolicy::BASE_CURRENCY;
-                if (CurrencyPolicy::paymentMatches(
-                $record['amount'] ?? null,
-                $expectedCurrency,
-                (int) ($session['amount_total'] ?? -1) / 100,
-                (string) ($session['currency'] ?? '')
+                if (CurrencyPolicy::paymentMatchesMinorUnits(
+                    $this->amountMinorUnits($record),
+                    $expectedCurrency,
+                    $session['amount_total'] ?? null,
+                    (string) ($session['currency'] ?? '')
                 )) {
                     $this->setPayment($reference, 'Paid', ['stripePaymentIntent' => $session['payment_intent'] ?? '']);
                 } else {
@@ -1018,15 +1093,19 @@ final class Application
                 }
             }
         } elseif (in_array($eventType, ['checkout.session.expired', 'checkout.session.async_payment_failed'], true)) {
-            if ($eventType === 'checkout.session.async_payment_failed') {
-                OperationalLogger::event('warning', 'stripe_async_payment_failed');
-            }
             $reference = $session['metadata']['reference'] ?? $session['client_reference_id'] ?? '';
             $record = $this->findBy($reference, 'stripeCheckoutSessionId', (string) ($session['id'] ?? ''));
             if ($record !== null && ($record['paymentStatus'] ?? '') === 'Pending') {
-                $this->setPayment($reference, 'Cancelled');
+                $this->setPayment($reference, $eventType === 'checkout.session.expired' ? 'Cancelled' : 'Failed');
             }
         }
+        $this->recordWebhookEvent(
+            'stripe',
+            $eventId,
+            (string) $eventType,
+            (string) ($session['id'] ?? ''),
+            (string) ($session['client_reference_id'] ?? '')
+        );
         Security::json(['received' => true]);
     }
 
@@ -1044,16 +1123,24 @@ final class Application
             OperationalLogger::event('warning', 'razorpay_webhook_payload_invalid');
             Security::json(['ok' => false, 'error' => 'Invalid Razorpay event.'], 400);
         }
+        $eventId = (string) ($_SERVER['HTTP_X_RAZORPAY_EVENT_ID'] ?? '');
+        if ($eventId === '' || strlen($eventId) > 128) {
+            Security::json(['ok' => false, 'error' => 'Invalid Razorpay event identifier.'], 400);
+        }
+        if ($this->webhookEventSeen('razorpay', $eventId)) {
+            Security::json(['received' => true, 'duplicate' => true]);
+        }
         $payment = $event['payload']['payment']['entity'] ?? [];
         $orderId = (string) ($payment['order_id'] ?? '');
-        if (($event['event'] ?? '') === 'payment.captured' && $orderId !== '') {
+        if (($event['event'] ?? '') === 'payment.captured' && $orderId !== ''
+            && ($payment['status'] ?? '') === 'captured') {
             $record = $this->findBy('', 'razorpayOrderId', $orderId);
             if ($record === null) {
                 OperationalLogger::event('error', 'razorpay_webhook_registration_unmatched');
-            } elseif (CurrencyPolicy::paymentMatches(
-                $record['amount'] ?? null,
+            } elseif (CurrencyPolicy::paymentMatchesMinorUnits(
+                $this->amountMinorUnits($record),
                 $record['transactionCurrency'] ?? $record['razorpayCurrency'] ?? $record['amountCurrency'] ?? CurrencyPolicy::BASE_CURRENCY,
-                (int) ($payment['amount'] ?? -1) / 100,
+                $payment['amount'] ?? null,
                 (string) ($payment['currency'] ?? '')
             )) {
                 $this->setPayment($record['reference'], 'Paid', ['razorpayPaymentId' => $payment['id'] ?? '']);
@@ -1067,11 +1154,150 @@ final class Application
                 $this->setPayment($record['reference'], 'Failed');
             }
         }
+        $record = $orderId === '' ? null : $this->findBy('', 'razorpayOrderId', $orderId);
+        $this->recordWebhookEvent(
+            'razorpay',
+            $eventId,
+            (string) ($event['event'] ?? ''),
+            (string) ($payment['id'] ?? ''),
+            (string) ($record['reference'] ?? '')
+        );
         Security::json(['received' => true]);
+    }
+
+    private function paypalWebhook(string $raw): never
+    {
+        $event = json_decode($raw, true);
+        if (!is_array($event)) {
+            Security::json(['ok' => false, 'error' => 'Invalid PayPal event.'], 400);
+        }
+        $eventId = (string) ($event['id'] ?? '');
+        $eventType = (string) ($event['event_type'] ?? '');
+        if ($eventId === '' || strlen($eventId) > 128 || $eventType === '') {
+            Security::json(['ok' => false, 'error' => 'Invalid PayPal event identifier.'], 400);
+        }
+        $verification = [
+            'auth_algo' => (string) ($_SERVER['HTTP_PAYPAL_AUTH_ALGO'] ?? ''),
+            'cert_url' => (string) ($_SERVER['HTTP_PAYPAL_CERT_URL'] ?? ''),
+            'transmission_id' => (string) ($_SERVER['HTTP_PAYPAL_TRANSMISSION_ID'] ?? ''),
+            'transmission_sig' => (string) ($_SERVER['HTTP_PAYPAL_TRANSMISSION_SIG'] ?? ''),
+            'transmission_time' => (string) ($_SERVER['HTTP_PAYPAL_TRANSMISSION_TIME'] ?? ''),
+            'webhook_id' => $this->config->get('PAYPAL_WEBHOOK_ID'),
+            'webhook_event' => $event,
+        ];
+        foreach (['auth_algo', 'cert_url', 'transmission_id', 'transmission_sig', 'transmission_time', 'webhook_id'] as $required) {
+            if ($verification[$required] === '') {
+                OperationalLogger::event('warning', 'paypal_webhook_headers_missing');
+                Security::json(['ok' => false, 'error' => 'Invalid PayPal webhook signature.'], 400);
+            }
+        }
+        $verificationResult = $this->paypalRequest('/v1/notifications/verify-webhook-signature', $verification);
+        if (($verificationResult['verification_status'] ?? '') !== 'SUCCESS') {
+            OperationalLogger::event('warning', 'paypal_webhook_signature_invalid');
+            Security::json(['ok' => false, 'error' => 'Invalid PayPal webhook signature.'], 400);
+        }
+        if ($this->webhookEventSeen('paypal', $eventId)) {
+            Security::json(['received' => true, 'duplicate' => true]);
+        }
+
+        $resource = is_array($event['resource'] ?? null) ? $event['resource'] : [];
+        $reference = '';
+        if ($eventType === 'PAYMENT.CAPTURE.COMPLETED') {
+            $orderId = (string) ($resource['supplementary_data']['related_ids']['order_id'] ?? '');
+            if ($orderId === '') {
+                Security::json(['ok' => false, 'error' => 'PayPal capture is missing its order reference.'], 400);
+            }
+            $record = $this->findBy('', 'paypalOrderId', $orderId);
+            if ($record === null) {
+                OperationalLogger::event('warning', 'paypal_webhook_order_unmatched');
+                Security::json(['ok' => false, 'error' => 'The PayPal order is not yet available.'], 503);
+            }
+            $reference = (string) $record['reference'];
+            $order = $this->paypalRequest('/v2/checkout/orders/' . rawurlencode($orderId));
+            $purchase = $this->paypalPurchase($order, $reference);
+            if ($purchase === null) {
+                OperationalLogger::event('error', 'paypal_webhook_payment_mismatch');
+                Security::json(['ok' => false, 'error' => 'PayPal capture details did not match this order.'], 400);
+            }
+            $expectedCurrency = (string) ($record['transactionCurrency'] ?? $record['amountCurrency'] ?? CurrencyPolicy::BASE_CURRENCY);
+            $captureMatches = false;
+            foreach (($purchase['payments']['captures'] ?? []) as $capture) {
+                if (($capture['id'] ?? '') === ($resource['id'] ?? '')
+                    && ($capture['status'] ?? '') === 'COMPLETED'
+                    && CurrencyPolicy::paymentMatches(
+                        $this->amountDecimal($record),
+                        $expectedCurrency,
+                        $capture['amount']['value'] ?? null,
+                        $capture['amount']['currency_code'] ?? ''
+                    )) {
+                    $captureMatches = true;
+                    break;
+                }
+            }
+            if (($order['status'] ?? '') !== 'COMPLETED'
+                || $purchase === null
+                || ($purchase['payee']['merchant_id'] ?? '') !== $this->config->get('PAYPAL_MERCHANT_ID')
+                || !CurrencyPolicy::paymentMatches(
+                    $this->amountDecimal($record),
+                    $expectedCurrency,
+                    $resource['amount']['value'] ?? null,
+                    $resource['amount']['currency_code'] ?? ''
+                )
+                || !$captureMatches) {
+                OperationalLogger::event('error', 'paypal_webhook_payment_mismatch');
+                Security::json(['ok' => false, 'error' => 'PayPal capture details did not match this order.'], 400);
+            }
+            $this->setPayment($reference, 'Paid', ['paypalCaptureId' => (string) ($resource['id'] ?? '')]);
+        }
+        $this->recordWebhookEvent('paypal', $eventId, $eventType, (string) ($resource['id'] ?? ''), $reference);
+        Security::json(['received' => true]);
+    }
+
+    private function webhookEventSeen(string $provider, string $eventId): bool
+    {
+        if ($this->pdo === null) {
+            throw new RuntimeException('MySQL payment persistence is required for webhook processing.');
+        }
+        $query = $this->pdo->prepare(
+            'SELECT 1 FROM matai_payment_events WHERE provider = ? AND provider_event_id = ?'
+        );
+        $query->execute([$provider, $eventId]);
+        return $query->fetchColumn() !== false;
+    }
+
+    private function recordWebhookEvent(
+        string $provider,
+        string $eventId,
+        string $eventType,
+        string $resourceId,
+        string $reference
+    ): void {
+        if ($this->pdo === null) {
+            throw new RuntimeException('MySQL payment persistence is required for webhook processing.');
+        }
+        $payload = json_encode([
+            'resourceId' => mb_substr($resourceId, 0, 128),
+        ], JSON_THROW_ON_ERROR);
+        $insert = $this->pdo->prepare(
+            'INSERT IGNORE INTO matai_payment_events ' .
+            '(provider, provider_event_id, registration_reference, event_type, payload_json) ' .
+            'VALUES (?, ?, ?, ?, ?)'
+        );
+        $insert->execute([
+            $provider,
+            $eventId,
+            $reference !== '' ? $reference : null,
+            mb_substr($eventType, 0, 80),
+            $payload,
+        ]);
     }
 
     private function saveRegistration(string $reference, array $registration, array $providerFields): void
     {
+        $snapshotItems = array_map(static function (array $item): array {
+            $item['lineTotalCents'] = (int) $item['unitCents'] * (int) $item['quantity'];
+            return $item;
+        }, $registration['items']);
         $record = [
             'reference' => $reference,
             'kind' => 'register',
@@ -1084,6 +1310,15 @@ final class Application
             'preferredCurrency' => $registration['preferredCurrency'],
             'transactionCurrency' => $registration['transactionCurrency'],
             'data' => $registration['data'],
+            'pricingSnapshot' => [
+                'items' => $snapshotItems,
+                'grossCents' => $registration['grossCents'],
+                'discountCents' => $registration['discountCents'],
+                'taxCents' => $registration['taxCents'],
+                'totalCents' => $registration['totalCents'],
+                'currency' => $registration['transactionCurrency'],
+                'createdAt' => gmdate(DATE_ATOM),
+            ],
         ] + $providerFields;
         $couponCode = strtoupper(trim((string) ($registration['data']['couponCode'] ?? '')));
         $maxUses = null;
@@ -1113,6 +1348,25 @@ final class Application
         $this->notifications->notifySubmission('register', $record);
     }
 
+    private function updateRegistrationFields(string $reference, array $fields): void
+    {
+        $updated = $this->store->mutate('register', static function (array &$records) use ($reference, $fields): bool {
+            foreach ($records as &$record) {
+                if (($record['reference'] ?? '') !== $reference) {
+                    continue;
+                }
+                foreach ($fields as $key => $value) {
+                    $record[$key] = $value;
+                }
+                return true;
+            }
+            return false;
+        });
+        if ($updated !== true) {
+            throw new RuntimeException('Could not associate the provider order with its internal registration.');
+        }
+    }
+
     private function findBy(string $reference, string $field, string $value): ?array
     {
         foreach ($this->store->submissions('register') as $record) {
@@ -1129,7 +1383,17 @@ final class Application
         $this->store->mutate('register', static function (array &$records) use ($reference, $status, $extra): void {
             foreach ($records as &$record) {
                 if (($record['reference'] ?? '') === $reference) {
-                    if ($status === 'Paid' && ($record['paymentStatus'] ?? '') === 'Paid') {
+                    $current = $record['paymentStatus'] ?? 'Pending';
+                    if ($current === 'Paid') {
+                        return;
+                    }
+                    if ($status === 'Paid' && !in_array($current, ['Pending', 'Failed', 'Cancelled'], true)) {
+                        return;
+                    }
+                    if (in_array($status, ['Failed', 'Cancelled'], true) && $current !== 'Pending') {
+                        return;
+                    }
+                    if (!in_array($status, ['Paid', 'Failed', 'Cancelled'], true)) {
                         return;
                     }
                     $record['paymentStatus'] = $status;
@@ -1140,6 +1404,32 @@ final class Application
                 }
             }
         });
+    }
+
+    private function requirePaymentPersistence(): void
+    {
+        if ($this->pdo === null) {
+            OperationalLogger::event('error', 'payment_persistence_unavailable');
+            Security::json([
+                'ok' => false,
+                'error' => 'Online payment processing is temporarily unavailable.',
+            ], 503);
+        }
+    }
+
+    private function amountMinorUnits(array $record): int
+    {
+        $snapshotAmount = $record['pricingSnapshot']['totalCents'] ?? null;
+        if (is_int($snapshotAmount) && $snapshotAmount >= 0) {
+            return $snapshotAmount;
+        }
+        return CurrencyPolicy::toMinorUnits($record['amount'] ?? null) ?? -1;
+    }
+
+    private function amountDecimal(array $record): ?string
+    {
+        $minorUnits = $this->amountMinorUnits($record);
+        return $minorUnits < 0 ? null : CurrencyPolicy::formatMinorUnits($minorUnits);
     }
 
     private function httpJson(string $url, string $method, array $headers, ?string $body = null): array
@@ -1179,7 +1469,7 @@ final class Application
         return $result;
     }
 
-    private function paypalRequest(string $path, ?array $body = null): array
+    private function paypalRequest(string $path, ?array $body = null, ?string $requestId = null): array
     {
         $id = $this->config->get('PAYPAL_CLIENT_ID');
         $secret = $this->config->get('PAYPAL_CLIENT_SECRET');
@@ -1197,6 +1487,9 @@ final class Application
             throw new RuntimeException('PayPal authentication failed.');
         }
         $headers = ['Authorization: Bearer ' . $token['access_token'], 'Content-Type: application/json'];
+        if ($requestId !== null && $requestId !== '') {
+            $headers[] = 'PayPal-Request-Id: ' . $requestId;
+        }
         return $this->httpJson($base . $path, $body === null ? 'GET' : 'POST', $headers,
             $body === null ? null : json_encode($body, JSON_THROW_ON_ERROR));
     }

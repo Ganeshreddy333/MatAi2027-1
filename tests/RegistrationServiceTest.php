@@ -56,6 +56,47 @@ final class RegistrationServiceTest extends TestCase
         self::assertSame('94.50', $registration['data']['totalPrice']);
     }
 
+    public function testAccommodationCheckoutDateIsDerivedOnTheServer(): void
+    {
+        $content = [
+            'fees' => ['Early Bird' => ['Speaker' => 100]],
+            'registrationPeriods' => ['active' => 'Early Bird'],
+            'registrationPricing' => ['fixedItems' => []],
+            'accommodation' => ['enabled' => true, 'pricePerNight' => '40.25', 'maxNights' => 5],
+            'coupons' => [],
+        ];
+        file_put_contents($this->dataDirectory . '/content.json', json_encode($content, JSON_THROW_ON_ERROR));
+        $input = $this->validInput();
+        $input['accommodationType'] = 'double';
+        $input['accommodationNights'] = '2';
+        $input['checkInDate'] = '2027-10-12';
+
+        $registration = $this->service->prepare($input);
+
+        self::assertSame('2027-10-14', $registration['data']['checkOutDate']);
+        self::assertSame(18953, $registration['totalCents']);
+        self::assertSame(4025, $registration['items'][1]['unitCents']);
+    }
+
+    public function testInvalidCalendarDateIsRejected(): void
+    {
+        $content = [
+            'fees' => ['Early Bird' => ['Speaker' => 100]],
+            'registrationPeriods' => ['active' => 'Early Bird'],
+            'registrationPricing' => ['fixedItems' => []],
+            'accommodation' => ['enabled' => true, 'pricePerNight' => '40.25', 'maxNights' => 5],
+            'coupons' => [],
+        ];
+        file_put_contents($this->dataDirectory . '/content.json', json_encode($content, JSON_THROW_ON_ERROR));
+        $input = $this->validInput();
+        $input['accommodationType'] = 'single';
+        $input['accommodationNights'] = '1';
+        $input['checkInDate'] = '2027-02-30';
+
+        $this->expectException(DomainException::class);
+        $this->service->prepare($input);
+    }
+
     public function testCategoryDeadlineAdvancesOnlyThatCategory(): void
     {
         $today = new \DateTimeImmutable('today', new \DateTimeZone('UTC'));

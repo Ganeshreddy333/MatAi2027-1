@@ -25,15 +25,32 @@ final class Config
             'SMTP_HOST', 'SMTP_PORT', 'SMTP_ENCRYPTION', 'SMTP_USERNAME', 'SMTP_PASSWORD', 'SMTP_FROM_ADDRESS',
             'SMTP_FROM_NAME', 'ADMIN_NOTIFICATION_EMAIL',
             'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET',
-            'STRIPE_EUR_CHECKOUT_VERIFIED',
-            'PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET', 'PAYPAL_MODE',
-            'PAYPAL_EUR_CHECKOUT_VERIFIED',
+            'STRIPE_USD_CHECKOUT_VERIFIED', 'STRIPE_EUR_CHECKOUT_VERIFIED',
+            'PAYPAL_CLIENT_ID', 'PAYPAL_CLIENT_SECRET', 'PAYPAL_MERCHANT_ID', 'PAYPAL_WEBHOOK_ID', 'PAYPAL_MODE',
+            'PAYPAL_USD_CHECKOUT_VERIFIED', 'PAYPAL_EUR_CHECKOUT_VERIFIED',
             'RAZORPAY_KEY_ID', 'RAZORPAY_KEY_SECRET', 'RAZORPAY_WEBHOOK_SECRET',
-            'RAZORPAY_CURRENCY', 'RAZORPAY_EUR_CHECKOUT_VERIFIED'
+            'RAZORPAY_CURRENCY', 'RAZORPAY_USD_CHECKOUT_VERIFIED', 'RAZORPAY_EUR_CHECKOUT_VERIFIED'
         ];
         $values = [];
         foreach ($keys as $key) {
             $values[$key] = $_ENV[$key] ?? getenv($key) ?: '';
+        }
+        foreach ([
+            'STRIPE_USD_CHECKOUT_VERIFIED' => ['STRIPE_EUR_CHECKOUT_VERIFIED'],
+            'PAYPAL_USD_CHECKOUT_VERIFIED' => ['PAYPAL_EUR_CHECKOUT_VERIFIED'],
+            'RAZORPAY_USD_CHECKOUT_VERIFIED' => ['RAZORPAY_EUR_CHECKOUT_VERIFIED'],
+        ] as $canonical => $legacyKeys) {
+            $value = $values[$canonical];
+            if ($value === '') {
+                foreach ($legacyKeys as $legacyKey) {
+                    $legacyValue = $values[$legacyKey] ?? '';
+                    if ($legacyValue !== '') {
+                        $value = $legacyValue;
+                        break;
+                    }
+                }
+            }
+            $values[$canonical] = $value;
         }
         $values['APP_ENV'] = $values['APP_ENV'] ?: 'production';
         $values['LOG_LEVEL'] = strtolower($values['LOG_LEVEL'] ?: 'warning');
@@ -41,7 +58,7 @@ final class Config
         $values['SMTP_PORT'] = $values['SMTP_PORT'] ?: '587';
         $values['SMTP_ENCRYPTION'] = strtolower($values['SMTP_ENCRYPTION'] ?: 'tls');
         $values['PAYPAL_MODE'] = $values['PAYPAL_MODE'] ?: 'sandbox';
-        $values['RAZORPAY_CURRENCY'] = $values['RAZORPAY_CURRENCY'] ?: 'EUR';
+        $values['RAZORPAY_CURRENCY'] = strtoupper(trim((string) ($values['RAZORPAY_CURRENCY'] ?: 'USD')));
         if (!ctype_digit($values['MYSQL_PORT']) || (int) $values['MYSQL_PORT'] < 1 || (int) $values['MYSQL_PORT'] > 65535) {
             throw new \RuntimeException('MYSQL_PORT must be a valid TCP port.');
         }

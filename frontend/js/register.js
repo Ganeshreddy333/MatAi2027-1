@@ -751,12 +751,32 @@
       });
       var oldText = submitButton ? submitButton.textContent : "";
       if (submitButton) { submitButton.disabled = true; submitButton.textContent = "Starting secure checkout…"; }
+      var csrfToken = "";
       fetch("/api/csrf").then(function (csrfResponse) {
         return csrfResponse.json().then(function (csrf) {
           if (!csrfResponse.ok || !csrf.token) throw new Error("Could not initialize request security.");
+          csrfToken = csrf.token;
+          return fetch("/api/checkout/quote", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
+            body: JSON.stringify(payload)
+          });
+        });
+      }).then(function (quoteResponse) {
+        return quoteResponse.json().then(function (quote) {
+          if (!quoteResponse.ok) throw new Error(quote.error || "Could not verify the checkout amount.");
+          if (quote.currency !== payload.currency ||
+              Number(quote.totalMinor) !== Math.round(Number(payload.totalPrice) * 100)) {
+            var serverTotal = Number(quote.totalMinor) / 100;
+            throw new Error("The server quote is " + quote.currency + " " + serverTotal.toFixed(2) +
+              " (subtotal " + (Number(quote.subtotalMinor) / 100).toFixed(2) +
+              ", discount " + (Number(quote.discountMinor) / 100).toFixed(2) +
+              ", tax " + (Number(quote.taxMinor) / 100).toFixed(2) +
+              "). Review the updated registration summary before paying.");
+          }
           return fetch("/api/checkout/stripe", {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf.token },
+            headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfToken },
             body: JSON.stringify(payload)
           });
         });
@@ -840,6 +860,23 @@
   }
   recalc();
   loadCurrencyRates();
+  fetch("/api/checkout/config").then(function (response) {
+    if (!response.ok) throw new Error("Could not load checkout pricing configuration.");
+    return response.json();
+  }).then(function (configuration) {
+    var rate = Number(configuration.taxRateBasisPoints);
+    if (!Number.isInteger(rate) || rate < 0 || rate > 10000) {
+      throw new Error("The server returned an invalid tax configuration.");
+    }
+    TAX_RATE = rate / 10000;
+    recalc();
+  }).catch(function () {
+    var pricingStatus = form.querySelector(".form-status");
+    if (pricingStatus) {
+      pricingStatus.className = "form-status info";
+      pricingStatus.textContent = "Could not load server pricing settings. The final amount will be revalidated before online checkout.";
+    }
+  });
   }
 
   initializeRegistrationForm();

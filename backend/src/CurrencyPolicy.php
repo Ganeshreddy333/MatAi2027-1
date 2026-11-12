@@ -44,13 +44,52 @@ final class CurrencyPolicy
         mixed $actualAmount,
         mixed $actualCurrency
     ): bool {
-        if (!is_numeric($expectedAmount) || !is_numeric($actualAmount)
-            || !is_string($expectedCurrency) || !is_string($actualCurrency)
-            || strtoupper($expectedCurrency) !== strtoupper($actualCurrency)) {
+        if (!is_string($expectedCurrency) || !is_string($actualCurrency)
+            || strtoupper(trim($expectedCurrency)) !== strtoupper(trim($actualCurrency))) {
             return false;
         }
-        $expectedCents = round((float) $expectedAmount * 100);
-        $actualCents = round((float) $actualAmount * 100);
-        return $expectedCents >= 0 && $actualCents >= 0 && $expectedCents === $actualCents;
+        $expectedCents = self::minorUnits($expectedAmount);
+        $actualCents = self::minorUnits($actualAmount);
+        return $expectedCents !== null && $actualCents !== null && $expectedCents === $actualCents;
+    }
+
+    public static function paymentMatchesMinorUnits(
+        mixed $expectedMinorUnits,
+        mixed $expectedCurrency,
+        mixed $actualMinorUnits,
+        mixed $actualCurrency
+    ): bool {
+        if (!is_string($expectedCurrency) || !is_string($actualCurrency)
+            || strtoupper(trim($expectedCurrency)) !== strtoupper(trim($actualCurrency))
+            || !is_int($expectedMinorUnits) || $expectedMinorUnits < 0
+            || !is_int($actualMinorUnits) || $actualMinorUnits < 0) {
+            return false;
+        }
+        return $expectedMinorUnits === $actualMinorUnits;
+    }
+
+    public static function toMinorUnits(mixed $amount): ?int
+    {
+        return self::minorUnits($amount);
+    }
+
+    public static function formatMinorUnits(int $minorUnits): string
+    {
+        if ($minorUnits < 0) {
+            throw new DomainException('Minor units cannot be negative.');
+        }
+        return intdiv($minorUnits, 100) . '.' . str_pad((string) ($minorUnits % 100), 2, '0', STR_PAD_LEFT);
+    }
+
+    private static function minorUnits(mixed $amount): ?int
+    {
+        if (!is_string($amount) && !is_int($amount) && !is_float($amount)) {
+            return null;
+        }
+        $value = trim((string) $amount);
+        if (!preg_match('/^(\d{1,10})(?:\.(\d{1,2}))?$/', $value, $matches)) {
+            return null;
+        }
+        return ((int) $matches[1] * 100) + (int) str_pad($matches[2] ?? '', 2, '0');
     }
 }
