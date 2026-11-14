@@ -6,6 +6,15 @@ namespace MatAi;
 
 final class PaymentConfiguration
 {
+    public static function paypalMode(string $mode): string
+    {
+        return match (strtolower(trim($mode))) {
+            'live', 'production' => 'live',
+            'sandbox', 'test' => 'sandbox',
+            default => throw new \InvalidArgumentException('PAYPAL_MODE must be sandbox, test, live, or production.'),
+        };
+    }
+
     public static function stripeEnabled(string $secret, string $usdCheckoutVerified): bool
     {
         return $secret !== '' && strtolower(trim($usdCheckoutVerified)) === 'true';

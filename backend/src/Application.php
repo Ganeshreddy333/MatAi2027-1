@@ -136,7 +136,7 @@ final class Application
                 ],
                 'paypal' => [
                     'enabled' => $paypalEnabled,
-                    'mode' => $this->config->get('PAYPAL_MODE', 'sandbox'),
+                    'mode' => PaymentConfiguration::paypalMode($this->config->get('PAYPAL_MODE', 'sandbox')),
                     'currency' => $paypalEnabled ? 'USD' : null,
                     'supportedCurrencies' => $paypalEnabled ? ['USD'] : [],
                 ],
@@ -816,55 +816,33 @@ final class Application
             $reference = $this->newReference();
             $this->saveRegistration($reference, $registration, []);
             $stage = 'paypal_api';
-            $order = $this->paypalRequest('/v2/checkout/orders', [
-                'intent' => 'CAPTURE',
-                'purchase_units' => [[
-                    'reference_id' => $reference,
-                    'custom_id' => $reference,
-                    'description' => mb_substr($registration['data']['selectedItems'], 0, 120),
-                    'payee' => ['merchant_id' => $this->config->get('PAYPAL_MERCHANT_ID')],
-                    'amount' => [
-                        'currency_code' => $registration['transactionCurrency'],
-                        'value' => number_format($registration['amount'], 2, '.', ''),
-                    ],
-                ]],
-                'payment_source' => ['paypal' => ['experience_context' => [
-                    'brand_name' => 'MatAi 2027',
-                    'user_action' => 'PAY_NOW',
-                    'return_url' => $this->baseUrl() . '/registration.html?checkout=paypal-return',
-                    'cancel_url' => $this->baseUrl() . '/registration.html?checkout=paypal-cancelled',
-                ]]],
-            ], $reference);
+            $order = $this->paypalRequest('/v2/checkout/orders', PayPalOrder::payload(
+                $reference,
+                $registration['data']['selectedItems'],
+                $this->config->get('PAYPAL_MERCHANT_ID'),
+                $registration['totalCents'],
+                $registration['transactionCurrency'],
+                $this->baseUrl()
+            ), $reference);
             $stage = 'paypal_order_validation';
-            $approval = '';
-            foreach ($order['links'] ?? [] as $link) {
-                if (in_array($link['rel'] ?? '', ['payer-action', 'approve'], true)) {
-                    $approval = (string) ($link['href'] ?? '');
-                    break;
-                }
-            }
-            $purchase = $this->paypalPurchase($order, $reference);
-            $hasOrderId = !empty($order['id']);
-            $hasApprovalUrl = $this->isPaypalUrl($approval);
-            $purchaseMatched = $purchase !== null;
-            $merchantMatched = $purchaseMatched
-                && ($purchase['payee']['merchant_id'] ?? '') === $this->config->get('PAYPAL_MERCHANT_ID');
-            $amountCurrencyMatched = $purchaseMatched && CurrencyPolicy::paymentMatches(
-                    CurrencyPolicy::formatMinorUnits($registration['totalCents']),
-                    $registration['transactionCurrency'],
-                    $purchase['amount']['value'] ?? null,
-                    $purchase['amount']['currency_code'] ?? ''
-                );
-            if (!$hasOrderId || !$hasApprovalUrl || !$purchaseMatched || !$merchantMatched || !$amountCurrencyMatched) {
+            $validation = PayPalOrder::validateResponse(
+                $order,
+                $reference,
+                $this->config->get('PAYPAL_MERCHANT_ID'),
+                $registration['totalCents'],
+                $registration['transactionCurrency']
+            );
+            if (!$validation['valid']) {
                 OperationalLogger::event('error', 'paypal_order_response_rejected', [
-                    'has_order_id' => $hasOrderId,
-                    'has_approval_url' => $hasApprovalUrl,
-                    'purchase_unit_matched' => $purchaseMatched,
-                    'merchant_matched' => $merchantMatched,
-                    'amount_currency_matched' => $amountCurrencyMatched,
+                    'has_order_id' => $validation['checks']['has_order_id'],
+                    'has_approval_url' => $validation['checks']['has_approval_url'],
+                    'purchase_unit_matched' => $validation['checks']['purchase_unit_matched'],
+                    'merchant_matched' => $validation['checks']['merchant_matched'],
+                    'amount_currency_matched' => $validation['checks']['amount_currency_matched'],
                 ]);
                 throw new RuntimeException('PayPal order amount or currency did not match the confirmed registration.');
             }
+            $approval = $validation['approvalUrl'];
             $stage = 'registration_update';
             $this->updateRegistrationFields($reference, ['paypalOrderId' => $order['id']]);
         } catch (Throwable $error) {
@@ -1657,7 +1635,7 @@ final class Application
         if ($id === '' || $secret === '') {
             Security::json(['ok' => false, 'error' => 'PayPal checkout is not configured.'], 503);
         }
-        $base = $this->config->get('PAYPAL_MODE') === 'live'
+        $base = PaymentConfiguration::paypalMode($this->config->get('PAYPAL_MODE', 'sandbox')) === 'live'
             ? 'https://api-m.paypal.com'
             : 'https://api-m.sandbox.paypal.com';
         $token = $this->httpJson($base . '/v1/oauth2/token', 'POST', [
@@ -1696,14 +1674,6 @@ final class Application
             }
         }
         return null;
-    }
-
-    private function isPaypalUrl(string $url): bool
-    {
-        $host = parse_url($url, PHP_URL_HOST);
-        return parse_url($url, PHP_URL_SCHEME) === 'https'
-            && is_string($host)
-            && (strtolower($host) === 'paypal.com' || str_ends_with(strtolower($host), '.paypal.com'));
     }
 
     /** Validate financial configuration before it becomes live site content. */

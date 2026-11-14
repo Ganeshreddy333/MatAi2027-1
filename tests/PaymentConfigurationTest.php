@@ -9,6 +9,20 @@ use PHPUnit\Framework\TestCase;
 
 final class PaymentConfigurationTest extends TestCase
 {
+    public function testPayPalProductionModeSelectsLiveAndSandboxModeStaysSandbox(): void
+    {
+        self::assertSame('live', PaymentConfiguration::paypalMode('production'));
+        self::assertSame('live', PaymentConfiguration::paypalMode(' LIVE '));
+        self::assertSame('sandbox', PaymentConfiguration::paypalMode('sandbox'));
+        self::assertSame('sandbox', PaymentConfiguration::paypalMode('test'));
+    }
+
+    public function testPayPalRejectsUnknownModeInsteadOfSilentlyUsingSandbox(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        PaymentConfiguration::paypalMode('prod');
+    }
+
     public function testRazorpayRequiresCredentialsAndUsdBillingCurrency(): void
     {
         self::assertTrue(PaymentConfiguration::razorpayEnabled('key-id', 'key-secret', 'USD', 'true'));
