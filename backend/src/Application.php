@@ -806,50 +806,74 @@ final class Application
         )) {
             Security::json(['ok' => false, 'error' => 'PayPal checkout is not enabled. The merchant must verify USD checkout before it can be used.'], 503);
         }
-        $registration = $this->registrations->prepare($body);
-        if (($registration['data']['paymentGateway'] ?? '') !== 'PayPal') {
-            Security::json(['ok' => false, 'error' => 'Select PayPal to continue.'], 400);
-        }
-        $reference = $this->newReference();
-        $this->saveRegistration($reference, $registration, []);
-        $order = $this->paypalRequest('/v2/checkout/orders', [
-            'intent' => 'CAPTURE',
-            'purchase_units' => [[
-                'reference_id' => $reference,
-                'custom_id' => $reference,
-                'description' => mb_substr($registration['data']['selectedItems'], 0, 120),
-                'payee' => ['merchant_id' => $this->config->get('PAYPAL_MERCHANT_ID')],
-                'amount' => [
-                    'currency_code' => $registration['transactionCurrency'],
-                    'value' => number_format($registration['amount'], 2, '.', ''),
-                ],
-            ]],
-            'payment_source' => ['paypal' => ['experience_context' => [
-                'brand_name' => 'MatAi 2027',
-                'user_action' => 'PAY_NOW',
-                'return_url' => $this->baseUrl() . '/registration.html?checkout=paypal-return',
-                'cancel_url' => $this->baseUrl() . '/registration.html?checkout=paypal-cancelled',
-            ]]],
-        ], $reference);
-        $approval = '';
-        foreach ($order['links'] ?? [] as $link) {
-            if (in_array($link['rel'] ?? '', ['payer-action', 'approve'], true)) {
-                $approval = (string) ($link['href'] ?? '');
-                break;
+        $stage = 'registration_validation';
+        try {
+            $registration = $this->registrations->prepare($body);
+            if (($registration['data']['paymentGateway'] ?? '') !== 'PayPal') {
+                Security::json(['ok' => false, 'error' => 'Select PayPal to continue.'], 400);
             }
+            $stage = 'registration_persistence';
+            $reference = $this->newReference();
+            $this->saveRegistration($reference, $registration, []);
+            $stage = 'paypal_api';
+            $order = $this->paypalRequest('/v2/checkout/orders', [
+                'intent' => 'CAPTURE',
+                'purchase_units' => [[
+                    'reference_id' => $reference,
+                    'custom_id' => $reference,
+                    'description' => mb_substr($registration['data']['selectedItems'], 0, 120),
+                    'payee' => ['merchant_id' => $this->config->get('PAYPAL_MERCHANT_ID')],
+                    'amount' => [
+                        'currency_code' => $registration['transactionCurrency'],
+                        'value' => number_format($registration['amount'], 2, '.', ''),
+                    ],
+                ]],
+                'payment_source' => ['paypal' => ['experience_context' => [
+                    'brand_name' => 'MatAi 2027',
+                    'user_action' => 'PAY_NOW',
+                    'return_url' => $this->baseUrl() . '/registration.html?checkout=paypal-return',
+                    'cancel_url' => $this->baseUrl() . '/registration.html?checkout=paypal-cancelled',
+                ]]],
+            ], $reference);
+            $stage = 'paypal_order_validation';
+            $approval = '';
+            foreach ($order['links'] ?? [] as $link) {
+                if (in_array($link['rel'] ?? '', ['payer-action', 'approve'], true)) {
+                    $approval = (string) ($link['href'] ?? '');
+                    break;
+                }
+            }
+            $purchase = $this->paypalPurchase($order, $reference);
+            $hasOrderId = !empty($order['id']);
+            $hasApprovalUrl = $this->isPaypalUrl($approval);
+            $purchaseMatched = $purchase !== null;
+            $merchantMatched = $purchaseMatched
+                && ($purchase['payee']['merchant_id'] ?? '') === $this->config->get('PAYPAL_MERCHANT_ID');
+            $amountCurrencyMatched = $purchaseMatched && CurrencyPolicy::paymentMatches(
+                    CurrencyPolicy::formatMinorUnits($registration['totalCents']),
+                    $registration['transactionCurrency'],
+                    $purchase['amount']['value'] ?? null,
+                    $purchase['amount']['currency_code'] ?? ''
+                );
+            if (!$hasOrderId || !$hasApprovalUrl || !$purchaseMatched || !$merchantMatched || !$amountCurrencyMatched) {
+                OperationalLogger::event('error', 'paypal_order_response_rejected', [
+                    'has_order_id' => $hasOrderId,
+                    'has_approval_url' => $hasApprovalUrl,
+                    'purchase_unit_matched' => $purchaseMatched,
+                    'merchant_matched' => $merchantMatched,
+                    'amount_currency_matched' => $amountCurrencyMatched,
+                ]);
+                throw new RuntimeException('PayPal order amount or currency did not match the confirmed registration.');
+            }
+            $stage = 'registration_update';
+            $this->updateRegistrationFields($reference, ['paypalOrderId' => $order['id']]);
+        } catch (Throwable $error) {
+            OperationalLogger::event('error', 'paypal_order_creation_failed', [
+                'stage' => $stage,
+                'exception' => $error::class,
+            ]);
+            throw $error;
         }
-        $purchase = $this->paypalPurchase($order, $reference);
-        if (empty($order['id']) || !$this->isPaypalUrl($approval) || $purchase === null
-            || ($purchase['payee']['merchant_id'] ?? '') !== $this->config->get('PAYPAL_MERCHANT_ID')
-            || !CurrencyPolicy::paymentMatches(
-                CurrencyPolicy::formatMinorUnits($registration['totalCents']),
-                $registration['transactionCurrency'],
-                $purchase['amount']['value'] ?? null,
-                $purchase['amount']['currency_code'] ?? ''
-            )) {
-            throw new RuntimeException('PayPal order amount or currency did not match the confirmed registration.');
-        }
-        $this->updateRegistrationFields($reference, ['paypalOrderId' => $order['id']]);
         Security::json([
             'ok' => true, 'reference' => $reference, 'orderId' => $order['id'],
             'approvalUrl' => $approval, 'amount' => $registration['amount'],
@@ -1545,8 +1569,13 @@ final class Application
         return $minorUnits < 0 ? null : CurrencyPolicy::formatMinorUnits($minorUnits);
     }
 
-    private function httpJson(string $url, string $method, array $headers, ?string $body = null): array
-    {
+    private function httpJson(
+        string $url,
+        string $method,
+        array $headers,
+        ?string $body = null,
+        ?string $provider = null
+    ): array {
         if (!function_exists('curl_init')) {
             throw new RuntimeException('PHP cURL is required for payment provider integrations.');
         }
@@ -1566,16 +1595,55 @@ final class Application
         }
         $response = curl_exec($handle);
         $status = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+        $errorNumber = curl_errno($handle);
         $error = curl_error($handle);
         curl_close($handle);
         if (!is_string($response)) {
+            if ($provider !== null) {
+                OperationalLogger::event('error', 'payment_provider_transport_failed', [
+                    'provider' => $provider,
+                    'endpoint' => parse_url($url, PHP_URL_PATH),
+                    'transport_error_code' => $errorNumber,
+                ]);
+            }
             throw new RuntimeException('Payment provider request failed: ' . $error);
         }
         $result = json_decode($response, true);
         if (!is_array($result)) {
+            if ($provider !== null) {
+                OperationalLogger::event('error', 'payment_provider_invalid_response', [
+                    'provider' => $provider,
+                    'endpoint' => parse_url($url, PHP_URL_PATH),
+                    'http_status' => $status,
+                ]);
+            }
             throw new RuntimeException('Payment provider returned an invalid response.');
         }
         if ($status < 200 || $status >= 300) {
+            if ($provider !== null) {
+                $issueCodes = [];
+                $details = $result['details'] ?? [];
+                if (is_array($details)) {
+                    foreach ($details as $detail) {
+                        $issue = is_array($detail) ? ($detail['issue'] ?? null) : null;
+                        if (is_string($issue) && preg_match('/^[A-Z0-9_.-]{1,80}$/', $issue)) {
+                            $issueCodes[] = $issue;
+                        }
+                    }
+                }
+                $providerError = $result['name'] ?? 'unknown';
+                $debugId = $result['debug_id'] ?? null;
+                OperationalLogger::event('error', 'payment_provider_http_error', [
+                    'provider' => $provider,
+                    'endpoint' => parse_url($url, PHP_URL_PATH),
+                    'http_status' => $status,
+                    'provider_error' => is_string($providerError)
+                        && preg_match('/^[A-Za-z0-9_.-]{1,80}$/', $providerError) ? $providerError : 'unknown',
+                    'provider_debug_id' => is_string($debugId)
+                        && preg_match('/^[A-Za-z0-9_.-]{1,80}$/', $debugId) ? $debugId : null,
+                    'provider_issue_codes' => implode(',', array_unique($issueCodes)),
+                ]);
+            }
             $message = $result['error']['message'] ?? $result['message'] ?? 'Payment provider request failed.';
             throw new RuntimeException((string) $message);
         }
@@ -1595,8 +1663,9 @@ final class Application
         $token = $this->httpJson($base . '/v1/oauth2/token', 'POST', [
             'Authorization: Basic ' . base64_encode($id . ':' . $secret),
             'Content-Type: application/x-www-form-urlencoded',
-        ], 'grant_type=client_credentials');
+        ], 'grant_type=client_credentials', 'paypal');
         if (empty($token['access_token'])) {
+            OperationalLogger::event('error', 'paypal_authentication_response_invalid');
             throw new RuntimeException('PayPal authentication failed.');
         }
         $headers = ['Authorization: Bearer ' . $token['access_token'], 'Content-Type: application/json'];
@@ -1604,7 +1673,7 @@ final class Application
             $headers[] = 'PayPal-Request-Id: ' . $requestId;
         }
         return $this->httpJson($base . $path, $body === null ? 'GET' : 'POST', $headers,
-            $body === null ? null : json_encode($body, JSON_THROW_ON_ERROR));
+            $body === null ? null : json_encode($body, JSON_THROW_ON_ERROR), 'paypal');
     }
 
     private function razorpayRequest(string $path, ?array $body = null, string $method = 'GET'): array

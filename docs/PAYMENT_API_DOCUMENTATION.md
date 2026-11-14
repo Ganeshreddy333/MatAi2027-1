@@ -31,3 +31,9 @@ Never submit an amount to a provider based on `totalPrice`, tax, discount or uni
 ## Known API limitations
 
 No public order-status lookup independent of Stripe session ID, no guest ownership token, no payment retry endpoint, no refund endpoint, no internal idempotency key, and no reconciliation endpoint are currently implemented. Do not expose a generic registration-reference lookup to unauthenticated callers.
+
+## PayPal order errors
+
+If `POST /api/checkout/paypal/order` returns HTTP 500, its response includes a `requestId`. Match that ID to the PHP/server error log. The application records the failing stage (`registration_persistence`, `paypal_api`, `paypal_order_validation`, or `registration_update`) without logging credentials or participant data. PayPal API failures additionally record the endpoint, HTTP status, PayPal error name, debug ID, and issue codes when supplied. Share those diagnostics with the hosting administrator or PayPal support; never share `PAYPAL_CLIENT_SECRET`.
+
+The PayPal configuration endpoint must report PayPal as enabled, and online checkout requires MySQL, PHP cURL, matching credentials and `PAYPAL_MODE` (sandbox or live), a merchant ID, a webhook ID, and explicit USD checkout verification. A successful sandbox order does not verify live credentials or account eligibility.
